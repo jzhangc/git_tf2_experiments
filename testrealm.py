@@ -5,6 +5,9 @@ current objectives:
 
 follow: https://www.tensorflow.org/guide/keras/rnn
 and: https://www.tensorflow.org/guide/keras/custom_layers_and_models
+
+https://www.tensorflow.org/guide/keras/rnn
+https://www.tensorflow.org/tutorials/structured_data/time_series
 """
 
 import os
