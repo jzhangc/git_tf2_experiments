@@ -14,22 +14,38 @@ import os
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from tensorflow.keras import layers
+from tensorflow.keras import layers, Model
 
 # ------ clear session ------
 tf.keras.backend.clear_session()
 
 
 # ------ DL classes ------
-class my_linear(layers.Layer):
-    """
-    a dense layer with linear activation.
-    It has a state: the variables w and b.
-    """
+class myModel(Model):
+    def __init__(self, num_classes=10):
+        super(myModel, self).__init__(name='my_model')
+        self.num_classes = num_classes
+        # layers
+        self.dense_1 = layers.Dense(32, activation='relu')
+        self.dense_2 = layers.Dense(
+            num_classes, activation='sigmoid')  # output layer
 
-    def __init__(self, units, input_dim):
-        super(my_linear, self).__init__()
-        w_init = tf.random_normal_initializer()
+    def call(self, inputs):
+        # Define forward pass using the layers
+        x = self.dense_1(inputs)
+        # use output of dense_1 as input for output layer
+        return self.dense_2(x)
+
+
+model = MyModel(num_classes=10)
+
+# The compile step specifies the training configuration.
+model.compile(optimizer=tf.keras.optimizers.RMSprop(0.001),
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+
+# Trains for 5 epochs.
+model.fit(data, labels, batch_size=32, epochs=5)
 
 
 # ------ setup working dictory ------
