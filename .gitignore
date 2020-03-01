@@ -115,6 +115,10 @@ celerybeat.pid
 env/
 venv/
 ENV/
+conda-env/
+conda-venv/
+conda_env/
+conda_venv/
 env.bak/
 venv.bak/
 
