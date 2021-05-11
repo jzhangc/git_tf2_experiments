@@ -6,7 +6,7 @@ experimental codes for apple tensorflow2.4 with gpu acceleration
 
     conda config --add channels conda-forge 
     
-    conda config --add channels conda-forgenodefaults
+    conda config --add channels nodefaults
 
 2. create a conda environment and install via the yml file
 
