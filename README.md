@@ -20,7 +20,7 @@ experimental codes for apple tensorflow2.4 with gpu acceleration
 
 3. install additional pacakges
 
-    conda install scikit-learn setuptools cached-property six packaging matplotlib autopep8 jupyter tqdm -c conda-forge
+    conda install scikit-learn setuptools cached-property six packaging matplotlib autopep8 jupyter tqdm pandas -c conda-forge
 
 4. install apple tf2.4
 
