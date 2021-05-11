@@ -192,7 +192,7 @@ earlystop_callback = EarlyStopping(monitor='val_loss', patience=5)
 callbacks = [earlystop_callback]  # callback is a list
 autoencoder.fit(x_train, x_train,
                 epochs=50,
-                batch_size=256, shuffle=True, validation_data=(x_test_s, x_test_s))
+                batch_size=256, shuffle=True, validation_data=(x_test, x_test))
 
 # ------ display resutls ------
 # - predict -
