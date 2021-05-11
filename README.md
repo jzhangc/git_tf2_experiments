@@ -1,16 +1,21 @@
-# apple tensorflow2.4 with gpu acceleration
+# Apple tensorflow2.4 with gpu acceleration
 experimental codes for apple tensorflow2.4 with gpu acceleration
 
-# install via conda enviroment
+# Install via conda enviroment
 1. add conda-forge channel
 
-    conda config --add channels conda-forge nodefaults
+    conda config --add channels conda-forge 
+    conda config --add channels conda-forgenodefaults
 
 2. create a conda environment and install via the yml file
 
     conda env create -f ./inst/environment.yml --prefix ./conda_venv_atf24
 
-3. install apple tf2.4
+3. install additional pacakges
+
+    conda install setuptools cached-property six packaging matplotlib autopep8 jupyter tqdm -c conda-forge
+
+4. install apple tf2.4
 
     Intel chips:
 
