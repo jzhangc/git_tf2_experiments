@@ -27,18 +27,6 @@ from tqdm import tqdm
 
 from tensorflow.keras.datasets import mnist
 
-
-# ------ set environmental variables ------
-"""
-Intel CPU acceleration needs to have some environmental viarables set
-
-This is NOT required if to run on GPU or Google Golab
-
-If to use this, make sure to use the IntelPython venv: conda_venv_intel
-"""
-os.environ['USE_DAAL4PY_SKLEARN'] = 'YES'
-
-
 # ------ custom functions ------
 
 # ----- model constuction ------
