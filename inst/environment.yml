@@ -26,4 +26,9 @@ dependencies:
   - wheel
   - wrapt
   - setuptools
+  - matplotlib
+  - autopep8
+  - jupyter
+  - tqdm
+  - os
   

@@ -9,16 +9,14 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
+import tensorflow as tf
 from datatime import datatime
-from keras.callbacks import EarlyStopping
-from keras.datasets import mnist
-from keras.layers import Dense, Input
-from keras.models import Model, Sequential
-from keras.utils import to_categorical
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.datasets import mnist
+from tensorflow.keras.layers import Dense, Input
+from tensorflow.keras.models import Model, Sequential
+from tensorflow.keras.utils import to_categorical
 from tqdm import tqdm
-
-os.environ["KERAS_BACKEND"] = 'plaidml.keras.backend'
 
 
 # ------ model ------
