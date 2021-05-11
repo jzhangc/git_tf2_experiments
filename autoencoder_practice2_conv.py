@@ -7,31 +7,27 @@ Current Objectives:
 NOTE: autoencoder is neither supervised learning, nor unsupervised learning. 
     It is "self-supervsied learning"
 """
+
+
 # ------ import modules ------
 import os
 from datetime import datetime
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import matplotlib.pyplot as plt
-
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.datasets import mnist
 from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras.models import Model
+from tensorflow.python.compiler.mlcompute import mlcompute
 from tqdm import tqdm
-
-from tensorflow.keras.datasets import mnist
 
 
 # ------ set environmental variables ------
-"""
-Intel CPU acceleration needs to have some environmental viarables set
-
-This is NOT required if to run on GPU or Google Golab
-
-If to use this, make sure to use the IntelPython venv: conda_venv_intel
-"""
-os.environ['USE_DAAL4PY_SKLEARN'] = 'YES'
+tf.compat.v1.disable_eager_execution()
+mlcompute.set_mlc_device(device_name='gpu')
 
 
 # ------ custom functions ------
@@ -191,10 +187,12 @@ input, output = x_train,, x_train: because the input and outpout are the same fo
 batch_size: we don't set the number of batches. Instead, we set batch_size, which will determine the number of batches
     given the total sample number. 
 """
-
-autoencoder.fit(x_train_s, x_train_s,
-                epochs=150,
-                batch_size=50, shuffle=True, validation_data=(x_test_s, x_test_s))
+# early stop
+earlystop_callback = EarlyStopping(monitor='val_loss', patience=5)
+callbacks = [earlystop_callback]  # callback is a list
+autoencoder.fit(x_train, x_train,
+                epochs=50,
+                batch_size=256, shuffle=True, validation_data=(x_test_s, x_test_s))
 
 # ------ display resutls ------
 # - predict -
@@ -222,16 +220,4 @@ for i in range(n):
     ax.get_yaxis().set_visible(False)
 plt.show()
 
-# # ------ test ------
-# with tf.device('/cpu:0'):
-#     a = tf.constant([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], shape=[2, 3], name='a')
-#     b = tf.constant([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], shape=[3, 2], name='b')
-#     c = tf.matmul(a, b)
-
-# with tf.compat.v1.Session() as sess:
-#     print(sess.run(c))
-
-# sess = tf.compat.v1.Session(
-#     config=tf.compat.v1.ConfigProto(log_device_placement=True))
-
-# print(sess)
+# ------ test ------
