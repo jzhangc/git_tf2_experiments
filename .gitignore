@@ -1,9 +1,9 @@
 # Jing's stuff
+data
+results
+test
 .DS_Store
 .vscode
-1.results
-0.data
-z.ref_codes
 log
 
 # Byte-compiled / optimized / DLL files
@@ -112,15 +112,8 @@ celerybeat.pid
 # Environments
 .env
 .venv
-env/
-venv/
-ENV/
-conda-env/
-conda-venv/
-conda_env/
-conda_venv/
-env.bak/
-venv.bak/
+*venv*/
+*env*/
 
 # Spyder project settings
 .spyderproject
