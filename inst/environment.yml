@@ -25,4 +25,5 @@ dependencies:
   - typing_extensions
   - wheel
   - wrapt
+  - setuptools
   
