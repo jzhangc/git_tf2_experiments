@@ -83,7 +83,7 @@ input_img = Input(shape=(784, ))
 # Chain 1, encoding layer: from 784 to 32
 encoded = Dense(encoding_dim, activation='relu')(input_img)
 
-# Chain 2, encoding layer: from 32 to 784
+# Chain 2, decoding layer: from 32 to 784
 # NOTE: 0,1 is the output format, simoid
 decoded = Dense(784, activation='sigmoid')(encoded)
 
