@@ -11,21 +11,25 @@ NOTE: Autoencoder is neither supervised learning, nor unsupervised learning.
     It is "self-supervsied learning"
 NOTE: This dense version WILL NOT run well without GPU acceleration. Do it on Google Colab
 """
-# ------ import modules ------
+
 import os
 from datetime import datetime
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import matplotlib.pyplot as plt
-
 from tensorflow.keras.callbacks import EarlyStopping
+# ------ import modules ------
+from tensorflow.keras.datasets import mnist
 from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras.models import Model
+from tensorflow.python.compiler.mlcompute import mlcompute
 from tqdm import tqdm
 
-from tensorflow.keras.datasets import mnist
+tf.compat.v1.disable_eager_execution()
+mlcompute.set_mlc_device(device_name="any")
+
 
 # ------ custom functions ------
 
@@ -36,7 +40,7 @@ The model we are building here only has three layers:
 Input -> Encoded -> Decoded
 
 2. 
-Here we use the double parentheses syntax (example):
+Here we use the double parentheses syntax (example, transfer learning):
     model = VGG19(weights='imagenet',include_top=False)
     model.trainable=False
     layer1 = Flatten(name='flat')(model)
@@ -73,8 +77,6 @@ By having a shape=784, each batch is a single sample (image).
 
 When we fit the model, we will need to set a batch size (how many batches per run)
     It is also noted that an "epoch" is the run of all the batches required to go through all the samples
-
-
 """
 input_img = Input(shape=(784, ))
 

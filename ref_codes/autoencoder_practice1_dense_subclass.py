@@ -1,8 +1,35 @@
 #!/usr/bin/env python3
 """
-NOTE: Use the FUNCTIONAL API. This subclassing API is just for fun. 
+NOTE: We can now use subclass modelling as well. 
 
 SEE BELOW:
+After 2.2
+By using model.save to save the whole model and by using load_model to restore previously stored subclassed model. 
+The following code snippets describe how to implement them.
+
+class ThreeLayerMLP(keras.Model):
+  def __init__(self, name=None):
+    super(ThreeLayerMLP, self).__init__(name=name)
+    self.dense_1 = layers.Dense(64, activation='relu', name='dense_1')
+    self.dense_2 = layers.Dense(64, activation='relu', name='dense_2')
+    self.pred_layer = layers.Dense(10, name='predictions')
+
+  def call(self, inputs):
+    x = self.dense_1(inputs)
+    x = self.dense_2(x)
+    return self.pred_layer(x)
+
+def get_model():
+  return ThreeLayerMLP(name='3_layer_mlp')
+
+model = get_model()
+# Save the model
+model.save('path_to_my_model',save_format='tf')
+
+# Recreate the exact same model purely from the file
+new_model = keras.models.load_model('path_to_my_model')
+
+Before TF 2.2
 Saving the model to HDF5 format requires the model to be a Functional model or a Sequential model. 
 It does not work for subclassed models, because such models are defined via the body of a Python method, 
 which isn't safely serializable. Consider saving to the Tensorflow SavedModel format (by setting save_format="tf") 
@@ -23,18 +50,20 @@ NOTE: Use conda_venv_intel for this one
 import os
 from datetime import datetime
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import matplotlib.pyplot as plt
-
 from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.datasets import mnist
 from tensorflow.keras.layers import Dense, Input, Layer
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
+from tensorflow.python.compiler.mlcompute import mlcompute
 from tqdm import tqdm
 
-from tensorflow.keras.datasets import mnist
+tf.compat.v1.disable_eager_execution()
+mlcompute.set_mlc_device(device_name="any")
 
 
 # ----- model constuction ------
@@ -132,8 +161,7 @@ m.fit(x_train, x_train,
       callbacks=callbacks,
       shuffle=True, validation_data=(x_test, x_test))
 
-
-m.save('./results/subclass_autoencoder')
+m.save('../results/subclass_autoencoder', save_format='tf')
 
 
 # ------ display resutls ------
@@ -153,10 +181,10 @@ for i in range(n):
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
 
-    # # display reconstruction
-    # ax = plt.subplot(2, n, i + 1 + n)
-    # plt.imshow(decoded_imgs[i].reshape(28, 28))
-    # plt.gray()
-    # ax.get_xaxis().set_visible(False)
-    # ax.get_yaxis().set_visible(False)
+    # display reconstruction
+    ax = plt.subplot(2, n, i + 1 + n)
+    plt.imshow(decoded_imgs[i].reshape(28, 28))
+    plt.gray()
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
 plt.show()
