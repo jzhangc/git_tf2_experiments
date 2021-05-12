@@ -22,10 +22,11 @@ from tqdm import tqdm
 class Encoder(Layer):
     def __init__(self, latent_dim):
         super(Encoder, self).__init__()
+        self.output_dim = 16
         self.hidden_layer1 = Dense(
             units=latent_dim, activation='relu', kernel_initializer='he_uniform')
         self.hidden_layer2 = Dense(units=32, activation='relu')
-        self.output = Dense(units=16, activation='sigmoid')
+        self.output = Dense(units=self.output_dim, activation='sigmoid')
 
     def call(self, input_dim):
         x = self.hidden_layer1(input_dim)
@@ -53,7 +54,7 @@ class autoencoder_decoder(Model):
     def __init__(self, original_dim, latent_dim):
         super(autoencoder_decoder, self).__init__()
         self.encoder = Encoder(latent_dim=latent_dim)
-        self.decoder = Decoder(latent_dim=latent_dim,
+        self.decoder = Decoder(latent_dim=self.encoder.output_dim,
                                original_dim=original_dim)
 
     def call(self, input_dim):
