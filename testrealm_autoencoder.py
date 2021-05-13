@@ -5,6 +5,7 @@ this is test realm
 
 # ------ load modules ------
 import os
+from datetime import datetime
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,10 +13,14 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.datasets import mnist
-from tensorflow.keras.layers import Dense, Layer, Input
-from tensorflow.keras.models import Model, Sequential
-from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.layers import Dense, Input, Layer
+from tensorflow.keras.models import Model
+from tensorflow.keras.optimizers import Adam
+from tensorflow.python.compiler.mlcompute import mlcompute
 from tqdm import tqdm
+
+tf.compat.v1.disable_eager_execution()
+mlcompute.set_mlc_device(device_name="gpu")
 
 
 # ------ model ------
@@ -26,12 +31,12 @@ class Encoder(Layer):
         self.hidden_layer1 = Dense(
             units=latent_dim, activation='relu', kernel_initializer='he_uniform')
         self.hidden_layer2 = Dense(units=32, activation='relu')
-        self.output = Dense(units=self.output_dim, activation='sigmoid')
+        self.output_layer = Dense(units=self.output_dim, activation='sigmoid')
 
     def call(self, input_dim):
         x = self.hidden_layer1(input_dim)
         x = self.hidden_layer2(x)
-        x = self.output(x)
+        x = self.output_layer(x)
         return x
 
 
@@ -41,12 +46,12 @@ class Decoder(Layer):
         self.hidden_layer1 = Dense(
             units=latent_dim, activation='relu', kernel_initializer='he_uniform')
         self.hidden_layer2 = Dense(units=32, activation='relu')
-        self.output = Dense(unit=original_dim, activation='sigmoid')
+        self.output_layer = Dense(units=original_dim, activation='sigmoid')
 
     def call(self, encoded_dim):
         x = self.hidden_layer1(encoded_dim)
         x = self.hidden_layer2(x)
-        x = self.output(x)
+        x = self.output_layer(x)
         return x
 
 
@@ -73,9 +78,50 @@ x_train, x_test = x_train.astype('float32') / 255, x_test.astype(
     'float32') / 255  # transform from int to float and min(0.0)-max(255.0) normalization into 0-1
 
 # -- data vectorization: 28*28 = 784 --
-
+# ndarray.shape: x, y, z. index: [0, 1, 2]. so y and z are ndarray.shape[1:]
+x_train = x_train.reshape(len(x_train), np.prod(x_train.shape[1:]))
+x_test = x_test.reshape(len(x_test), np.prod(x_test.shape[1:]))
 
 # ------ training ------
+# -- early stop and optimizer --
+earlystop = EarlyStopping(monitor='val_loss', patience=5)
+callbacks = [earlystop]
+optm = Adam(learning_rate=0.001)
+
 # -- model --
+m = autoencoder_decoder(original_dim=x_train.shape[1], latent_dim=64)
+# the output is sigmoid, therefore binary_crossentropy
+m.compile(optimizer=optm, loss="binary_crossentropy")
 
 # -- training --
+m.fit(x=x_train, y=x_train, batch_size=256, epochs=100, callbacks=callbacks,
+      shuffle=True, validation_data=(x_test, x_test))
+
+# -- inspection --
+reconstruction_test = m.predict(x_test)
+
+# - visulization -
+n = 10  # how many digits we will display
+plt.figure(figsize=(20, 4))
+for i in range(n):
+    # display original
+    ax = plt.subplot(2, n, i + 1)
+    plt.imshow(x_test[i].reshape(28, 28))
+    plt.gray()
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+
+    # display reconstruction
+    ax = plt.subplot(2, n, i + 1 + n)
+    plt.imshow(reconstruction_test[i].reshape(28, 28))
+    plt.gray()
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+plt.show()
+
+
+# ------ save model ------
+m.save('../results/subclass_autoencoder', save_format='tf')
+
+
+# ------ testing ------
