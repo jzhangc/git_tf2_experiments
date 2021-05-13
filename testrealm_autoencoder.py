@@ -64,7 +64,15 @@ class autoencoder_decoder(Model):
 
 
 # ------ data ------
-(x_train, y_train), (x_test, y_test) = mnist.load_data()
+# -- loading data --
+# x_train: 60000, 28, 28. no need to have y
+(x_train, _), (x_test, _) = mnist.load_data()
+
+# -- data transformation and normalization --
+x_train, x_test = x_train.astype('float32') / 255, x_test.astype(
+    'float32') / 255  # transform from int to float and min(0.0)-max(255.0) normalization into 0-1
+
+# -- data vectorization: 28*28 = 784 --
 
 
 # ------ training ------
