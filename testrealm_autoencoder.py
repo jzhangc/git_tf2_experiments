@@ -65,3 +65,9 @@ class autoencoder_decoder(Model):
 
 # ------ data ------
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+
+# ------ training ------
+# -- model --
+
+# -- training --
