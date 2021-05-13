@@ -1,11 +1,11 @@
 """
-this is test realm
+this is test realm for autoencoder
+current: autoencoder for feature encoding
 """
 
 
 # ------ load modules ------
 import os
-from datetime import datetime
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,59 +13,49 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.datasets import mnist
-from tensorflow.keras.layers import Dense, Input, Layer
+from tensorflow.keras.layers import Dense, Input, Layer, BatchNormalization, LeakyReLU
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
-from tensorflow.python.compiler.mlcompute import mlcompute
+from tensorflow.keras.utils import plot_model
+# from tensorflow.python.compiler.mlcompute import mlcompute
 from tqdm import tqdm
 
-tf.compat.v1.disable_eager_execution()
-mlcompute.set_mlc_device(device_name="gpu")
+# tf.compat.v1.disable_eager_execution()
+# mlcompute.set_mlc_device(device_name="gpu")
 
 
 # ------ model ------
-class Encoder(Layer):
-    def __init__(self, latent_dim):
-        super(Encoder, self).__init__()
-        self.output_dim = 16
-        self.hidden_layer1 = Dense(
-            units=latent_dim, activation='relu', kernel_initializer='he_uniform')
-        self.hidden_layer2 = Dense(units=32, activation='relu')
-        self.output_layer = Dense(units=self.output_dim, activation='sigmoid')
-
-    def call(self, input_dim):
-        x = self.hidden_layer1(input_dim)
-        x = self.hidden_layer2(x)
-        x = self.output_layer(x)
-        return x
 
 
-class Decoder(Layer):
-    def __init__(self, latent_dim, original_dim):
-        super(Decoder, self).__init__()
-        self.hidden_layer1 = Dense(
-            units=latent_dim, activation='relu', kernel_initializer='he_uniform')
-        self.hidden_layer2 = Dense(units=32, activation='relu')
-        self.output_layer = Dense(units=original_dim, activation='sigmoid')
-
-    def call(self, encoded_dim):
-        x = self.hidden_layer1(encoded_dim)
-        x = self.hidden_layer2(x)
-        x = self.output_layer(x)
-        return x
-
-
-class autoencoder_decoder(Model):
-    def __init__(self, original_dim, latent_dim):
-        super(autoencoder_decoder, self).__init__()
-        self.encoder = Encoder(latent_dim=latent_dim)
-        self.decoder = Decoder(latent_dim=self.encoder.output_dim,
-                               original_dim=original_dim)
-
-    def call(self, input_dim):
-        x = self.encoder(input_dim)
-        x = self.decoder(x)
-        return x
+# define encoder
+visible = Input(shape=(n_inputs,))
+# encoder level 1
+e = Dense(n_inputs*2)(visible)
+e = BatchNormalization()(e)
+e = LeakyReLU()(e)
+# encoder level 2
+e = Dense(n_inputs)(e)
+e = BatchNormalization()(e)
+e = LeakyReLU()(e)
+# bottleneck
+n_bottleneck = n_inputs
+bottleneck = Dense(n_bottleneck)(e)
+# define decoder, level 1
+d = Dense(n_inputs)(bottleneck)
+d = BatchNormalization()(d)
+d = LeakyReLU()(d)
+# decoder level 2
+d = Dense(n_inputs*2)(d)
+d = BatchNormalization()(d)
+d = LeakyReLU()(d)
+# output layer
+output = Dense(n_inputs, activation='linear')(d)
+# define autoencoder model
+model = Model(inputs=visible, outputs=output)
+# compile autoencoder model
+model.compile(optimizer='adam', loss='mse')
+# plot the autoencoder
+plot_model(model, 'autoencoder_no_compress.png', show_shapes=True)
 
 
 # ------ data ------
@@ -89,16 +79,13 @@ callbacks = [earlystop]
 optm = Adam(learning_rate=0.001)
 
 # -- model --
-m = autoencoder_decoder(original_dim=x_train.shape[1], latent_dim=64)
-# the output is sigmoid, therefore binary_crossentropy
-m.compile(optimizer=optm, loss="binary_crossentropy")
+
 
 # -- training --
-m.fit(x=x_train, y=x_train, batch_size=256, epochs=100, callbacks=callbacks,
-      shuffle=True, validation_data=(x_test, x_test))
+
 
 # -- inspection --
-reconstruction_test = m.predict(x_test)
+
 
 # - visulization -
 n = 10  # how many digits we will display
@@ -121,7 +108,6 @@ plt.show()
 
 
 # ------ save model ------
-m.save('../results/subclass_autoencoder', save_format='tf')
 
 
 # ------ testing ------
