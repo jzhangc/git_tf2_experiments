@@ -2,6 +2,10 @@
 this is test realm
 NOTE: if to use subclassing API to build autoencoder, we cannot access intermediate layers for encoded data. 
 This is by TF2's design.
+
+NOTE: ATF2.4 major known bug: model.evluate and model.predit confict each other: running one will cause the other to crash.
+This also means, model.fit cannot use argument validation_data, which calls model.evaluate.
+For now, use official TF2.4 to train if were to use model.predict. 
 """
 
 
@@ -17,11 +21,11 @@ from tensorflow.keras.datasets import mnist
 from tensorflow.keras.layers import Dense, Input, Layer
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
-# from tensorflow.python.compiler.mlcompute import mlcompute
+from tensorflow.python.compiler.mlcompute import mlcompute
 from tqdm import tqdm
 
-# tf.compat.v1.disable_eager_execution()
-# mlcompute.set_mlc_device(device_name="cpu")
+tf.compat.v1.disable_eager_execution()
+mlcompute.set_mlc_device(device_name="gpu")
 
 
 # ------ model ------
@@ -86,6 +90,7 @@ x_test = x_test.reshape(len(x_test), np.prod(x_test.shape[1:]))
 # ------ training ------
 # -- early stop and optimizer --
 earlystop = EarlyStopping(monitor='val_loss', patience=5)
+# earlystop = EarlyStopping(monitor='loss', patience=5)
 callbacks = [earlystop]
 optm = Adam(learning_rate=0.001)
 
@@ -97,6 +102,9 @@ m.compile(optimizer=optm, loss="binary_crossentropy")
 # -- training --
 m.fit(x=x_train, y=x_train, batch_size=256, epochs=50, callbacks=callbacks,
       shuffle=True, validation_data=(x_test, x_test))
+
+# m.fit(x=x_train, y=x_train, batch_size=256, epochs=50, callbacks=callbacks,
+#       shuffle=True)
 
 # -- inspection --
 reconstruction_test = m.predict(x_test)
