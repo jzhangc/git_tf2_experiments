@@ -21,7 +21,7 @@ from tensorflow.keras.optimizers import Adam
 from tqdm import tqdm
 
 # tf.compat.v1.disable_eager_execution()
-# mlcompute.set_mlc_device(device_name="gpu")
+# mlcompute.set_mlc_device(device_name="cpu")
 
 
 # ------ model ------
@@ -92,17 +92,14 @@ optm = Adam(learning_rate=0.001)
 # -- model --
 m = autoencoder_decoder(original_dim=x_train.shape[1], latent_dim=64)
 # the output is sigmoid, therefore binary_crossentropy
-m.compile(optimizer=optm, loss="binary_crossentropy", metrics="accuracy")
+m.compile(optimizer=optm, loss="binary_crossentropy")
 
 # -- training --
-m.fit(x=x_train, y=x_train, batch_size=256, epochs=100, callbacks=callbacks,
+m.fit(x=x_train, y=x_train, batch_size=256, epochs=50, callbacks=callbacks,
       shuffle=True, validation_data=(x_test, x_test))
 
 # -- inspection --
 reconstruction_test = m.predict(x_test)
-
-m.input
-
 
 # - visulization -
 n = 10  # how many digits we will display
