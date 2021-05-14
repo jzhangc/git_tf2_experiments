@@ -5,7 +5,7 @@ This is by TF2's design.
 
 NOTE: ATF2.4 major known bug: model.evluate and model.predit confict each other: running one will cause the other to crash.
 This also means, model.fit cannot use argument validation_data, which calls model.evaluate.
-For now, use official TF2.4 to train if were to use model.predict. 
+For now, use official TF2.4 to train if were to use model.predict -> we have a venv for that. 
 """
 
 
