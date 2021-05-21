@@ -30,7 +30,7 @@ experimental codes for apple tensorflow2.4 with gpu acceleration
 
     pip install --upgrade --force --no-dependencies https://github.com/apple/tensorflow_macos/releases/download/v0.1alpha3/tensorflow_macos-0.1a3-cp38-cp38-macosx_11_0_x86_64.whl https://github.com/apple/tensorflow_macos/releases/download/v0.1alpha3/tensorflow_addons_macos-0.1a3-cp38-cp38-macosx_11_0_x86_64.whl 
 
-    NOTE: run "export SYSTEM_VERSION_COMPAT=0" if not supported error
+    NOTE: run "export SYSTEM_VERSION_COMPAT=0" if "not supported" error is returned
 
     Apple chips:
 
