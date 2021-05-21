@@ -100,11 +100,10 @@ m = autoencoder_decoder(original_dim=x_train.shape[1], latent_dim=64)
 m.compile(optimizer=optm, loss="binary_crossentropy")
 
 # -- training --
-m.fit(x=x_train, y=x_train, batch_size=256, epochs=50, callbacks=callbacks,
+m.fit(x=x_train, y=x_train, batch_size=256, epochs=150, callbacks=callbacks,
       shuffle=True, validation_data=(x_test, x_test))
 
-# m.fit(x=x_train, y=x_train, batch_size=256, epochs=50, callbacks=callbacks,
-#       shuffle=True)
+# m.fit(x=x_train, y=x_train, batch_size=256, epochs=50, shuffle=True)
 
 # -- inspection --
 reconstruction_test = m.predict(x_test)

@@ -36,4 +36,5 @@ experimental codes for apple tensorflow2.4 with gpu acceleration
 
 # Known issue
 
-    - ATF24 does not work with numpy version newer than 1.19.5 
+    - ATF24 does not work with numpy version newer than 1.19.5
+    - evaluate and predict functions conflict (cannot use validation data in model.fit)
