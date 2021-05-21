@@ -11,7 +11,7 @@ dependencies:
   - h5py
   - ipython
   - keras-preprocessing
-  - numpy
+  - numpy=1.19.5
   - opt_einsum
   - pip=20.2.4
   - protobuf
