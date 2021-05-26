@@ -2,12 +2,7 @@
 experimental codes for apple tensorflow2.4 with gpu acceleration
 
 # Install via conda enviroment
-1. a. (Intel chips only) add conda-forge channel
-
-        conda config --add channels conda-forge    
-        conda config --add channels nodefaults
-
-1. b. (Apple and Intel chips) install miniforge3 (mini coda with forge channel as default)
+1. (Apple and Intel chips) install miniforge3 (mini coda with forge channel as default)
     
    url: https://github.com/conda-forge/miniforge#miniforge3
 
