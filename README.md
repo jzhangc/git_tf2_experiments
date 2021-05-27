@@ -6,7 +6,7 @@ experimental codes for apple tensorflow2.4 with gpu acceleration
 
 1. (Apple and Intel chips) install miniforge3 (mini coda with forge channel as default)
 
-   url: https://github.com/conda-forge/miniforge#miniforge3
+   url: <https://github.com/conda-forge/miniforge#miniforge3>
 
         bash Miniforge3-MacOSX-arm64.sh
 
