@@ -1,6 +1,6 @@
 """
-this is test realm for autoencoder
-current: autoencoder for feature encoding and extracting
+This is test realm for autoencoder
+Current: autoencoder for feature encoding and extracting using tf.keras functional API
 """
 
 
