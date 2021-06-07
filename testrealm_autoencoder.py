@@ -1,6 +1,6 @@
 """
 this is test realm for autoencoder
-current: autoencoder for feature encoding
+current: autoencoder for feature encoding and extracting
 """
 
 
