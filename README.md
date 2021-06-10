@@ -1,8 +1,12 @@
 # Apple tensorflow2.4 with gpu acceleration
 
-experimental codes for apple tensorflow2.4 with gpu acceleration
+experimental codes for apple tensorflow2.4 with GPU acceleration
 
-## Install via conda enviroment
+## UPDATE (June.2021)
+
+Apple has now implmented metal TF2.5 plugin for GPU acceleration. See [here](https://developer.apple.com/metal/tensorflow-plugin/) for details.
+
+## Install via conda enviroment (old)
 
 1. (Apple and Intel chips) install miniforge3 (mini coda with forge channel as default)
 
@@ -10,7 +14,7 @@ experimental codes for apple tensorflow2.4 with gpu acceleration
 
         bash Miniforge3-MacOSX-arm64.sh
 
-   NOTE: Although it is possible to use `conda config --add channels conda-forge`  to manually add the `forge` channel to miniconda, it is generally recommended using miniforge version of conda for both Apple and Intel chips. 
+   NOTE: Although it is possible to use `conda config --add channels conda-forge`  to manually add the `forge` channel to miniconda, it is generally recommended using miniforge version of conda for both Apple and Intel chips.
 
 2. create a conda environment and install via the yml file
 
@@ -37,7 +41,7 @@ experimental codes for apple tensorflow2.4 with gpu acceleration
 
         pip install --upgrade --force --no-dependencies https://github.com/apple/tensorflow_macos/releases/download/v0.1alpha3/tensorflow_macos-0.1a3-cp38-cp38-macosx_11_0_arm64.whl https://github.com/apple/tensorflow_macos/releases/download/v0.1alpha3/tensorflow_addons_macos-0.1a3-cp38-cp38-macosx_11_0_arm64.whl
 
-## Known issues
+5. Known issues
 
     - ATF24 does not work with numpy version newer than 1.19.5
     - evaluate and predict functions conflict (cannot use validation data in model.fit)

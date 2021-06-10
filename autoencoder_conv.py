@@ -101,9 +101,6 @@ m.fit(x=x_train, y=x_train, batch_size=256, epochs=100, callbacks=callbacks,
 # -- inspection --
 reconstruction_test = m.predict(x_test)
 
-m.input
-
-
 # - visulization -
 n = 10  # how many digits we will display
 plt.figure(figsize=(20, 4))
