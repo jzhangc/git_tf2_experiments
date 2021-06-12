@@ -5,6 +5,7 @@ Current: autoencoder for feature encoding and extracting using tf.keras function
 
 
 # ------ load modules ------
+from inspect import Attribute
 import os
 
 import matplotlib.pyplot as plt
@@ -30,6 +31,11 @@ class Coder(object):
         self.n_inputs = n_inputs
         # self.latent_dim = latent_dim
 
+    @property
+    def Encoder(self):
+        return self._Encoder
+
+    @Encoder.setter
     def Encoder(self):
         # define encoder
         visible = Input(shape=(self.n_inputs,))
@@ -44,6 +50,10 @@ class Coder(object):
         # bottleneck
         n_bottleneck = self.n_inputs
         bottleneck = Dense(n_bottleneck)(e)
+
+    @property
+    def Decoder(self):
+        return self._Decoder
 
 
 # define encoder
