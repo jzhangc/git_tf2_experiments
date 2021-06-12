@@ -59,6 +59,19 @@ e = LeakyReLU()(e)
 # bottleneck
 n_bottleneck = n_inputs
 bottleneck = Dense(n_bottleneck)(e)
+# define encoder
+visible = Input(shape=(n_inputs,))
+# encoder level 1
+e = Dense(n_inputs*2)(visible)
+e = BatchNormalization()(e)
+e = LeakyReLU()(e)
+# encoder level 2
+e = Dense(n_inputs)(e)
+e = BatchNormalization()(e)
+e = LeakyReLU()(e)
+# bottleneck
+n_bottleneck = n_inputs
+bottleneck = Dense(n_bottleneck)(e)
 # define decoder, level 1
 d = Dense(n_inputs)(bottleneck)
 d = BatchNormalization()(d)
