@@ -1,4 +1,4 @@
-# Apple tensorflow2.4 with gpu acceleration
+# Tensorflow 2.5 with Apple-Metal gpu acceleration
 
 experimental codes for apple tensorflow2.4 with GPU acceleration
 
