@@ -20,17 +20,24 @@ Apple has now implmented metal TF2.5 plugin for GPU acceleration. See [here](htt
 
    NOTE 1: Although it is possible to use `conda config --add channels conda-forge`  to manually add the `forge` channel to miniconda, it is generally recommended using miniforge version of conda for both Apple and Intel chips.
 
-   NOTE 2: It is recommended setting up and using a conda virtual environment (good practice).
+3. Create a conda environment
 
-3. (Apple chip) Install tensorflow dependencies
+        conda env create -f ./inst/environment.yml --prefix ./conda_venv_tf_metal
+
+    Install essential conda libraries
+
+        conda activate ./conda_venv_tf_metal
+        conda install scikit-learn setuptools cached-property six packaging matplotlib autopep8 jupyter tqdm pandas
+
+4. (Apple chip) Install tensorflow dependencies
 
         conda install -c apple tensorflow-deps
 
-4. Install base tensorflow
+5. Install base tensorflow
 
         python -m pip install tensorflow-macos
 
-5. Install metal plugin
+6. Install metal plugin
 
         python -m pip install tensorflow-metal
 
