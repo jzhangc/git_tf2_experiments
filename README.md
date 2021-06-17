@@ -6,15 +6,37 @@ experimental codes for apple tensorflow2.4 with GPU acceleration
 
 Apple has now implmented metal TF2.5 plugin for GPU acceleration. See [here](https://developer.apple.com/metal/tensorflow-plugin/) for details.
 
-## Install via conda enviroment (old)
+1. System requrement
 
-1. (Apple and Intel chips) install miniforge3 (mini coda with forge channel as default)
+    Apple suggests to have at least macOS 12.0 (Monterey), which has not been out to the public yet.
+
+    However, test seemed to be successful on a M1 13 inch Macbook Pro running macOS 11.4 (Big Sur)
+
+2. Install miniforge3 (mini coda with forge channel as default)
 
    url: <https://github.com/conda-forge/miniforge#miniforge3>
 
         bash Miniforge3-MacOSX-arm64.sh
 
-   NOTE: Although it is possible to use `conda config --add channels conda-forge`  to manually add the `forge` channel to miniconda, it is generally recommended using miniforge version of conda for both Apple and Intel chips.
+   NOTE 1: Although it is possible to use `conda config --add channels conda-forge`  to manually add the `forge` channel to miniconda, it is generally recommended using miniforge version of conda for both Apple and Intel chips.
+
+   NOTE 2: It is recommended setting up and using a conda virtual environment (good practice).
+
+3. (Apple chip) Install tensorflow dependencies
+
+        conda install -c apple tensorflow-deps
+
+4. Install base tensorflow
+
+        python -m pip install tensorflow-macos
+
+5. Install metal plugin
+
+        python -m pip install tensorflow-metal
+
+## Install via conda enviroment (OLD)
+
+1. (Apple and Intel chips) install miniforge3 (mini coda with forge channel as default)
 
 2. create a conda environment and install via the yml file
 
