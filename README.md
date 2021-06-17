@@ -22,7 +22,7 @@ Apple has now implmented metal TF2.5 plugin for GPU acceleration. See [here](htt
 
 3. Create a conda environment
 
-        conda env create -f ./inst/environment.yml --prefix ./conda_venv_tf_metal
+        conda env create --prefix ./conda_venv_tf_metal
 
     Install essential conda libraries
 
