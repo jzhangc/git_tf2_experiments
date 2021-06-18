@@ -1,10 +1,12 @@
 """
 This is test realm for autoencoder
 Current: autoencoder for feature encoding and extracting using tf.keras functional API
+url: https://machinelearningmastery.com/autoencoder-for-classification/
 """
 
 
 # ------ load modules ------
+from autoencoder_dense_subclass import Encoder
 from inspect import Attribute
 import os
 
@@ -26,18 +28,18 @@ from tqdm import tqdm
 
 
 # ------ model ------
-class Coder(object):
+class encoder_decoder(object):
     def __init__(self, n_inputs):
         self.n_inputs = n_inputs
         # self.latent_dim = latent_dim
 
-    @property
-    def Encoder(self):
-        return self._Encoder
+        # -- early stop and optimizer --
+        earlystop = EarlyStopping(monitor='val_loss', patience=5)
+        # earlystop = EarlyStopping(monitor='loss', patience=5)
+        callbacks = [earlystop]
+        optm = Adam(learning_rate=0.001)
 
-    @Encoder.setter
-    def Encoder(self):
-        # define encoder
+        # -- define encoder --
         visible = Input(shape=(self.n_inputs,))
         # encoder level 1
         e = Dense(self.n_inputs*2)(visible)
@@ -50,10 +52,33 @@ class Coder(object):
         # bottleneck
         n_bottleneck = self.n_inputs
         bottleneck = Dense(n_bottleneck)(e)
+        # -- define decoder, level 1 --
+        d = Dense(self.n_inputs)(bottleneck)
+        d = BatchNormalization()(d)
+        d = LeakyReLU()(d)
+        # decoder level 2
+        d = Dense(self.n_inputs*2)(d)
+        d = BatchNormalization()(d)
+        d = LeakyReLU()(d)
+        # output layer
+        output = Dense(self.n_inputs, activation='linear')(d)
+
+    def call(self):
+        m = Model(visible, output)
+        m.compile(optimizer=optm, loss='binary_crossentropy')
+        return m
 
     @property
-    def Decoder(self):
-        return self._Decoder
+    def Encoder(self):
+        return self._Encoder
+
+    @Encoder.setter
+    def Encoder(self):
+        """
+        We train the encoder as part of the autoencoder, but then only save the encoder part. The weights are shared between the two models.
+        No beed need to compile the encoder as it is not trained directly.
+        """
+        encoder_m = Model(visible, bottleneck)
 
 
 # define encoder
