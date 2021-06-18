@@ -21,11 +21,11 @@ from tensorflow.keras.datasets import mnist
 from tensorflow.keras.layers import Dense, Input, Layer
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
-from tensorflow.python.compiler.mlcompute import mlcompute
+# from tensorflow.python.compiler.mlcompute import mlcompute
 from tqdm import tqdm
 
-tf.compat.v1.disable_eager_execution()
-mlcompute.set_mlc_device(device_name="gpu")
+# tf.compat.v1.disable_eager_execution()
+# mlcompute.set_mlc_device(device_name="gpu")
 
 
 # ------ model ------
@@ -42,6 +42,7 @@ class Encoder(Layer):
         x = self.hidden_layer1(input_dim)
         x = self.hidden_layer2(x)
         x = self.output_layer(x)
+        self.encoded = x
         return x
 
 
@@ -100,10 +101,8 @@ m = autoencoder_decoder(original_dim=x_train.shape[1], latent_dim=64)
 m.compile(optimizer=optm, loss="binary_crossentropy")
 
 # -- training --
-m.fit(x=x_train, y=x_train, batch_size=256, epochs=150, callbacks=callbacks,
-      shuffle=True, validation_data=(x_test, x_test))
-
-# m.fit(x=x_train, y=x_train, batch_size=256, epochs=50, shuffle=True)
+m_history = m.fit(x=x_train, y=x_train, batch_size=256, epochs=100, callbacks=callbacks,
+                  shuffle=True, validation_data=(x_test, x_test))
 
 # -- inspection --
 reconstruction_test = m.predict(x_test)
