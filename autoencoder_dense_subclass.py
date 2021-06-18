@@ -24,11 +24,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.python.keras.callbacks import BackupAndRestore
 from tensorflow.python.keras.layers.advanced_activations import LeakyReLU
 from tensorflow.python.keras.layers.normalization import BatchNormalization
-# from tensorflow.python.compiler.mlcompute import mlcompute
 from tqdm import tqdm
-
-# tf.compat.v1.disable_eager_execution()
-# mlcompute.set_mlc_device(device_name="gpu")
 
 
 # ------ model ------
@@ -119,7 +115,7 @@ m = autoencoder_decoder(original_dim=x_train.shape[1], latent_dim=64)
 m.compile(optimizer=optm, loss="binary_crossentropy")
 
 # -- training --
-m_history = m.fit(x=x_train, y=x_train, batch_size=256, epochs=100, callbacks=callbacks,
+m_history = m.fit(x=x_train, y=x_train, batch_size=256, epochs=150, callbacks=callbacks,
                   shuffle=True, validation_data=(x_test, x_test))
 
 # -- inspection --
