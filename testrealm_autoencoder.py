@@ -3,9 +3,9 @@ this is test realm
 NOTE: if to use subclassing API to build autoencoder, we cannot access intermediate layers for encoded data. 
 This is by TF2's design.
 
-NOTE: ATF2.4 major known bug: model.evluate and model.predit confict each other: running one will cause the other to crash.
-This also means, model.fit cannot use argument validation_data, which calls model.evaluate.
-For now, use official TF2.4 to train if were to use model.predict -> we have a venv for that. 
+However, we can package the layers into "sub" models before stacking them into the final model. Then we can 
+just use model.submodel.predict() to extract intermediate predictions.
+
 """
 
 
