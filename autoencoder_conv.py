@@ -1,7 +1,5 @@
 """
-this is test realm
-NOTE: if to use subclassing API to build autoencoder, we cannot access intermediate layers for encoded data. 
-This is by TF2's design.
+this is test realm for CNN+autoencoder
 """
 
 
