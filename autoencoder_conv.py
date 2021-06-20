@@ -15,41 +15,56 @@ from tensorflow.keras.datasets import mnist
 from tensorflow.keras.layers import Dense, Input, Layer
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
-# from tensorflow.python.compiler.mlcompute import mlcompute
+from tensorflow.python.keras.callbacks import BackupAndRestore
+from tensorflow.python.keras.layers.advanced_activations import LeakyReLU
+from tensorflow.python.keras.layers.normalization import BatchNormalization
 from tqdm import tqdm
-
-# tf.compat.v1.disable_eager_execution()
-# mlcompute.set_mlc_device(device_name="gpu")
 
 
 # ------ model ------
-class Encoder(Layer):
+class Encoder(Model):  # this is a model class not a layer class
     def __init__(self, latent_dim):
         super(Encoder, self).__init__()
-        self.output_dim = 16
+        self.output_dim = 16  # bottleneck size
         self.hidden_layer1 = Dense(
             units=latent_dim, activation='relu', kernel_initializer='he_uniform')
+        self.bn1 = BatchNormalization()
+        self.leakyr1 = LeakyReLU()
         self.hidden_layer2 = Dense(units=32, activation='relu')
+        self.bn2 = BatchNormalization()
+        self.leakyr2 = LeakyReLU()
         self.output_layer = Dense(units=self.output_dim, activation='sigmoid')
 
     def call(self, input_dim):
         x = self.hidden_layer1(input_dim)
+        x = self.bn1(x)
+        x = self.leakyr1(x)
         x = self.hidden_layer2(x)
+        x = self.bn2(x)
+        x = self.leakyr2(x)
         x = self.output_layer(x)
         return x
 
 
-class Decoder(Layer):
+class Decoder(Model):  # this is a model class not a layer class
     def __init__(self, latent_dim, original_dim):
         super(Decoder, self).__init__()
         self.hidden_layer1 = Dense(
             units=latent_dim, activation='relu', kernel_initializer='he_uniform')
+        self.bn1 = BatchNormalization()
+        self.leakyr1 = LeakyReLU()
         self.hidden_layer2 = Dense(units=32, activation='relu')
+        self.bn2 = BatchNormalization()
+        self.leakyr2 = LeakyReLU()
         self.output_layer = Dense(units=original_dim, activation='sigmoid')
 
     def call(self, encoded_dim):
         x = self.hidden_layer1(encoded_dim)
+        x = self.bn1(x)
+        x = self.leakyr1(x)
         x = self.hidden_layer2(x)
+        x = self.bn2(x)
+        x = self.leakyr2(x)
         x = self.output_layer(x)
         return x
 
@@ -61,7 +76,7 @@ class autoencoder_decoder(Model):
         self.decoder = Decoder(latent_dim=self.encoder.output_dim,
                                original_dim=original_dim)
 
-    def call(self, input_dim):
+    def call(self, input_dim):  # putting two models togeter
         x = self.encoder(input_dim)
         x = self.decoder(x)
         return x
@@ -84,20 +99,23 @@ x_test = x_test.reshape(len(x_test), np.prod(x_test.shape[1:]))
 # ------ training ------
 # -- early stop and optimizer --
 earlystop = EarlyStopping(monitor='val_loss', patience=5)
+# earlystop = EarlyStopping(monitor='loss', patience=5)
 callbacks = [earlystop]
 optm = Adam(learning_rate=0.001)
 
 # -- model --
 m = autoencoder_decoder(original_dim=x_train.shape[1], latent_dim=64)
 # the output is sigmoid, therefore binary_crossentropy
-m.compile(optimizer=optm, loss="binary_crossentropy", metrics="accuracy")
+m.compile(optimizer=optm, loss="binary_crossentropy")
 
 # -- training --
-m.fit(x=x_train, y=x_train, batch_size=256, epochs=100, callbacks=callbacks,
-      shuffle=True, validation_data=(x_test, x_test))
+m_history = m.fit(x=x_train, y=x_train, batch_size=256, epochs=150, callbacks=callbacks,
+                  shuffle=True, validation_data=(x_test, x_test))
 
 # -- inspection --
 reconstruction_test = m.predict(x_test)
+
+m.encoder.predict(x_test)  # use the trained encoder to encode the input data
 
 # - visulization -
 n = 10  # how many digits we will display
