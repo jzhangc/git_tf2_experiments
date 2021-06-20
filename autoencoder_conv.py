@@ -12,7 +12,7 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.datasets import mnist
-from tensorflow.keras.layers import Dense, Input, Layer
+from tensorflow.keras.layers import Dense, Layer, Conv2D
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.python.keras.callbacks import BackupAndRestore
@@ -22,6 +22,13 @@ from tqdm import tqdm
 
 
 # ------ model ------
+class CNN2d(Model):  # this a model class not a layer class
+    def __init__(self):
+        super(CNN2d, self).__initi__()
+        # set up CNN layers
+        self.CNN2d_1 = Conv2D()
+
+
 class Encoder(Model):  # this is a model class not a layer class
     def __init__(self, latent_dim):
         super(Encoder, self).__init__()
