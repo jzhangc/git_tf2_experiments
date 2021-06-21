@@ -1,5 +1,9 @@
 """
 this is test realm for CNN+autoencoder
+
+things to fiddle:
+[ ] 1. CNN autoencoder_decoder with CNN
+[ ] 2. CNN hyperparameter tuning
 """
 
 
@@ -12,7 +16,7 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.datasets import mnist
-from tensorflow.keras.layers import Dense, Layer, Conv2D
+from tensorflow.keras.layers import Dense, Conv2D, MaxPooling2D, UpSampling2D
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.python.keras.callbacks import BackupAndRestore
@@ -22,69 +26,64 @@ from tqdm import tqdm
 
 
 # ------ model ------
-class CNN2d(Model):  # this a model class not a layer class
-    def __init__(self):
-        super(CNN2d, self).__initi__()
+class CNN2d_encoder(Model):  # this a model class not a layer class
+    def __init__(self, input_shape):
+        super(CNN2d_encoder, self).__initi__()
         # set up CNN layers
-        self.CNN2d_1 = Conv2D()
+        self.conv2d_1 = Conv2D(16, (3, 3), activation='relu',
+                               padding='same', input_shape=input_shape)
+        self.maxpooling_1 = MaxPooling2D((2, 2), padding='same')
+        self.conv2d_2 = Conv2D(8, (3, 3), activation='relu', padding='same')
+        self.maxpooling_2 = MaxPooling2D((2, 2), padding='same')
+        self.con2d_3 = Conv2D(8, (3, 3), activation='relu', padding='same')
+        self.encoded = MaxPooling2D(
+            (2, 2), padding='same')  # output shape: 4, 4, 8
 
-
-class Encoder(Model):  # this is a model class not a layer class
-    def __init__(self, latent_dim):
-        super(Encoder, self).__init__()
-        self.output_dim = 16  # bottleneck size
-        self.hidden_layer1 = Dense(
-            units=latent_dim, activation='relu', kernel_initializer='he_uniform')
-        self.bn1 = BatchNormalization()
-        self.leakyr1 = LeakyReLU()
-        self.hidden_layer2 = Dense(units=32, activation='relu')
-        self.bn2 = BatchNormalization()
-        self.leakyr2 = LeakyReLU()
-        self.output_layer = Dense(units=self.output_dim, activation='sigmoid')
-
-    def call(self, input_dim):
-        x = self.hidden_layer1(input_dim)
-        x = self.bn1(x)
-        x = self.leakyr1(x)
-        x = self.hidden_layer2(x)
-        x = self.bn2(x)
-        x = self.leakyr2(x)
-        x = self.output_layer(x)
+    def call(self, input_shape):
+        x = self.conv2d_1(input_shape=input_shape)
+        x = self.maxpooling_1(x)
+        x = self.conv2d_2(x)
+        x = self.maxpooling_2(x)
+        x = self.con2d_3(x)
+        x = self.encoded(x)
         return x
 
 
-class Decoder(Model):  # this is a model class not a layer class
-    def __init__(self, latent_dim, original_dim):
-        super(Decoder, self).__init__()
-        self.hidden_layer1 = Dense(
-            units=latent_dim, activation='relu', kernel_initializer='he_uniform')
-        self.bn1 = BatchNormalization()
-        self.leakyr1 = LeakyReLU()
-        self.hidden_layer2 = Dense(units=32, activation='relu')
-        self.bn2 = BatchNormalization()
-        self.leakyr2 = LeakyReLU()
-        self.output_layer = Dense(units=original_dim, activation='sigmoid')
+class CNN2d_decoder(Model):  # this is a model class not a layer class
+    def __init__(self, encoded_shape):
+        """
+        UpSampling2D layer: a reverse of pooling2d layer
+        """
+        super(CNN2d_decoder, self).__init__():
+        self.conv2d_1 = Conv2D(8, (3, 3), activation='relu',
+                               padding='same', input_shape=encoded_shape)
+        self.upsampling_1 = UpSampling2D(size=(2, 2))
+        self.conv2d_2 = Conv2D(8, (3, 3), acviation='relu', padding='same')
+        self.upsampling_2 = UpSampling2D(size=(2, 2))
+        self.conv2d_3 = Conv2D(16, (3, 3), acviation='relu', padding='same')
+        self.upsampling_3 = UpSampling2D((2, 2))
+        self.decoded = Conv2D(1, (3, 3), activation='sigmoid', padding='same')
 
-    def call(self, encoded_dim):
-        x = self.hidden_layer1(encoded_dim)
-        x = self.bn1(x)
-        x = self.leakyr1(x)
-        x = self.hidden_layer2(x)
-        x = self.bn2(x)
-        x = self.leakyr2(x)
-        x = self.output_layer(x)
+    def call(self, encoded_shape):
+        x = self.conv2d_1(encoded_shape=encoded_shape)
+        x = self.upsampling_1(x)
+        x = self.conv2d_2(x)
+        x = self.upsampling_2(x)
+        x = self.conv2d_3(x)
+        x = self.upsampling_3(x)
+        x = self.decoded(x)
         return x
 
 
 class autoencoder_decoder(Model):
-    def __init__(self, original_dim, latent_dim):
+    def __init__(self, input_shape):
         super(autoencoder_decoder, self).__init__()
-        self.encoder = Encoder(latent_dim=latent_dim)
-        self.decoder = Decoder(latent_dim=self.encoder.output_dim,
-                               original_dim=original_dim)
+        self.encoder = CNN2d_encoder(input_shape=input_shape)
+        self.decoder = CNN2d_decoder(
+            encoded_shape=self.encoder.encoded.output_shape)
 
-    def call(self, input_dim):  # putting two models togeter
-        x = self.encoder(input_dim)
+    def call(self, input_shape):  # putting two models togeter
+        x = self.encoder(input_shape)
         x = self.decoder(x)
         return x
 
