@@ -29,7 +29,7 @@ from tqdm import tqdm
 class CNN2d_encoder(Layer):
     def __init__(self, initial_shape):
         super(CNN2d_encoder, self).__init__()
-        # set up CNN layers
+        # CNN encoding sub layers
         self.conv2d_1 = Conv2D(16, (3, 3), activation='relu',
                                padding='same', input_shape=initial_shape)
         self.maxpooling_1 = MaxPooling2D((2, 2), padding='same')
@@ -55,6 +55,7 @@ class CNN2d_decoder(Layer):
         UpSampling2D layer: a reverse of pooling2d layer
         """
         super(CNN2d_decoder, self).__init__()
+        # CNN decoding sub layers
         self.conv2d_1 = Conv2D(8, (3, 3), activation='relu',
                                padding='same', input_shape=encoded_shape)
         self.upsampling_1 = UpSampling2D(size=(2, 2))
@@ -83,12 +84,12 @@ class autoencoder_decoder(Model):
             encoded_shape=(4, 4, 8))
 
     def call(self, initial_shape):  # putting two models togeter
-        z = self.encoder(initial_shape=initial_shape)
-        z = self.decoder(z)
+        x = self.encoder(initial_shape=initial_shape)
+        z = self.decoder(x)
         return z
 
-    def encoded(self, initial_shape):
-        x = self.encoder(initial_shape=initial_shape)
+    def encoded(self, x):
+        x = self.encoder(x)
         return x
 
     def decoded(self, z):

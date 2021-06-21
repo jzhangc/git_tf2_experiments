@@ -18,7 +18,7 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.datasets import mnist
-from tensorflow.keras.layers import Dense, Layer
+from tensorflow.keras.layers import Dense, Layer, Input
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.python.keras.callbacks import BackupAndRestore
@@ -29,11 +29,14 @@ from tqdm import tqdm
 
 # ------ model ------
 class Encoder(Layer):
-    def __init__(self, latent_dim):
+    def __init__(self, input_dim):
         super(Encoder, self).__init__()
         self.output_dim = 16  # bottleneck size
+
+        # encoder sub layers
+        self.input_layer = Input(input_dim)
         self.hidden_layer1 = Dense(
-            units=latent_dim, activation='relu', kernel_initializer='he_uniform')
+            units=64, activation='relu', kernel_initializer='he_uniform')
         self.bn1 = BatchNormalization()
         self.leakyr1 = LeakyReLU()
         self.hidden_layer2 = Dense(units=32, activation='relu')
@@ -55,6 +58,7 @@ class Encoder(Layer):
 class Decoder(Layer):
     def __init__(self, latent_dim, original_dim):
         super(Decoder, self).__init__()
+        # decoder sub layers
         self.hidden_layer1 = Dense(
             units=latent_dim, activation='relu', kernel_initializer='he_uniform')
         self.bn1 = BatchNormalization()
@@ -76,17 +80,16 @@ class Decoder(Layer):
 
 
 class autoencoder_decoder(Model):
-    def __init__(self, original_dim, latent_dim):
+    def __init__(self, original_dim):
         super(autoencoder_decoder, self).__init__()
         self.original_dim = original_dim
-        self.latent_dim = latent_dim
 
     def build(self, original_dim):
-        self.encoder = Encoder(latent_dim=self.latent_dim)
+        self.encoder = Encoder(input_dim=self.original_dim)
         self.decoder = Decoder(latent_dim=self.encoder.output_dim,
                                original_dim=self.original_dim)
 
-    def call(self, input_dim):  # putting two models togeter
+    def call(self, input_dim):  # putting two layers togeter
         x = self.encoder(input_dim)
         z = self.decoder(x)
         return z
@@ -122,7 +125,7 @@ callbacks = [earlystop]
 optm = Adam(learning_rate=0.001)
 
 # -- model --
-m = autoencoder_decoder(original_dim=x_train.shape[1], latent_dim=64)
+m = autoencoder_decoder(original_dim=x_train.shape[1])
 # the output is sigmoid, therefore binary_crossentropy
 m.compile(optimizer=optm, loss="binary_crossentropy")
 
