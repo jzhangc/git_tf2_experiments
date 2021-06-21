@@ -18,7 +18,7 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.datasets import mnist
-from tensorflow.keras.layers import Dense, Input, Layer
+from tensorflow.keras.layers import Dense, Layer
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.python.keras.callbacks import BackupAndRestore
@@ -28,7 +28,7 @@ from tqdm import tqdm
 
 
 # ------ model ------
-class Encoder(Model):  # this is a model class not a layer class
+class Encoder(Layer):
     def __init__(self, latent_dim):
         super(Encoder, self).__init__()
         self.output_dim = 16  # bottleneck size
@@ -52,7 +52,7 @@ class Encoder(Model):  # this is a model class not a layer class
         return x
 
 
-class Decoder(Model):  # this is a model class not a layer class
+class Decoder(Layer):
     def __init__(self, latent_dim, original_dim):
         super(Decoder, self).__init__()
         self.hidden_layer1 = Dense(
@@ -78,14 +78,26 @@ class Decoder(Model):  # this is a model class not a layer class
 class autoencoder_decoder(Model):
     def __init__(self, original_dim, latent_dim):
         super(autoencoder_decoder, self).__init__()
-        self.encoder = Encoder(latent_dim=latent_dim)
+        self.original_dim = original_dim
+        self.latent_dim = latent_dim
+
+    def build(self, original_dim):
+        self.encoder = Encoder(latent_dim=self.latent_dim)
         self.decoder = Decoder(latent_dim=self.encoder.output_dim,
-                               original_dim=original_dim)
+                               original_dim=self.original_dim)
 
     def call(self, input_dim):  # putting two models togeter
         x = self.encoder(input_dim)
-        x = self.decoder(x)
+        z = self.decoder(x)
+        return z
+
+    def encode(self, x):
+        x = self.encoder(x)
         return x
+
+    def decode(self, z):
+        z = self.decoder(z)
+        return z
 
 
 # ------ data ------
@@ -95,7 +107,7 @@ class autoencoder_decoder(Model):
 
 # -- data transformation and normalization --
 x_train, x_test = x_train.astype('float32') / 255, x_test.astype(
-    'float32') / 255  # transform from int to float and min(0.0)-max(255.0) normalization into 0-1
+    'float32') / 255  # transform from int to float and min(0.0)-max(255.0) normalization into 0-1  (sigmoid)
 
 # -- data vectorization: 28*28 = 784 --
 # ndarray.shape: x, y, z. index: [0, 1, 2]. so y and z are ndarray.shape[1:]
@@ -115,13 +127,14 @@ m = autoencoder_decoder(original_dim=x_train.shape[1], latent_dim=64)
 m.compile(optimizer=optm, loss="binary_crossentropy")
 
 # -- training --
-m_history = m.fit(x=x_train, y=x_train, batch_size=256, epochs=150, callbacks=callbacks,
+m_history = m.fit(x=x_train, y=x_train, batch_size=256, epochs=100, callbacks=callbacks,
                   shuffle=True, validation_data=(x_test, x_test))
 
 # -- inspection --
 reconstruction_test = m.predict(x_test)
 
 m.encoder.predict(x_test)  # use the trained encoder to encode the input data
+
 
 # - visulization -
 n = 10  # how many digits we will display
