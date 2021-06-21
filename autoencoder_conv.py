@@ -26,7 +26,7 @@ from tqdm import tqdm
 
 
 # ------ model ------
-class CNN2d_encoder(Model):
+class CNN2d_encoder(Layer):
     def __init__(self, initial_shape):
         super(CNN2d_encoder, self).__init__()
         # set up CNN layers
@@ -49,7 +49,7 @@ class CNN2d_encoder(Model):
         return x
 
 
-class CNN2d_decoder(Model):
+class CNN2d_decoder(Layer):
     def __init__(self, encoded_shape):
         """
         UpSampling2D layer: a reverse of pooling2d layer
@@ -103,7 +103,7 @@ class autoencoder_decoder(Model):
 
 # -- data transformation and normalization --
 x_train, x_test = x_train.astype('float32') / 255, x_test.astype(
-    'float32') / 255  # transform from int to float and min(0.0)-max(255.0) normalization into 0-1
+    'float32') / 255  # transform from int to float and min(0.0)-max(255.0) normalization into 0-1 (sigmoid)
 
 
 x_train.shape
@@ -119,7 +119,7 @@ callbacks = [earlystop]
 optm = Adam(learning_rate=0.001)
 
 # -- model --
-m = autoencoder_decoder(initial_shape=(28, 28, 1))
+m = autoencoder_decoder(initial_shape=x_train.shape[1:])
 # the output is sigmoid, therefore binary_crossentropy
 m.compile(optimizer=optm, loss="binary_crossentropy")
 

@@ -133,7 +133,7 @@ m_history = m.fit(x=x_train, y=x_train, batch_size=256, epochs=100, callbacks=ca
 # -- inspection --
 reconstruction_test = m.predict(x_test)
 
-m.encoder.predict(x_test)  # use the trained encoder to encode the input data
+m.encode(x_test)  # use the trained encoder to encode the input data
 
 
 # - visulization -
