@@ -106,11 +106,11 @@ class autoencoder_decoder(Model):
         z = self.decoder(x)
         return z
 
-    def encoded(self, x):
+    def encode(self, x):
         x = self.encoder(x)
         return x
 
-    def decoded(self, z):
+    def decode(self, z):
         z = self.decoder(z)
         return z
 
@@ -155,7 +155,7 @@ m_history = m.fit(x=x_train, y=x_train, batch_size=256, epochs=100, callbacks=ca
 # -- inspection --
 reconstruction_test = m.predict(x_test)
 
-m.encoder.predict(x_test)  # use the trained encoder to encode the input data
+m.encoded(x_test)  # use the trained encoder to encode the input data
 
 # - visulization -
 n = 10  # how many digits we will display
