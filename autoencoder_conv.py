@@ -180,6 +180,8 @@ plt.show()
 # ------ save model ------
 m.save('../results/subclass_autoencoder', save_format='tf')
 
+m.encoded(x_test).shape
+m.encoded(x_test)[0]
 
 # ------ testing ------
 input_img = Input(shape=(28, 28, 1))
