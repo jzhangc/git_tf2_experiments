@@ -30,7 +30,7 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.datasets import mnist
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Layer, Flatten, Dense, Reshape, Input
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Layer, Flatten, Dense, Reshape, Input, BatchNormalization, LeakyReLU
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tqdm import tqdm
@@ -44,19 +44,29 @@ class CNN2d_encoder(Layer):
         # CNN encoding sub layers
         self.conv2d_1 = Conv2D(16, (3, 3), activation='relu',
                                padding='same', input_shape=initial_shape)  # output: 28, 28, 16
+        self.bn1 = BatchNormalization()
+        self.leakyr1 = LeakyReLU()
         self.maxpooling_1 = MaxPooling2D((2, 2))  # output: 14, 14, 16
         self.conv2d_2 = Conv2D(8, (3, 3), activation='relu',
                                padding='same')  # output: 14, 14, 8
+        self.bn2 = BatchNormalization()
+        self.leakyr2 = LeakyReLU()
         self.maxpooling_2 = MaxPooling2D((2, 2))  # output: 7, 7, 8
         self.fl = Flatten()  # 7*7*8=392
-        self.encoded = Dense(bottleneck_dim, activation='relu')
+        self.dense1 = Dense(bottleneck_dim, activation='relu')
+        self.encoded = LeakyReLU()
 
     def call(self, initial_shape):
         x = self.conv2d_1(initial_shape)
+        x = self.bn1(x)
+        x = self.leakyr1(x)
         x = self.maxpooling_1(x)
         x = self.conv2d_2(x)
+        x = self.bn2(x)
+        x = self.leakyr2(x)
         x = self.maxpooling_2(x)
         x = self.fl(x)
+        x = self.dense1(x)
         x = self.encoded(x)
         return x
 
@@ -73,9 +83,13 @@ class CNN2d_decoder(Layer):
         self.reshape1 = Reshape(target_shape=(7, 7, 8))  # output: 7, 7, 8
         self.conv2d_1 = Conv2D(8, (3, 3), activation='relu',
                                padding='same')  # output: 7, 7, 8
+        self.bn1 = BatchNormalization()
+        self.leakyr1 = LeakyReLU()
         self.upsampling_1 = UpSampling2D(size=(2, 2))  # output: 14, 14, 28
         self.conv2d_2 = Conv2D(16, (3, 3), activation='relu',
                                padding='same')  # output: 14, 14, 16
+        self.bn2 = BatchNormalization()
+        self.leakyr2 = LeakyReLU()
         self.upsampling_2 = UpSampling2D((2, 2))  # output: 28, 28, 16
         self.decoded = Conv2D(1, (3, 3), activation='sigmoid',
                               padding='same')  # output: 28, 28, 1
@@ -85,8 +99,12 @@ class CNN2d_decoder(Layer):
         x = self.dense1(x)
         x = self.reshape1(x)
         x = self.conv2d_1(x)
+        x = self.bn1(x)
+        x = self.leakyr1(x)
         x = self.upsampling_1(x)
         x = self.conv2d_2(x)
+        x = self.bn2(x)
+        x = self.leakyr2(x)
         x = self.upsampling_2(x)
         x = self.decoded(x)
         return x
@@ -149,13 +167,14 @@ m.compile(optimizer=optm, loss="binary_crossentropy")
 m.model().summary()
 
 # -- training --
-m_history = m.fit(x=x_train, y=x_train, batch_size=256, epochs=100, callbacks=callbacks,
+m_history = m.fit(x=x_train, y=x_train, batch_size=256, epochs=80, callbacks=callbacks,
                   shuffle=True, validation_data=(x_test, x_test))
 
 # -- inspection --
 reconstruction_test = m.predict(x_test)
 
-m.encoded(x_test)  # use the trained encoder to encode the input data
+m.encode(x_test).shape
+m.encode(x_test)[0]  # use the trained encoder to encode the input data
 
 # - visulization -
 n = 10  # how many digits we will display
@@ -180,28 +199,5 @@ plt.show()
 # ------ save model ------
 m.save('../results/subclass_autoencoder', save_format='tf')
 
-m.encoded(x_test).shape
-m.encoded(x_test)[0]
 
 # ------ testing ------
-input_img = Input(shape=(28, 28, 1))
-
-x = Conv2D(16, (3, 3), activation='relu', padding='same')(input_img)
-x = MaxPooling2D((2, 2), padding='same')(x)
-x = Conv2D(8, (3, 3), activation='relu', padding='same')(x)
-x = MaxPooling2D((2, 2), padding='same')(x)
-x = Conv2D(8, (3, 3), activation='relu', padding='same')(x)
-encoded = MaxPooling2D((2, 2), padding='same')(x)
-
-# at this point the representation is (4, 4, 8) i.e. 128-dimensional
-
-x = Conv2D(8, (3, 3), activation='relu', padding='same')(encoded)
-x = UpSampling2D((2, 2))(x)
-x = Conv2D(8, (3, 3), activation='relu', padding='same')(x)
-x = UpSampling2D((2, 2))(x)
-x = Conv2D(16, (3, 3), activation='relu')(x)
-x = UpSampling2D((2, 2))(x)
-decoded = Conv2D(1, (3, 3), activation='sigmoid', padding='same')(x)
-
-autoencoder = Model(input_img, decoded)
-autoencoder.compile(optimizer='adam', loss='binary_crossentropy')
