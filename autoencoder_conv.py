@@ -140,7 +140,7 @@ class autoencoder_decoder(Model):
 
     def model(self):
         """
-        This method enables the correct model.summary() results:
+        This method enables correct model.summary() results:
         model.model().summary()
         """
         x = Input(self.initial_shape)
