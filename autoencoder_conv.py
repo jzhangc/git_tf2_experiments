@@ -35,6 +35,9 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tqdm import tqdm
 
+# ------ TF device check ------
+tf.config.list_physical_devices()
+
 
 # ------ model ------
 class CNN2d_encoder(Layer):

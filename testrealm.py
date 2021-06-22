@@ -10,14 +10,9 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.keras import Model, layers
 from tensorflow.keras.callbacks import EarlyStopping
-import tensorflow_datasets as tfds
 from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras.models import Model, Sequential
-from tensorflow.python.compiler.mlcompute import mlcompute
 from tqdm import tqdm
-
-tf.compat.v1.disable_eager_execution()
-mlcompute.set_mlc_device(device_name='gpu')
 
 
 # ------ function ------

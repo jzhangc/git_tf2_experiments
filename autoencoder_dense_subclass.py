@@ -26,6 +26,10 @@ from tensorflow.python.keras.layers.normalization import BatchNormalization
 from tqdm import tqdm
 
 
+# ------ TF device check ------
+tf.config.list_physical_devices()
+
+
 # ------ model ------
 class Encoder(Layer):
     def __init__(self, input_dim):
