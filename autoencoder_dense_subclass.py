@@ -105,6 +105,9 @@ class autoencoder_decoder(Model):
         return z
 
     def encode(self, x):
+        """
+        This method is used to encode data using the trained encoder
+        """
         x = self.encoder(x)
         return x
 
@@ -113,6 +116,10 @@ class autoencoder_decoder(Model):
         return z
 
     def model(self):
+        """
+        This method enables the correct model.summary() results:
+        model.model().summary()
+        """
         x = Input(self.original_dim)
         return Model(inputs=[x], outputs=self.call(x))
 
