@@ -34,9 +34,8 @@ class Encoder(Layer):
         self.output_dim = 16  # bottleneck size
 
         # encoder sub layers
-        self.input_layer = Input(input_dim)
         self.hidden_layer1 = Dense(
-            units=64, activation='relu', kernel_initializer='he_uniform')
+            units=64, activation='relu', kernel_initializer='he_uniform', input_dim=input_dim)
         self.bn1 = BatchNormalization()
         self.leakyr1 = LeakyReLU()
         self.hidden_layer2 = Dense(units=32, activation='relu')
@@ -80,11 +79,19 @@ class Decoder(Layer):
 
 
 class autoencoder_decoder(Model):
+    """
+    Alternatively to writing layers into the __init__ method,
+    one can also write them in a "build" method, e.g. def build(self, input_shape). 
+
+    This is optional. Utility of this is for user to run Model.build()
+    separately to build a model.  
+
+    It also appears to have better performance with a build method
+    """
+
     def __init__(self, original_dim):
         super(autoencoder_decoder, self).__init__()
         self.original_dim = original_dim
-
-    def build(self, original_dim):
         self.encoder = Encoder(input_dim=self.original_dim)
         self.decoder = Decoder(latent_dim=self.encoder.output_dim,
                                original_dim=self.original_dim)
@@ -101,6 +108,10 @@ class autoencoder_decoder(Model):
     def decode(self, z):
         z = self.decoder(z)
         return z
+
+    def model(self):
+        x = Input(self.original_dim)
+        return Model(inputs=[x], outputs=self.call(x))
 
 
 # ------ data ------

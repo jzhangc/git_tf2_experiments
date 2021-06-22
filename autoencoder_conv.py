@@ -16,10 +16,11 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.datasets import mnist
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Layer
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Layer, Input
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.python.keras.callbacks import BackupAndRestore
+from tensorflow.python.keras.engine import input_layer
 from tensorflow.python.keras.layers.advanced_activations import LeakyReLU
 from tensorflow.python.keras.layers.normalization import BatchNormalization
 from tqdm import tqdm
@@ -79,7 +80,8 @@ class CNN2d_decoder(Layer):
 class autoencoder_decoder(Model):
     def __init__(self, initial_shape):
         super(autoencoder_decoder, self).__init__()
-        self.encoder = CNN2d_encoder(initial_shape=initial_shape)
+        self.initial_shape = initial_shape
+        self.encoder = CNN2d_encoder(initial_shape=self.initial_shape)
         self.decoder = CNN2d_decoder(
             encoded_shape=(4, 4, 8))
 
@@ -95,6 +97,10 @@ class autoencoder_decoder(Model):
     def decoded(self, z):
         z = self.decoder(z)
         return z
+
+    def model(self):
+        x = Input(self.initial_shape)
+        return Model(inputs=[x], outputs=self.call(x))
 
 
 # ------ data ------
