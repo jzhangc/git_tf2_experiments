@@ -46,8 +46,8 @@ class Encoder(Layer):
         self.leakyr2 = LeakyReLU()
         self.output_layer = Dense(units=self.output_dim, activation='sigmoid')
 
-    def call(self, input_dim):
-        x = self.hidden_layer1(input_dim)
+    def call(self, input):
+        x = self.hidden_layer1(input)
         x = self.bn1(x)
         x = self.leakyr1(x)
         x = self.hidden_layer2(x)
@@ -70,8 +70,8 @@ class Decoder(Layer):
         self.leakyr2 = LeakyReLU()
         self.output_layer = Dense(units=original_dim, activation='sigmoid')
 
-    def call(self, encoded_dim):
-        x = self.hidden_layer1(encoded_dim)
+    def call(self, input):
+        x = self.hidden_layer1(input)
         x = self.bn1(x)
         x = self.leakyr1(x)
         x = self.hidden_layer2(x)
@@ -99,8 +99,8 @@ class autoencoder_decoder(Model):
         self.decoder = Decoder(latent_dim=self.encoder.output_dim,
                                original_dim=self.original_dim)
 
-    def call(self, input_dim):  # putting two layers togeter
-        x = self.encoder(input_dim)
+    def call(self, input):  # putting two layers togeter
+        x = self.encoder(input)
         z = self.decoder(x)
         return z
 

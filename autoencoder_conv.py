@@ -59,8 +59,8 @@ class CNN2d_encoder(Layer):
         self.dense1 = Dense(bottleneck_dim, activation='relu')
         self.encoded = LeakyReLU()
 
-    def call(self, initial_shape):
-        x = self.conv2d_1(initial_shape)
+    def call(self, input):
+        x = self.conv2d_1(input)
         x = self.bn1(x)
         x = self.leakyr1(x)
         x = self.maxpooling_1(x)
@@ -97,8 +97,8 @@ class CNN2d_decoder(Layer):
         self.decoded = Conv2D(1, (3, 3), activation='sigmoid',
                               padding='same')  # output: 28, 28, 1
 
-    def call(self, encoded_dim):
-        x = self.encoded_input(encoded_dim)
+    def call(self, input):
+        x = self.encoded_input(input)
         x = self.dense1(x)
         x = self.reshape1(x)
         x = self.conv2d_1(x)
@@ -122,8 +122,8 @@ class autoencoder_decoder(Model):
             initial_shape=self.initial_shape, bottleneck_dim=bottleneck_dim)
         self.decoder = CNN2d_decoder(encoded_dim=bottleneck_dim)
 
-    def call(self, initial_shape):  # putting two models togeter
-        x = self.encoder(initial_shape=initial_shape)
+    def call(self, input):  # putting two models togeter
+        x = self.encoder(input)
         z = self.decoder(x)
         return z
 
