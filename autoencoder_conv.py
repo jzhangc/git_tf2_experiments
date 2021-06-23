@@ -207,7 +207,7 @@ plt.show()
 
 
 # ------ save model ------
-m.save('../results/subclass_autoencoder', save_format='tf')
+m.save('./results/subclass_autoencoder', save_format='tf')
 
 
 # ------ testing ------
