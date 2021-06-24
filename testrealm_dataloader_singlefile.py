@@ -14,12 +14,9 @@ the application.
 import argparse
 import os
 import sys
-from datetime import datetime
-
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import (KFold, LeaveOneOut, ShuffleSplit,
-                                     StratifiedKFold, StratifiedShuffleSplit)
+from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler
 
 
