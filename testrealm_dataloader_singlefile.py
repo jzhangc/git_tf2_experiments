@@ -269,35 +269,30 @@ add_arg('-p', '--training_percentage', type=float, default=0.8,
         help='num, range: 0~1. Split percentage for training set when --no-man_split is set. (Default: %(default)s)')
 add_arg('-r', '--random_state', type=int, default=1, help='int. Random state.')
 
-add_arg('-m', '--model_type', type=str, choices=['regression', 'classification'],
-        default='classifciation',
-        help='str. Model type. Options: \'regression\' and \'classification\'. (Default: %(default)s)')
-add_arg('-l', '--lstm_type', type=str, choices=['simple', 'bidirectional'],
-        default='simple',
-        help='str. LSTM model type. \'simple\' also contains stacked strcuture. (Default: %(default)s)')
-add_arg('-ns', '--n_stack', type=int, default=1,
-        help='int. Number of LSTM stacks. 1 means no stack. (Default: %(default)s)')
-add_arg('-e', '--epochs', type=int, default=500,
-        help='int. Number of epochs for LSTM modelling. (Default: %(default)s)')
-add_arg('-b', '--batch_size', type=int, default=32,
-        help='int. The batch size for LSTM modeling. (Default: %(default)s)')
-add_arg('-d', '--dense_activation', type=str, choices=['relu', 'linear', 'sigmoid', 'softmax'],
-        default='linear', help='str. Acivitation function for the dense layer of the LSTM model. (Default: %(default)s)')
-add_arg('-c', '--loss', type=str,
-        choices=['mean_squared_error', 'binary_crossentropy',
-                 'categorical_crossentropy', 'sparse_categorical_crossentropy', 'hinge'],
-        default='mean_squared_error',
-        help='str. Loss function for LSTM models. (Default: %(default)s)')
-add_arg('-u', '--hidden_units', type=int, default=50,
-        help='int. Number of hidden unit for the LSTM network. (Default: %(default)s)')
-add_arg('-x', '--dropout_rate', type=float, default=0.0,
-        help='float, 0.0~1.0. Dropout rate for LSTM models . 0.0 means no dropout. (Default: %(default)s)')
-add_arg('-g', '--optimizer', type=str,
-        choices=['adam', 'sgd'], default='adam', help='str. Model optimizer. (Default: %(default)s)')
-add_arg('-lr', '--learning_rate', type=float, default=0.001,
-        help='foalt. Learning rate for the optimizer. Note: use 0.01 for sgd. (Default: %(default)s)')
-add_bool_arg(parser=parser, name='stateful', input_type='flag', default=False,
-             help="Use stateful LSTM for modelling. (Default: %(default)s)")
+# add_arg('-m', '--model_type', type=str, choices=['regression', 'classification'],
+#         default='classifciation',
+#         help='str. Model type. Options: \'regression\' and \'classification\'. (Default: %(default)s)')
+# add_arg('-e', '--epochs', type=int, default=500,
+#         help='int. Number of epochs for LSTM modelling. (Default: %(default)s)')
+# add_arg('-b', '--batch_size', type=int, default=32,
+#         help='int. The batch size for LSTM modeling. (Default: %(default)s)')
+# add_arg('-d', '--dense_activation', type=str, choices=['relu', 'linear', 'sigmoid', 'softmax'],
+#         default='linear', help='str. Acivitation function for the dense layer of the LSTM model. (Default: %(default)s)')
+# add_arg('-c', '--loss', type=str,
+#         choices=['mean_squared_error', 'binary_crossentropy',
+#                  'categorical_crossentropy', 'sparse_categorical_crossentropy', 'hinge'],
+#         default='mean_squared_error',
+#         help='str. Loss function for LSTM models. (Default: %(default)s)')
+# add_arg('-u', '--hidden_units', type=int, default=50,
+#         help='int. Number of hidden unit for the LSTM network. (Default: %(default)s)')
+# add_arg('-x', '--dropout_rate', type=float, default=0.0,
+#         help='float, 0.0~1.0. Dropout rate for LSTM models . 0.0 means no dropout. (Default: %(default)s)')
+# add_arg('-g', '--optimizer', type=str,
+#         choices=['adam', 'sgd'], default='adam', help='str. Model optimizer. (Default: %(default)s)')
+# add_arg('-lr', '--learning_rate', type=float, default=0.001,
+#         help='foalt. Learning rate for the optimizer. Note: use 0.01 for sgd. (Default: %(default)s)')
+# add_bool_arg(parser=parser, name='stateful', input_type='flag', default=False,
+#              help="Use stateful LSTM for modelling. (Default: %(default)s)")
 
 add_arg('-o', '--output_dir', type=str,
         default='.',
@@ -306,19 +301,19 @@ add_arg('-o', '--output_dir', type=str,
 add_bool_arg(parser=parser, name='verbose', input_type='flag', default=False,
              help='Verbose or not. (Default: %(default)s)')
 
-add_bool_arg(parser=parser, name='plot', input_type='flag', default=False,
-             help='Explort a scatter plot. (Default: %(default)s)')
-add_arg('-j', '--plot-type', type=str,
-        choices=['scatter', 'bar'], default='scatter', help='str. Plot type. (Default: %(default)s)')
+# add_bool_arg(parser=parser, name='plot', input_type='flag', default=False,
+#              help='Explort a scatter plot. (Default: %(default)s)')
+# add_arg('-j', '--plot-type', type=str,
+#         choices=['scatter', 'bar'], default='scatter', help='str. Plot type. (Default: %(default)s)')
 
 args = parser.parse_args()
 # check the arguments. did not use parser.error as error() has fancy colours
 if not args.sample_id_var:
     error('-s/--sample_id_var missing.',
           'Be sure to set the following: -s/--sample_id_var, -n/--n_timepoints, -y/--outcome_var, -a/--annotation_vars')
-if not args.n_timepoints:
-    error('-n/--n_timepoints flag missing.',
-          'Be sure to set the following: -s/--sample_id_var, -n/--n_timepoints, -y/--outcome_var, -a/--annotation_vars')
+# if not args.n_timepoints:
+#     error('-n/--n_timepoints flag missing.',
+#           'Be sure to set the following: -s/--sample_id_var, -n/--n_timepoints, -y/--outcome_var, -a/--annotation_vars')
 if not args.outcome_var:
     error('-y/--outcome_var flag missing.',
           'Be sure to set the following: -s/--sample_id_var, -n/--n_timepoints, -y/--outcome_var, -a/--annotation_vars')
@@ -329,23 +324,20 @@ if len(args.annotation_vars) < 1:
 if args.man_split and len(args.holdout_samples) < 1:
     error('Set -t/--holdout_samples when --man_split was set.')
 
-if args.dropout_rate < 0.0 or args.dropout_rate > 1.0:
-    error('-x/--dropout_rate should be between 0.0 and 1.0.')
-
-if args.n_stack < 1:
-    error('-ns/--n_stack should be equal to or greater than 1.')
+# if args.dropout_rate < 0.0 or args.dropout_rate > 1.0:
+#     error('-x/--dropout_rate should be between 0.0 and 1.0.')
 
 if args.cv_type == 'monte':
     if args.monte_test_rate < 0.0 or args.monte_test_rate > 1.0:
         error('-mt/--monte_test_rate should be between 0.0 and 1.0.')
 
-if args.model_type == 'classification':
-    if args.n_classes is None:
-        error('Set -nc/n_classes when -m/--model_type=\'classification\'.')
-    elif args.n_classes < 1:
-        error('Set -nc/n_classes needs to be greater than 1 when -m/--model_type=\'classification\'.')
-    elif args.n_classes > 2 and args.loss == 'binary_crossentropy':
-        error('-l/--loss cannot be \'binary_crossentropy\' when -m/--model_type=\'classification\' and -nc/n_classes greater than 2.')
+# if args.model_type == 'classification':
+#     if args.n_classes is None:
+#         error('Set -nc/n_classes when -m/--model_type=\'classification\'.')
+#     elif args.n_classes < 1:
+#         error('Set -nc/n_classes needs to be greater than 1 when -m/--model_type=\'classification\'.')
+#     elif args.n_classes > 2 and args.loss == 'binary_crossentropy':
+#         error('-l/--loss cannot be \'binary_crossentropy\' when -m/--model_type=\'classification\' and -nc/n_classes greater than 2.')
 
 
 # ------ loacl classes ------
@@ -521,26 +513,13 @@ class DataLoader(object):
 
 # ------ model evaluation when cv_only=True ------
 # below: single round lstm modelling
-# mylstm = lstmModel(n_timepoints=mydata.n_timepoints,
-#                    model_type=mydata.model_type, n_features=mydata.n_features,
-#                    n_stack=args.n_stack, hidden_units=args.hidden_units, epochs=args.epochs,
-#                    batch_size=args.batch_size, stateful=args.stateful, dropout=args.dropout_rate,
-#                    dense_activation=args.dense_activation, loss=args.loss,
-#                    optimizer=args.optimizer, learning_rate=args.learning_rate, verbose=True)
 
 
 # # ------ model evaluation when cv_only=False ------
 # # below: model ensemble testing
 
 # # below: single production model testing
-# myfinal_lstm = lstmProduction(training=mydata.modelling_data['training'], n_timepoints=mydata.n_timepoints, n_features=mydata.n_features,
-#                               model_type=mydata.model_type, y_scale=args.y_scale, lstm_type=args.lstm_type, outcome_var=mydata.outcome_var,
-#                               annotation_vars=mydata.annotation_vars, random_state=mydata.rand, verbose=mydata.verbose)
 # # modelling
-# myfinal_lstm.productionRun(res_dir=res_dir, optim_epochs=math.ceil(mycv.cv_bestparam_epocs_mean), n_timepoints=mydata.n_timepoints,
-#                            n_stack=args.n_stack, hidden_units=args.hidden_units, batch_size=args.batch_size, stateful=args.stateful,
-#                            dropout=args.dropout, dense_activation=args.dense_activation, loss=args.loss, optimizer=args.optimizer,
-#                            learning_rate=args.learning_rate)
 
 # # prepare test data
 # test = mydata.modelling_data['test']
