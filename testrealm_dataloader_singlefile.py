@@ -217,9 +217,9 @@ def training_test_spliter_final(data,
 __version__ = '0.1.0'
 AUTHOR = 'Jing Zhang, PhD'
 DESCRIPITON = """
----------------------------------- Description ---------------------------------
+--------------------------------- Description ---------------------------------
 Data loader for single CSV file data table for deep learning
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 """
 
 # ------ augment definition ------
