@@ -2,6 +2,7 @@
 """
 Current objectives:
 [ ] Test argparse
+    [ ] Add groupped arguments
 [ ] Test output directory creation
 [ ] Test file reading
 [ ] Test file processing
@@ -239,8 +240,6 @@ add_arg('-s', '--sample_id_var', type=str, default=None,
         help='str. Vairable name for sample ID. NOTE: only needed with single file processing. (Default: %(default)s)')
 add_arg('-a', '--annotation_vars', type=str, nargs="+", default=[],
         help='list of str. names of the annotation columns in the input data, excluding the outcome variable. (Default: %(default)s)')
-add_arg('-n', '--n_timepoints', type=int, default=None,
-        help='int. Number of timepoints. NOTE: only needed with single file processing. (Default: %(default)s)')
 add_arg('-cl', '--n_classes', type=int, default=None,
         help='int. Number of class for classification models. (Default: %(default)s)')
 add_arg('-y', '--outcome_var', type=str, default=None,
@@ -269,30 +268,9 @@ add_arg('-p', '--training_percentage', type=float, default=0.8,
         help='num, range: 0~1. Split percentage for training set when --no-man_split is set. (Default: %(default)s)')
 add_arg('-r', '--random_state', type=int, default=1, help='int. Random state.')
 
-# add_arg('-m', '--model_type', type=str, choices=['regression', 'classification'],
-#         default='classifciation',
-#         help='str. Model type. Options: \'regression\' and \'classification\'. (Default: %(default)s)')
-# add_arg('-e', '--epochs', type=int, default=500,
-#         help='int. Number of epochs for LSTM modelling. (Default: %(default)s)')
-# add_arg('-b', '--batch_size', type=int, default=32,
-#         help='int. The batch size for LSTM modeling. (Default: %(default)s)')
-# add_arg('-d', '--dense_activation', type=str, choices=['relu', 'linear', 'sigmoid', 'softmax'],
-#         default='linear', help='str. Acivitation function for the dense layer of the LSTM model. (Default: %(default)s)')
-# add_arg('-c', '--loss', type=str,
-#         choices=['mean_squared_error', 'binary_crossentropy',
-#                  'categorical_crossentropy', 'sparse_categorical_crossentropy', 'hinge'],
-#         default='mean_squared_error',
-#         help='str. Loss function for LSTM models. (Default: %(default)s)')
-# add_arg('-u', '--hidden_units', type=int, default=50,
-#         help='int. Number of hidden unit for the LSTM network. (Default: %(default)s)')
-# add_arg('-x', '--dropout_rate', type=float, default=0.0,
-#         help='float, 0.0~1.0. Dropout rate for LSTM models . 0.0 means no dropout. (Default: %(default)s)')
-# add_arg('-g', '--optimizer', type=str,
-#         choices=['adam', 'sgd'], default='adam', help='str. Model optimizer. (Default: %(default)s)')
-# add_arg('-lr', '--learning_rate', type=float, default=0.001,
-#         help='foalt. Learning rate for the optimizer. Note: use 0.01 for sgd. (Default: %(default)s)')
-# add_bool_arg(parser=parser, name='stateful', input_type='flag', default=False,
-#              help="Use stateful LSTM for modelling. (Default: %(default)s)")
+add_arg('-m', '--model_type', type=str, choices=['regression', 'classification'],
+        default='classifciation',
+        help='str. Model type. Options: \'regression\' and \'classification\'. (Default: %(default)s)')
 
 add_arg('-o', '--output_dir', type=str,
         default='.',
@@ -301,43 +279,32 @@ add_arg('-o', '--output_dir', type=str,
 add_bool_arg(parser=parser, name='verbose', input_type='flag', default=False,
              help='Verbose or not. (Default: %(default)s)')
 
-# add_bool_arg(parser=parser, name='plot', input_type='flag', default=False,
-#              help='Explort a scatter plot. (Default: %(default)s)')
-# add_arg('-j', '--plot-type', type=str,
-#         choices=['scatter', 'bar'], default='scatter', help='str. Plot type. (Default: %(default)s)')
-
 args = parser.parse_args()
+
 # check the arguments. did not use parser.error as error() has fancy colours
 if not args.sample_id_var:
     error('-s/--sample_id_var missing.',
-          'Be sure to set the following: -s/--sample_id_var, -n/--n_timepoints, -y/--outcome_var, -a/--annotation_vars')
-# if not args.n_timepoints:
-#     error('-n/--n_timepoints flag missing.',
-#           'Be sure to set the following: -s/--sample_id_var, -n/--n_timepoints, -y/--outcome_var, -a/--annotation_vars')
+          'Be sure to set the following: -s/--sample_id_var, -y/--outcome_var, -a/--annotation_vars')
+
 if not args.outcome_var:
     error('-y/--outcome_var flag missing.',
-          'Be sure to set the following: -s/--sample_id_var, -n/--n_timepoints, -y/--outcome_var, -a/--annotation_vars')
+          'Be sure to set the following: -s/--sample_id_var, -y/--outcome_var, -a/--annotation_vars')
 if len(args.annotation_vars) < 1:
     error('-a/--annotation_vars missing.',
-          'Be sure to set the following: -s/--sample_id_var, -n/--n_timepoints, -y/--outcome_var, -a/--annotation_vars')
+          'Be sure to set the following: -s/--sample_id_var, -y/--outcome_var, -a/--annotation_vars')
 
 if args.man_split and len(args.holdout_samples) < 1:
     error('Set -t/--holdout_samples when --man_split was set.')
-
-# if args.dropout_rate < 0.0 or args.dropout_rate > 1.0:
-#     error('-x/--dropout_rate should be between 0.0 and 1.0.')
 
 if args.cv_type == 'monte':
     if args.monte_test_rate < 0.0 or args.monte_test_rate > 1.0:
         error('-mt/--monte_test_rate should be between 0.0 and 1.0.')
 
-# if args.model_type == 'classification':
-#     if args.n_classes is None:
-#         error('Set -nc/n_classes when -m/--model_type=\'classification\'.')
-#     elif args.n_classes < 1:
-#         error('Set -nc/n_classes needs to be greater than 1 when -m/--model_type=\'classification\'.')
-#     elif args.n_classes > 2 and args.loss == 'binary_crossentropy':
-#         error('-l/--loss cannot be \'binary_crossentropy\' when -m/--model_type=\'classification\' and -nc/n_classes greater than 2.')
+if args.model_type == 'classification':
+    if args.n_classes is None:
+        error('Set -nc/n_classes when -m/--model_type=\'classification\'.')
+    elif args.n_classes < 1:
+        error('Set -nc/n_classes needs to be greater than 1 when -m/--model_type=\'classification\'.')
 
 
 # ------ loacl classes ------
@@ -357,7 +324,7 @@ class DataLoader(object):
     """
 
     def __init__(self, cwd, file,
-                 outcome_var, annotation_vars, n_timepoints, sample_id_var,
+                 outcome_var, annotation_vars, sample_id_var,
                  model_type, n_classes,
                  cv_only,
                  man_split, holdout_samples, training_percentage, random_state, verbose):
@@ -368,7 +335,6 @@ class DataLoader(object):
             outcome_var: str. variable nanme for outcome. Only one is accepted for this version. "args.outcome_var" from argparser
             annotation_vars: list of strings. Column names for the annotation variables in the input dataframe, EXCLUDING outcome variable.
                 "args.annotation_vars" from argparser
-            n_timepoints: int. number of timepoints. "args.n_timepoints" from argparser
             sample_id_var: str. variable used to identify samples. "args.sample_id_var" from argparser
             model_type: str. model type, classification or regression
             n_classes: int. number of classes when model_type='classification'
@@ -386,7 +352,6 @@ class DataLoader(object):
                 self.file
                 self.outcome_var
                 self.annotation_vars
-                self.n_timepoints
                 self.cv_only
                 self.holdout_samples
                 self.training_percentage
@@ -438,9 +403,8 @@ class DataLoader(object):
             self.raw_working = self.raw.copy()  # value might be changed
             self.complete_annot_vars = self.annotation_vars + self.y_var
             self._n_annot_col = len(self.complete_annot_vars)
-            self.n_timepoints = n_timepoints
             self.n_features = int(
-                (self.raw_working.shape[1] - self._n_annot_col) // self.n_timepoints)  # pd.shape[1]: ncol
+                (self.raw_working.shape[1] - self._n_annot_col))  # pd.shape[1]: ncol
 
             self.cv_only = cv_only
             self.sample_id_var = sample_id_var
