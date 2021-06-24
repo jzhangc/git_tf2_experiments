@@ -101,7 +101,17 @@ def file_path(string):
     if os.path.isfile(full_path):
         return full_path
     else:
-        error("input file not found.")
+        error("invalid input file or input file not found.")
+
+
+def output_dir(string):
+    input_path = os.path.dirname(__file__)
+    full_path = os.path.normpath(os.path.join(input_path, string))
+
+    if os.path.isdir(full_path):
+        return full_path
+    else:
+        error("output directory not found.")
 
 
 # def training_test_spliter_final(data,
@@ -272,7 +282,7 @@ add_g1_arg('-y', '--outcome_var', type=str, default=None,
            help='str. Vairable name for outcome. NOTE: only needed with single file processing. (Default: %(default)s)')
 add_bool_arg(parser=arg_g1, name='y_scale', input_type='flag', default=False,
              help='str. If to min-max scale outcome for regression study. (Default: %(default)s)')
-add_g1_arg('-o', '--output_dir', type=str,
+add_g1_arg('-o', '--output_dir', type=output_dir,
            default='.',
            help='str. Output directory. NOTE: not an absolute path, only relative to working directory -w/--working_dir.')
 
@@ -517,6 +527,5 @@ print(args)
 
 
 # ------ process/__main__ statement ------
-# ------ setup output folders ------
 # if __name__ == '__main__':
 #     mydata = DataLoader()
