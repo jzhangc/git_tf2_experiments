@@ -94,7 +94,7 @@ def add_bool_arg(parser, name, help, input_type, default=False):
     parser.set_defaults(**{name: default})
 
 
-def file_path(string, type='f'):
+def file_path(string):
     input_path = os.path.dirname(__file__)
     full_path = os.path.normpath(os.path.join(input_path, string))
 
