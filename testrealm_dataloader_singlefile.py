@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
 Current objectives:
-[X] Test argparse
-[X] Test output directory creation
-[X] Test file reading
-[X] Test file processing
+[ ] Test argparse
+[ ] Test output directory creation
+[ ] Test file reading
+[ ] Test file processing
 
 NOTE
 All the argparser inputs are loaded from method arguments, making the class more portable, i.e. not tied to
@@ -233,83 +233,83 @@ add_arg = parser.add_argument
 add_arg('file', nargs=1, default=[],
         help='Input CSV file. Currently only one file is accepable.')
 add_arg('-w', "--working_dir", type=str, default=None,
-        help='str. Working directory if not the current one. Default is None.')
+        help='str. Working directory if not the current one. (Default: %(default)s)')
 
 add_arg('-s', '--sample_id_var', type=str, default=None,
-        help='str. Vairable name for sample ID. NOTE: only needed with single file processing. Default is None.')
+        help='str. Vairable name for sample ID. NOTE: only needed with single file processing. (Default: %(default)s)')
 add_arg('-a', '--annotation_vars', type=str, nargs="+", default=[],
-        help='list of str. names of the annotation columns in the input data, excluding the outcome variable. Default is [].')
+        help='list of str. names of the annotation columns in the input data, excluding the outcome variable. (Default: %(default)s)')
 add_arg('-n', '--n_timepoints', type=int, default=None,
-        help='int. Number of timepoints. NOTE: only needed with single file processing. Default is None.')
+        help='int. Number of timepoints. NOTE: only needed with single file processing. (Default: %(default)s)')
 add_arg('-cl', '--n_classes', type=int, default=None,
-        help='int. Number of class for classification models. Default is None.')
+        help='int. Number of class for classification models. (Default: %(default)s)')
 add_arg('-y', '--outcome_var', type=str, default=None,
-        help='str. Vairable name for outcome. NOTE: only needed with single file processing. Default is None.')
+        help='str. Vairable name for outcome. NOTE: only needed with single file processing. (Default: %(default)s)')
 add_bool_arg(parser=parser, name='y_scale', input_type='flag', default=False,
-             help='str. If to min-max scale outcome for regression study. Defatuls is False.')
+             help='str. If to min-max scale outcome for regression study. (Default: %(default)s)')
 
 add_arg('-v', '--cv_type', type=str,
         choices=['kfold', 'LOO', 'monte'], default='kfold',
         help='str. Cross validation type. Default is \'kfold\'')
 add_arg('-kf', '--cv_fold', type=int, default=10,
-        help='int. Number of cross validation fold when --cv_type=\'kfold\'. Default is 10.')
+        help='int. Number of cross validation fold when --cv_type=\'kfold\'. (Default: %(default)s)')
 add_arg('-mn', '--n_monte', type=int, default=10,
-        help='int. Number of Monte Carlo cross validation iterations when --cv_type=\'monte\'. Default is 10')
+        help='int. Number of Monte Carlo cross validation iterations when --cv_type=\'monte\'. (Default: %(default)s)')
 add_arg('-mt', '--monte_test_rate', type=float, default=0.2,
-        help='float. Ratio for cv test data split when --cv_type=\'monte\'. Default is 0.2.')
+        help='float. Ratio for cv test data split when --cv_type=\'monte\'. (Default: %(default)s)')
 add_bool_arg(parser=parser, name='cv_only', input_type='flag',
-             help='If to do cv_only mode for training, i.e. no holdout test split. Default is False.',
+             help='If to do cv_only mode for training, i.e. no holdout test split. (Default: %(default)s)',
              default=False)
 add_bool_arg(parser=parser, name='man_split', input_type='flag',
-             help='Manually split data into training and test sets. When set, the split is on -s/--sample_id_var. Default is False.',
+             help='Manually split data into training and test sets. When set, the split is on -s/--sample_id_var. (Default: %(default)s)',
              default=False)
 add_arg('-t', '--holdout_samples', nargs='+', type=str, default=[],
-        help='str. Sample IDs selected as holdout test group when --man_split was set. Default is None.')
+        help='str. Sample IDs selected as holdout test group when --man_split was set. (Default: %(default)s)')
 add_arg('-p', '--training_percentage', type=float, default=0.8,
-        help='num, range: 0~1. Split percentage for training set when --no-man_split is set. Default is 0.8.')
+        help='num, range: 0~1. Split percentage for training set when --no-man_split is set. (Default: %(default)s)')
 add_arg('-r', '--random_state', type=int, default=1, help='int. Random state.')
 
 add_arg('-m', '--model_type', type=str, choices=['regression', 'classification'],
         default='classifciation',
-        help='str. Model type. Options: \'regression\' and \'classification\'. Default is  \'regression\'.')
+        help='str. Model type. Options: \'regression\' and \'classification\'. (Default: %(default)s)')
 add_arg('-l', '--lstm_type', type=str, choices=['simple', 'bidirectional'],
         default='simple',
-        help='str. LSTM model type. \'simple\' also contains stacked strcuture. Default is \'simple\'.')
+        help='str. LSTM model type. \'simple\' also contains stacked strcuture. (Default: %(default)s)')
 add_arg('-ns', '--n_stack', type=int, default=1,
-        help='int. Number of LSTM stacks. 1 means no stack. Default is 1 (no stack).')
+        help='int. Number of LSTM stacks. 1 means no stack. (Default: %(default)s)')
 add_arg('-e', '--epochs', type=int, default=500,
-        help='int. Number of epochs for LSTM modelling. Default is 500. ')
+        help='int. Number of epochs for LSTM modelling. (Default: %(default)s)')
 add_arg('-b', '--batch_size', type=int, default=32,
-        help='int. The batch size for LSTM modeling. Default is 32. ')
+        help='int. The batch size for LSTM modeling. (Default: %(default)s)')
 add_arg('-d', '--dense_activation', type=str, choices=['relu', 'linear', 'sigmoid', 'softmax'],
-        default='linear', help='str. Acivitation function for the dense layer of the LSTM model. Default is \'linear\'')
+        default='linear', help='str. Acivitation function for the dense layer of the LSTM model. (Default: %(default)s)')
 add_arg('-c', '--loss', type=str,
         choices=['mean_squared_error', 'binary_crossentropy',
                  'categorical_crossentropy', 'sparse_categorical_crossentropy', 'hinge'],
         default='mean_squared_error',
-        help='str. Loss function for LSTM models. Default is \'mean_squared_error\'.')
+        help='str. Loss function for LSTM models. (Default: %(default)s)')
 add_arg('-u', '--hidden_units', type=int, default=50,
-        help='int. Number of hidden unit for the LSTM network. Default is 50.')
+        help='int. Number of hidden unit for the LSTM network. (Default: %(default)s)')
 add_arg('-x', '--dropout_rate', type=float, default=0.0,
-        help='float, 0.0~1.0. Dropout rate for LSTM models . 0.0 means no dropout. Default is 0.0.')
+        help='float, 0.0~1.0. Dropout rate for LSTM models . 0.0 means no dropout. (Default: %(default)s)')
 add_arg('-g', '--optimizer', type=str,
-        choices=['adam', 'sgd'], default='adam', help='str. Model optimizer. Default is \'adam\'.')
+        choices=['adam', 'sgd'], default='adam', help='str. Model optimizer. (Default: %(default)s)')
 add_arg('-lr', '--learning_rate', type=float, default=0.001,
-        help='foalt. Learning rate for the optimizer. Note: use 0.01 for sgd. Default is 0.001.')
+        help='foalt. Learning rate for the optimizer. Note: use 0.01 for sgd. (Default: %(default)s)')
 add_bool_arg(parser=parser, name='stateful', input_type='flag', default=False,
-             help="Use stateful LSTM for modelling. Default is False.")
+             help="Use stateful LSTM for modelling. (Default: %(default)s)")
 
 add_arg('-o', '--output_dir', type=str,
         default='.',
         help='str. Output directory. NOTE: not an absolute path, only relative to working directory -w/--working_dir.')
 
 add_bool_arg(parser=parser, name='verbose', input_type='flag', default=False,
-             help='Verbose or not. Default is False.')
+             help='Verbose or not. (Default: %(default)s)')
 
-add_bool_arg(parser=parser, name='plot', input_type='flag',
-             help='Explort a scatter plot', default=False)
+add_bool_arg(parser=parser, name='plot', input_type='flag', default=False,
+             help='Explort a scatter plot. (Default: %(default)s)')
 add_arg('-j', '--plot-type', type=str,
-        choices=['scatter', 'bar'], default='scatter', help='str. Plot type')
+        choices=['scatter', 'bar'], default='scatter', help='str. Plot type. (Default: %(default)s)')
 
 args = parser.parse_args()
 # check the arguments. did not use parser.error as error() has fancy colours
