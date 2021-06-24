@@ -228,10 +228,14 @@ def file_path(string):
 __version__ = '0.1.0'
 AUTHOR = 'Jing Zhang, PhD'
 DESCRIPITON = """
---------------------------------- Description ---------------------------------
-Data loader for single CSV file data table for deep learning
--------------------------------------------------------------------------------
-"""
+{}--------------------------------- Description -------------------------------------------
+Data loader for single CSV file data table for deep learning. 
+The loaded CSV file is stored in numpy arrays. 
+This loader also handels the following:
+    1. Data resampling, e.g. traning/test split, cross validation
+    2. Data normalization
+-----------------------------------------------------------------------------------------{}
+""".format(colr.YELLOW, colr.ENDC)
 
 # ------ augment definition ------
 # - set up parser and argument groups -
@@ -244,7 +248,7 @@ parser._optionals.title = "{}Help options{}".format(colr.CYAN_B, colr.ENDC)
 arg_g1 = parser.add_argument_group(
     '{}Input and output{}'.format(colr.CYAN_B, colr.ENDC))
 arg_g2 = parser.add_argument_group(
-    '{}Resampling{}'.format(colr.CYAN_B, colr.ENDC))
+    '{}Resampling and normalization{}'.format(colr.CYAN_B, colr.ENDC))
 arg_g3 = parser.add_argument_group(
     '{}Modelling{}'.format(colr.CYAN_B, colr.ENDC))
 arg_g4 = parser.add_argument_group('{}Other{}'.format(colr.CYAN_B, colr.ENDC))
