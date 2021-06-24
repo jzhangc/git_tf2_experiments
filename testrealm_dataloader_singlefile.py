@@ -239,11 +239,15 @@ parser = AppArgParser(description=DESCRIPITON,
                       epilog='Written by: {}. Current version: {}\n\r'.format(
                           AUTHOR, __version__),
                       formatter_class=argparse.RawTextHelpFormatter)
+parser._optionals.title = "{}Help options{}".format(colr.CYAN_B, colr.ENDC)
 
-arg_g1 = parser.add_argument_group('input and output')
-arg_g2 = parser.add_argument_group('resampling')
-arg_g3 = parser.add_argument_group('modelling')
-arg_g4 = parser.add_argument_group('other')
+arg_g1 = parser.add_argument_group(
+    '{}Input and output{}'.format(colr.CYAN_B, colr.ENDC))
+arg_g2 = parser.add_argument_group(
+    '{}Resampling{}'.format(colr.CYAN_B, colr.ENDC))
+arg_g3 = parser.add_argument_group(
+    '{}Modelling{}'.format(colr.CYAN_B, colr.ENDC))
+arg_g4 = parser.add_argument_group('{}Other{}'.format(colr.CYAN_B, colr.ENDC))
 
 add_g1_arg = arg_g1.add_argument
 add_g2_arg = arg_g2.add_argument
