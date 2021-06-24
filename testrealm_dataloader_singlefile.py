@@ -227,7 +227,7 @@ Data loader for single CSV file data table for deep learning
 parser = AppArgParser(description=DESCRIPITON,
                       epilog='Written by: {}. Current version: {}\n\r'.format(
                           AUTHOR, __version__),
-                      formatter_class=argparse.RawDescriptionHelpFormatter)
+                      formatter_class=argparse.RawTextHelpFormatter)
 
 add_arg = parser.add_argument
 add_arg('file', nargs=1, default=[],
