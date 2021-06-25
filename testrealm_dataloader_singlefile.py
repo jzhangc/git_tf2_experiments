@@ -116,124 +116,124 @@ def output_dir(string):
         error("output directory not found.")
 
 
-# def training_test_spliter_final(data,
-#                                 training_percent=0.8, random_state=None,
-#                                 man_split=False, man_split_colname=None,
-#                                 man_split_testset_value=None,
-#                                 x_standardization=True,
-#                                 x_scale_column_to_exclude=None,
-#                                 y_min_max_scaling=False, y_column_to_scale=None,
-#                                 y_scale_range=(0, 1)):
-#     """
-#     # Purpose:
-#         This is a final verion of the training_test_spliter.
-#         This version splits the data into training and test prior to Min-Max scaling.
-#         The z score standardization is used for X standardization
-#     # Return:
-#         Pandas DataFrame (for now) for training and test data.
-#         Y scalers for training and test data sets are also returned.
-#         Order: training (np.array), test (np.array), training_scaler_X, training_scaler_Y
-#     # Arguments:
-#         data: Pnadas DataFrame. Input data.
-#         man_split: boolean. If to manually split the data into training/test sets.
-#         man_split_colname: string. Set only when fixed_split=True, the variable name for the column to use for manual splitting.
-#         man_split_testset_value: list. Set only when fixed_split=True, the splitting variable values for test set.
-#         training_percent: float. percentage of the full data to be the training
-#         random_state: int. seed for resampling RNG
-#         x_standardization: boolean. if to center scale (z score standardization) the input X data
-#         x_scale_column_to_exclude: list. the name of the columns
-#                                 to remove from the X columns for scaling.
-#                                 makes sure to also inlcude the y column(s)
-#         y_column_to_scale: list. column(s) to use as outcome for scaling
-#         y_min_max_scaling: boolean. For regression study, if to do a Min_Max scaling to outcome
-#         y_scale_range: two-tuple. the Min_Max range.
-#     # Details:
-#         The data normalization is applied AFTER the training/test splitting
-#         The x_standardization is z score standardization ("center and scale"): (x - mean(x))/SD
-#         The y_min_max_scaling is min-max nomalization
-#         When x_standardization=True, the test data is standardized using training data mean and SD.
-#         When y_min_max_scaling=True, the test data is scaled using training data max-min parameters.
-#     # Examples
-#     1. with normalization
-#         training, test, training_scaler_X, training_scaler_Y = training_test_spliter_final(
-#             data=raw, random_state=1,
-#             man_split=True, man_split_colname='subject', man_split_testset_value=selected_features[0],
-#             x_standardization=True,
-#             x_scale_column_to_exclude=['subject', 'PCL', 'group'],
-#             y_min_max_scaling=True,
-#             y_column_to_scale=['PCL'], y_scale_range=(0, 1))
-#     2. without noralization
-#         training, test, _, _ = training_test_spliter_final(
-#             data=raw, random_state=1,
-#             man_split=True, man_split_colname='subject', man_split_testset_value=selected_features[1],
-#             x_standardization=False,
-#             y_min_max_scaling=False)
-#     """
-#     # argument check
-#     if not isinstance(data, pd.DataFrame):
-#         raise TypeError("Input needs to be a pandas DataFrame.")
+def training_test_spliter_final(data,
+                                training_percent=0.8, random_state=None,
+                                man_split=False, man_split_colname=None,
+                                man_split_testset_value=None,
+                                x_standardization=True,
+                                x_scale_column_to_exclude=None,
+                                y_min_max_scaling=False, y_column_to_scale=None,
+                                y_scale_range=(0, 1)):
+    """
+    # Purpose:
+        This is a final verion of the training_test_spliter.
+        This version splits the data into training and test prior to Min-Max scaling.
+        The z score standardization is used for X standardization
+    # Return:
+        Pandas DataFrame (for now) for training and test data.
+        Y scalers for training and test data sets are also returned.
+        Order: training (np.array), test (np.array), training_scaler_X, training_scaler_Y
+    # Arguments:
+        data: Pnadas DataFrame. Input data.
+        man_split: boolean. If to manually split the data into training/test sets.
+        man_split_colname: string. Set only when fixed_split=True, the variable name for the column to use for manual splitting.
+        man_split_testset_value: list. Set only when fixed_split=True, the splitting variable values for test set.
+        training_percent: float. percentage of the full data to be the training
+        random_state: int. seed for resampling RNG
+        x_standardization: boolean. if to center scale (z score standardization) the input X data
+        x_scale_column_to_exclude: list. the name of the columns
+                                to remove from the X columns for scaling.
+                                makes sure to also inlcude the y column(s)
+        y_column_to_scale: list. column(s) to use as outcome for scaling
+        y_min_max_scaling: boolean. For regression study, if to do a Min_Max scaling to outcome
+        y_scale_range: two-tuple. the Min_Max range.
+    # Details:
+        The data normalization is applied AFTER the training/test splitting
+        The x_standardization is z score standardization ("center and scale"): (x - mean(x))/SD
+        The y_min_max_scaling is min-max nomalization
+        When x_standardization=True, the test data is standardized using training data mean and SD.
+        When y_min_max_scaling=True, the test data is scaled using training data max-min parameters.
+    # Examples
+    1. with normalization
+        training, test, training_scaler_X, training_scaler_Y = training_test_spliter_final(
+            data=raw, random_state=1,
+            man_split=True, man_split_colname='subject', man_split_testset_value=selected_features[0],
+            x_standardization=True,
+            x_scale_column_to_exclude=['subject', 'PCL', 'group'],
+            y_min_max_scaling=True,
+            y_column_to_scale=['PCL'], y_scale_range=(0, 1))
+    2. without noralization
+        training, test, _, _ = training_test_spliter_final(
+            data=raw, random_state=1,
+            man_split=True, man_split_colname='subject', man_split_testset_value=selected_features[1],
+            x_standardization=False,
+            y_min_max_scaling=False)
+    """
+    # argument check
+    if not isinstance(data, pd.DataFrame):
+        raise TypeError("Input needs to be a pandas DataFrame.")
 
-#     if x_standardization:
-#         if not isinstance(x_scale_column_to_exclude, list):
-#             raise ValueError(
-#                 'x_scale_column_to_exclude needs to be a list.')
-#     if y_min_max_scaling:
-#         if not isinstance(y_column_to_scale, list):
-#             raise ValueError(
-#                 'y_column_to_scale needs to be a list.')
+    if x_standardization:
+        if not isinstance(x_scale_column_to_exclude, list):
+            raise ValueError(
+                'x_scale_column_to_exclude needs to be a list.')
+    if y_min_max_scaling:
+        if not isinstance(y_column_to_scale, list):
+            raise ValueError(
+                'y_column_to_scale needs to be a list.')
 
-#     if man_split:
-#         if (not man_split_colname) or (not man_split_testset_value):
-#             raise ValueError(
-#                 'set man_split_colname and man_split_testset_value when man_split=True.')
-#         else:
-#             if not isinstance(man_split_colname, str):
-#                 raise ValueError('man_split_colname needs to be a string.')
-#             if not isinstance(man_split_testset_value, list):
-#                 raise ValueError(
-#                     'man_split_colvaue needs to be a list.')
-#             if not all(test_value in list(data[man_split_colname]) for test_value in man_split_testset_value):
-#                 raise ValueError(
-#                     'One or all man_split_test_value missing from the splitting variable.')
+    if man_split:
+        if (not man_split_colname) or (not man_split_testset_value):
+            raise ValueError(
+                'set man_split_colname and man_split_testset_value when man_split=True.')
+        else:
+            if not isinstance(man_split_colname, str):
+                raise ValueError('man_split_colname needs to be a string.')
+            if not isinstance(man_split_testset_value, list):
+                raise ValueError(
+                    'man_split_colvaue needs to be a list.')
+            if not all(test_value in list(data[man_split_colname]) for test_value in man_split_testset_value):
+                raise ValueError(
+                    'One or all man_split_test_value missing from the splitting variable.')
 
-#     # split
-#     if man_split:
-#         # .copy() to make it explicit that it is a copy, to avoid Pandas SettingWithCopyWarning
-#         training = data.loc[~data[man_split_colname].isin(
-#             man_split_testset_value), :].copy()
-#         test = data.loc[data[man_split_colname].isin(
-#             man_split_testset_value), :].copy()
-#     else:
-#         training = data.sample(frac=training_percent,
-#                                random_state=random_state)
-#         test = data.iloc[~data.index.isin(training.index), :].copy()
+    # split
+    if man_split:
+        # .copy() to make it explicit that it is a copy, to avoid Pandas SettingWithCopyWarning
+        training = data.loc[~data[man_split_colname].isin(
+            man_split_testset_value), :].copy()
+        test = data.loc[data[man_split_colname].isin(
+            man_split_testset_value), :].copy()
+    else:
+        training = data.sample(frac=training_percent,
+                               random_state=random_state)
+        test = data.iloc[~data.index.isin(training.index), :].copy()
 
-#     # normalization if needed
-#     # set the variables
-#     training_scaler_X, training_scaler_Y, test_scaler_Y = None, None, None
-#     if x_standardization:
-#         if all(selected_col in data.columns for selected_col in x_scale_column_to_exclude):
-#             training_scaler_X = StandardScaler()
-#             training[training.columns[~training.columns.isin(x_scale_column_to_exclude)]] = training_scaler_X.fit_transform(
-#                 training[training.columns[~training.columns.isin(x_scale_column_to_exclude)]])
-#             test[test.columns[~test.columns.isin(x_scale_column_to_exclude)]] = training_scaler_X.transform(
-#                 test[test.columns[~test.columns.isin(x_scale_column_to_exclude)]])
-#         else:
-#             print(
-#                 'Not all columns are found in the input X. Proceed without X standardization. \n')
+    # normalization if needed
+    # set the variables
+    training_scaler_X, training_scaler_Y, test_scaler_Y = None, None, None
+    if x_standardization:
+        if all(selected_col in data.columns for selected_col in x_scale_column_to_exclude):
+            training_scaler_X = StandardScaler()
+            training[training.columns[~training.columns.isin(x_scale_column_to_exclude)]] = training_scaler_X.fit_transform(
+                training[training.columns[~training.columns.isin(x_scale_column_to_exclude)]])
+            test[test.columns[~test.columns.isin(x_scale_column_to_exclude)]] = training_scaler_X.transform(
+                test[test.columns[~test.columns.isin(x_scale_column_to_exclude)]])
+        else:
+            print(
+                'Not all columns are found in the input X. Proceed without X standardization. \n')
 
-#     if y_min_max_scaling:
-#         if all(selected_col in data.columns for selected_col in y_column_to_scale):
-#             training_scaler_Y = MinMaxScaler(feature_range=y_scale_range)
-#             training[training.columns[training.columns.isin(y_column_to_scale)]] = training_scaler_Y.fit_transform(
-#                 training[training.columns[training.columns.isin(y_column_to_scale)]])
-#             test[test.columns[test.columns.isin(y_column_to_scale)]] = training_scaler_Y.transform(
-#                 test[test.columns[test.columns.isin(y_column_to_scale)]])
-#         else:
-#             print(
-#                 'Y column to scale not found. Proceed without Y scaling. \n')
+    if y_min_max_scaling:
+        if all(selected_col in data.columns for selected_col in y_column_to_scale):
+            training_scaler_Y = MinMaxScaler(feature_range=y_scale_range)
+            training[training.columns[training.columns.isin(y_column_to_scale)]] = training_scaler_Y.fit_transform(
+                training[training.columns[training.columns.isin(y_column_to_scale)]])
+            test[test.columns[test.columns.isin(y_column_to_scale)]] = training_scaler_Y.transform(
+                test[test.columns[test.columns.isin(y_column_to_scale)]])
+        else:
+            print(
+                'Y column to scale not found. Proceed without Y scaling. \n')
 
-#     return training, test, training_scaler_X, training_scaler_Y
+    return training, test, training_scaler_X, training_scaler_Y
 
 
 # ------ GLOBAL variables -------
@@ -319,31 +319,31 @@ add_bool_arg(parser=arg_g4, name='verbose', input_type='flag', default=False,
 
 args = parser.parse_args()
 
-# # check arguments. did not use parser.error as error() has fancy colours
+# check arguments. did not use parser.error as error() has fancy colours
 print(args)
-# if not args.sample_id_var:
-#     error('-s/--sample_id_var missing.',
-#           'Be sure to set the following: -s/--sample_id_var, -y/--outcome_var, -a/--annotation_vars')
+if not args.sample_id_var:
+    error('-s/--sample_id_var missing.',
+          'Be sure to set the following: -s/--sample_id_var, -y/--outcome_var, -a/--annotation_vars')
 
-# if not args.outcome_var:
-#     error('-y/--outcome_var flag missing.',
-#           'Be sure to set the following: -s/--sample_id_var, -y/--outcome_var, -a/--annotation_vars')
-# if len(args.annotation_vars) < 1:
-#     error('-a/--annotation_vars missing.',
-#           'Be sure to set the following: -s/--sample_id_var, -y/--outcome_var, -a/--annotation_vars')
+if not args.outcome_var:
+    error('-y/--outcome_var flag missing.',
+          'Be sure to set the following: -s/--sample_id_var, -y/--outcome_var, -a/--annotation_vars')
+if len(args.annotation_vars) < 1:
+    error('-a/--annotation_vars missing.',
+          'Be sure to set the following: -s/--sample_id_var, -y/--outcome_var, -a/--annotation_vars')
 
-# if args.man_split and len(args.holdout_samples) < 1:
-#     error('Set -t/--holdout_samples when --man_split was set.')
+if args.man_split and len(args.holdout_samples) < 1:
+    error('Set -t/--holdout_samples when --man_split was set.')
 
-# if args.cv_type == 'monte':
-#     if args.monte_test_rate < 0.0 or args.monte_test_rate > 1.0:
-#         error('-mt/--monte_test_rate should be between 0.0 and 1.0.')
+if args.cv_type == 'monte':
+    if args.monte_test_rate < 0.0 or args.monte_test_rate > 1.0:
+        error('-mt/--monte_test_rate should be between 0.0 and 1.0.')
 
-# if args.model_type == 'classification':
-#     if args.n_classes is None:
-#         error('Set -nc/n_classes when -m/--model_type=\'classification\'.')
-#     elif args.n_classes < 1:
-#         error('Set -nc/n_classes needs to be greater than 1 when -m/--model_type=\'classification\'.')
+if args.model_type == 'classification':
+    if args.n_classes is None:
+        error('Set -nc/n_classes when -m/--model_type=\'classification\'.')
+    elif args.n_classes < 1:
+        error('Set -nc/n_classes needs to be greater than 1 when -m/--model_type=\'classification\'.')
 
 
 # ------ loacl classes ------
