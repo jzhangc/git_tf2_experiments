@@ -17,7 +17,7 @@ the application.
 import argparse
 import os
 import sys
-import numpy as np
+# import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler
