@@ -276,6 +276,7 @@ add_g3_arg = arg_g3.add_argument
 add_g4_arg = arg_g4.add_argument
 
 # - add arugments to the argument groups -
+# g1: inpout and ouput
 add_g1_arg('file', nargs=1, type=csv_path,
            help='One and only one input CSV file. (Default: %(default)s)')
 
@@ -293,6 +294,7 @@ add_g1_arg('-o', '--output_dir', type=output_dir,
            default='.',
            help='str. Output directory. NOTE: not an absolute path, only relative to working directory -w/--working_dir.')
 
+# g2: resampling and normalization
 add_g2_arg('-v', '--cv_type', type=str,
            choices=['kfold', 'LOO', 'monte'], default='kfold',
            help='str. Cross validation type. Default is \'kfold\'')
@@ -308,11 +310,16 @@ add_g2_arg('-p', '--training_percentage', type=float, default=0.8,
            help='num, range: 0~1. Split percentage for training set when --no-man_split is set. (Default: %(default)s)')
 add_g2_arg('-r', '--random_state', type=int,
            default=1, help='int. Random state. (Default: %(default)s)')
+add_bool_arg(parser=arg_g2, name='minmax', input_type='flag',
+             help='If to apply min-max normalization for x and, if regression, y (to range 0~1). (Default: %(default)s)',
+             default='False')
 
+# g3: modelling
 add_g3_arg('-m', '--model_type', type=str, choices=['regression', 'classification'],
            default='classifciation',
            help='str. Model type. Options: \'regression\' and \'classification\'. (Default: %(default)s)')
 
+# g4: others
 add_bool_arg(parser=arg_g4, name='verbose', input_type='flag', default=False,
              help='Verbose or not. (Default: %(default)s)')
 
@@ -360,6 +367,7 @@ class DataLoader(object):
                  outcome_var, annotation_vars, sample_id_var,
                  model_type,
                  cv_only,
+                 minmax,
                  man_split, holdout_samples, training_percentage, random_state, verbose):
         """
         # Arguments
@@ -432,6 +440,7 @@ class DataLoader(object):
         self.sample_id_var = sample_id_var
         self.holdout_samples = holdout_samples
         self.training_percentage = training_percentage
+        self.minmax = minmax
 
         if verbose:
             print('done!')
@@ -469,6 +478,7 @@ class DataLoader(object):
             _test: pandas dataframe. holdout test data. Only available without the "--cv_only" flag
         """
         # print("called setter") # for debugging
+        # data resampling
         if self.cv_only:  # only training is stored
             self._training, self._test = self.raw_working, None
         else:
@@ -501,11 +511,15 @@ class DataLoader(object):
         self._training_x, self._test_x = self._training_x.to_numpy(), self._test_x.to_numpy()
         self._training_y, self._test_y = self._training_y.to_numpy(), self._test_y.to_numpy()
 
+        # scaling and normalization
+
+        # output
         self._modelling_data = {
             'training_x': self._training_x, 'training_y': self._training_y,
             'test_x': self._test_x, 'test_y': self._test_y}
 
 
+# below: ad-hoc testing
 mydata = DataLoader(file='./data/test_dat.csv', outcome_var='group', annotation_vars=['subject', 'PCL'], sample_id_var='subject',
                     holdout_samples=None,
                     model_type='classification', cv_only=False, man_split=False, training_percentage=0.8, random_state=1, verbose=True)
