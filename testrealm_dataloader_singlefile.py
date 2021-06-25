@@ -296,12 +296,6 @@ add_g1_arg('-o', '--output_dir', type=output_dir,
 add_g2_arg('-v', '--cv_type', type=str,
            choices=['kfold', 'LOO', 'monte'], default='kfold',
            help='str. Cross validation type. Default is \'kfold\'')
-add_g2_arg('-kf', '--cv_fold', type=int, default=10,
-           help='int. Number of cross validation fold when --cv_type=\'kfold\'. (Default: %(default)s)')
-add_g2_arg('-mn', '--n_monte', type=int, default=10,
-           help='int. Number of Monte Carlo cross validation iterations when --cv_type=\'monte\'. (Default: %(default)s)')
-add_g2_arg('-mt', '--monte_test_rate', type=float, default=0.2,
-           help='float. Ratio for cv test data split when --cv_type=\'monte\'. (Default: %(default)s)')
 add_bool_arg(parser=arg_g2, name='cv_only', input_type='flag',
              help='If to do cv_only mode for training, i.e. no holdout test split. (Default: %(default)s)',
              default=False)
@@ -519,4 +513,8 @@ mydata = DataLoader(file='./data/test_dat.csv', outcome_var='group', annotation_
 
 # ------ process/__main__ statement ------
 # if __name__ == '__main__':
-#     mydata = DataLoader()
+#     mydata = DataLoader(file=args.file[0],
+#                         outcome_var=args.outcome_var, annotation_vars=args.annotation_vars, sample_id_var=args.sample_id_var,
+#                         holdout_samples=args.holdout_samples,
+#                         model_type=args.model_type, cv_only=args.cv_only, man_split=args.man_split, training_percentage=args.training_percentage,
+#                         random_state=args.random_state, verbose=args.verbose)
