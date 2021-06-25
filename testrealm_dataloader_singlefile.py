@@ -430,7 +430,7 @@ class DataLoader(object):
             (self.raw_working.shape[1] - self._n_annot_col))  # pd.shape[1]: ncol
 
         if model_type == 'classification':
-            self.n_class = self.raw[outcome_var].nuique()
+            self.n_class = self.raw[outcome_var].nunique()
         else:
             self.n_class = None
 
@@ -439,7 +439,7 @@ class DataLoader(object):
         self.holdout_samples = holdout_samples
         self.training_percentage = training_percentage
 
-        if self.verbose:
+        if verbose:
             print('done!')
 
         if self.model_type == 'classification':
@@ -449,16 +449,16 @@ class DataLoader(object):
                 self.raw_working[self.outcome_var])
             self.label_mapping = dict(
                 zip(self.le.classes_, self.le.transform(self.le.classes_)))
-            if self.verbose:
+            if verbose:
                 print('Class label encoding: ')
                 for i in self.label_mapping.items():
                     print('{}: {}'.format(i[0], i[1]))
 
         # call setter here
-        if self.verbose:
+        if verbose:
             print('Setting up modelling data...', end=' ')
         self.modelling_data = man_split
-        if self.verbose:
+        if verbose:
             print('done!')
 
     @property
@@ -499,11 +499,22 @@ class DataLoader(object):
                     self._training, self._test, _, _ = training_test_spliter_final(
                         data=self.raw_working, random_state=self.rand, man_split=man_split, training_percent=self.training_percentage,
                         x_standardization=False, y_min_max_scaling=False)  # data transformation will be doen during modeling
+
+        self._training_x, self._test_x = self._training[self._training.columns[
+            ~self._training.columns.isin(self.complete_annot_vars)]], self._test[self._test.columns[~self._test.columns.isin(self.complete_annot_vars)]]
+        self._training_y, self._test_y = self._training[self.outcome_var], self._test[self.outcome_var]
+
+        self._training_x, self._test_x = self._training_x.to_numpy(), self._test_x.to_numpy()
+        self._training_y, self._test_y = self._training_y.to_numpy(), self._test_y.to_numpy()
+
         self._modelling_data = {
-            'training': self._training, 'test': self._test}
+            'training_x': self._training_x, 'training_y': self._training_y,
+            'test_x': self._test_x, 'test_y': self._test_y}
 
 
-mydata = DataLoader()
+mydata = DataLoader(file='./data/test_dat.csv', outcome_var='group', annotation_vars=['subject', 'PCL'], sample_id_var='subject',
+                    holdout_samples=None,
+                    model_type='classification', cv_only=False, man_split=False, training_percentage=0.8, random_state=1, verbose=True)
 
 
 # ------ process/__main__ statement ------
