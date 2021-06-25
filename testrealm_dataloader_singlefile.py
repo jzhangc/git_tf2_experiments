@@ -55,7 +55,7 @@ class AppArgParser(argparse.ArgumentParser):
 
 # ------ custom functions ------
 # below: a lambda funciton to flatten the nested list into a single list
-# def flatten(x): return [item for sublist in x for item in sublist]
+def flatten(x): return [item for sublist in x for item in sublist]
 
 
 def error(message, *lines):
@@ -96,14 +96,19 @@ def add_bool_arg(parser, name, help, input_type, default=False):
     parser.set_defaults(**{name: default})
 
 
-def file_path(string):
+def csv_path(string):
     input_path = os.path.dirname(__file__)
     full_path = os.path.normpath(os.path.join(input_path, string))
 
     if os.path.isfile(full_path):
-        return full_path
+        # return full_path
+        _, file_ext = os.path.splitext(full_path)
+        if file_ext != '.csv':
+            error('input file needs to be .csv type')
+        else:
+            return full_path
     else:
-        error("invalid input file or input file not found.")
+        error('invalid input file or input file not found.')
 
 
 def output_dir(string):
@@ -271,15 +276,15 @@ add_g3_arg = arg_g3.add_argument
 add_g4_arg = arg_g4.add_argument
 
 # - add arugments to the argument groups -
-add_g1_arg('file', nargs=1, type=file_path,
+add_g1_arg('file', nargs=1, type=csv_path,
            help='One and only one input CSV file. (Default: %(default)s)')
 
 add_g1_arg('-s', '--sample_id_var', type=str, default=None,
            help='str. Vairable name for sample ID. NOTE: only needed with single file processing. (Default: %(default)s)')
 add_g1_arg('-a', '--annotation_vars', type=str, nargs="+", default=[],
            help='list of str. names of the annotation columns in the input data, excluding the outcome variable. (Default: %(default)s)')
-add_g1_arg('-cl', '--n_classes', type=int, default=None,
-           help='int. Number of class for classification models. (Default: %(default)s)')
+# add_g1_arg('-cl', '--n_classes', type=int, default=None,
+#            help='int. Number of class for classification models. (Default: %(default)s)')
 add_g1_arg('-y', '--outcome_var', type=str, default=None,
            help='str. Vairable name for outcome. NOTE: only needed with single file processing. (Default: %(default)s)')
 add_bool_arg(parser=arg_g1, name='y_scale', input_type='flag', default=False,
@@ -308,7 +313,7 @@ add_g2_arg('-t', '--holdout_samples', nargs='+', type=str, default=[],
 add_g2_arg('-p', '--training_percentage', type=float, default=0.8,
            help='num, range: 0~1. Split percentage for training set when --no-man_split is set. (Default: %(default)s)')
 add_g2_arg('-r', '--random_state', type=int,
-           default=1, help='int. Random state.')
+           default=1, help='int. Random state. (Default: %(default)s)')
 
 add_g3_arg('-m', '--model_type', type=str, choices=['regression', 'classification'],
            default='classifciation',
@@ -328,6 +333,7 @@ if not args.sample_id_var:
 if not args.outcome_var:
     error('-y/--outcome_var flag missing.',
           'Be sure to set the following: -s/--sample_id_var, -y/--outcome_var, -a/--annotation_vars')
+
 if len(args.annotation_vars) < 1:
     error('-a/--annotation_vars missing.',
           'Be sure to set the following: -s/--sample_id_var, -y/--outcome_var, -a/--annotation_vars')
@@ -338,12 +344,6 @@ if args.man_split and len(args.holdout_samples) < 1:
 if args.cv_type == 'monte':
     if args.monte_test_rate < 0.0 or args.monte_test_rate > 1.0:
         error('-mt/--monte_test_rate should be between 0.0 and 1.0.')
-
-if args.model_type == 'classification':
-    if args.n_classes is None:
-        error('Set -nc/n_classes when -m/--model_type=\'classification\'.')
-    elif args.n_classes < 1:
-        error('Set -nc/n_classes needs to be greater than 1 when -m/--model_type=\'classification\'.')
 
 
 # ------ loacl classes ------
@@ -362,14 +362,13 @@ class DataLoader(object):
             returns a dict object with 'training' and 'test' items
     """
 
-    def __init__(self, cwd, file,
+    def __init__(self, file,
                  outcome_var, annotation_vars, sample_id_var,
-                 model_type, n_classes,
+                 model_type,
                  cv_only,
                  man_split, holdout_samples, training_percentage, random_state, verbose):
         """
         # Arguments
-            cwd: str. working directory
             file: str. complete input file path. "args.file[0]" from argparser]
             outcome_var: str. variable nanme for outcome. Only one is accepted for this version. "args.outcome_var" from argparser
             annotation_vars: list of strings. Column names for the annotation variables in the input dataframe, EXCLUDING outcome variable.
@@ -385,7 +384,6 @@ class DataLoader(object):
             verbose: bool. verbose. "args.verbose" from argparser
         # Public class attributes
             Below are attributes read from arguments
-                self.cwd
                 self.model_type
                 self.n_classes
                 self.file
@@ -407,48 +405,39 @@ class DataLoader(object):
             self._basename: str. complete file name (with extension), no path
             self._n_annot_col: int. number of annotation columns
         """
-        # setup working director
-        self.cwd = cwd
-
-        # random state
+        # random state and other settings
         self.rand = random_state
         self.verbose = verbose
 
         # load files
         self.model_type = model_type
-        self.n_classes = n_classes
         # convert to a list for training_test_spliter_final() to use
         self.outcome_var = outcome_var
         self.annotation_vars = annotation_vars
         self.y_var = [self.outcome_var]
 
         # args.file is a list. so use [0] to grab the string
-        self.file = os.path.join(self.cwd, file)
-        self._basename = os.path.basename(file)
-        self.filename,  self._name_ext = os.path.splitext(self._basename)[
-            0], os.path.splitext(self._basename)[1]
+        self.file = file
+        self._basename, self._file_ext = os.path.splitext(file)
+        # self.filename, self._name_ext = os.path.splitext(self._basename)[
+        #     0], os.path.splitext(self._basename)[1]
 
-        if self.verbose:
-            print('Loading file: ', self._basename, '...', end=' ')
+        self.raw = pd.read_csv(self.file, engine='python')
+        self.raw_working = self.raw.copy()  # value might be changed
+        self.complete_annot_vars = self.annotation_vars + self.y_var
+        self._n_annot_col = len(self.complete_annot_vars)
+        self.n_features = int(
+            (self.raw_working.shape[1] - self._n_annot_col))  # pd.shape[1]: ncol
 
-        if self._name_ext != ".csv":
-            error('The input file should be in csv format.',
-                  'Please check.')
-        elif not os.path.exists(self.file):
-            error('The input file or directory does not exist.',
-                  'Please check.')
+        if model_type == 'classification':
+            self.n_class = self.raw[outcome_var].nuique()
         else:
-            self.raw = pd.read_csv(self.file, engine='python')
-            self.raw_working = self.raw.copy()  # value might be changed
-            self.complete_annot_vars = self.annotation_vars + self.y_var
-            self._n_annot_col = len(self.complete_annot_vars)
-            self.n_features = int(
-                (self.raw_working.shape[1] - self._n_annot_col))  # pd.shape[1]: ncol
+            self.n_class = None
 
-            self.cv_only = cv_only
-            self.sample_id_var = sample_id_var
-            self.holdout_samples = holdout_samples
-            self.training_percentage = training_percentage
+        self.cv_only = cv_only
+        self.sample_id_var = sample_id_var
+        self.holdout_samples = holdout_samples
+        self.training_percentage = training_percentage
 
         if self.verbose:
             print('done!')
@@ -514,18 +503,7 @@ class DataLoader(object):
             'training': self._training, 'test': self._test}
 
 
-# ------ model evaluation when cv_only=True ------
-# below: single round lstm modelling
-
-
-# # ------ model evaluation when cv_only=False ------
-# # below: model ensemble testing
-
-# # below: single production model testing
-# # modelling
-
-# # prepare test data
-# test = mydata.modelling_data['test']
+mydata = DataLoader()
 
 
 # ------ process/__main__ statement ------
