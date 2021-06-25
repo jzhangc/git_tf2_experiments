@@ -4,10 +4,10 @@ Current objectives:
 [x] Test argparse
     [x] Add groupped arguments
 [ ] Test output directory creation
-[ ] Test file reading
+[x] Test file reading
 [ ] Test file processing
     [ ] normalization and scalling
-    [ ] converting to numpy arrays
+    [x] converting to numpy arrays
 
 NOTE
 All the argparser inputs are loaded from method arguments, making the class more portable, i.e. not tied to
