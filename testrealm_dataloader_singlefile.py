@@ -121,25 +121,26 @@ def output_dir(string):
         error("output directory not found.")
 
 
-def training_test_spliter_final(data,
+def training_test_spliter_final(data, model_type='classification',
                                 training_percent=0.8, random_state=None,
                                 man_split=False, man_split_colname=None,
                                 man_split_testset_value=None,
                                 x_standardization=True,
+                                x_min_max_scaling=False,
                                 x_scale_column_to_exclude=None,
-                                y_min_max_scaling=False, y_column_to_scale=None,
-                                y_scale_range=(0, 1)):
+                                y_min_max_scaling=False,
+                                y_column_to_scale=None,
+                                min_max_scale_range=(0, 1)):
     """
     # Purpose:
-        This is a final verion of the training_test_spliter.
-        This version splits the data into training and test prior to Min-Max scaling.
-        The z score standardization is used for X standardization
+        This is a training_test_spliter, with data standardization and normalization functionalities
     # Return:
         Pandas DataFrame (for now) for training and test data.
-        Y scalers for training and test data sets are also returned.
-        Order: training (np.array), test (np.array), training_scaler_X, training_scaler_Y
+        Scalers for training and test data sets are also returned, if applicable.
+        Order: training (np.array), test (np.array), training_standard_scaler_X, training_minmax_scaler_X, training_scaler_Y
     # Arguments:
-        data: Pnadas DataFrame. Input data.
+        data: Pandas DataFrame. Input data.
+        model_type: string. Options are "classification" and "regression". 
         man_split: boolean. If to manually split the data into training/test sets.
         man_split_colname: string. Set only when fixed_split=True, the variable name for the column to use for manual splitting.
         man_split_testset_value: list. Set only when fixed_split=True, the splitting variable values for test set.
@@ -154,10 +155,13 @@ def training_test_spliter_final(data,
         y_scale_range: two-tuple. the Min_Max range.
     # Details:
         The data normalization is applied AFTER the training/test splitting
-        The x_standardization is z score standardization ("center and scale"): (x - mean(x))/SD
-        The y_min_max_scaling is min-max nomalization
+        "Standardization" is z score standardization ("center and scale"): (x - mean(x))/SD
+        "min_max_scaling" is min-max nomalization
         When x_standardization=True, the test data is standardized using training data mean and SD.
-        When y_min_max_scaling=True, the test data is scaled using training data max-min parameters.
+        When y_min_max_scaling=True, the test data is scaled using training data min-max parameters.
+        For X, both standardiation and min-max normalization can be applied.
+        For Y, only min-max normalization can be chosen. 
+        The z score standardization is used for X standardization.
     # Examples
     1. with normalization
         training, test, training_scaler_X, training_scaler_Y = training_test_spliter_final(
@@ -213,32 +217,56 @@ def training_test_spliter_final(data,
                                random_state=random_state)
         test = data.iloc[~data.index.isin(training.index), :].copy()
 
+        # if self.model_type == 'classification':  # stratified
+        #     train_idx, test_idx = list(), list()
+        #     stf = StratifiedShuffleSplit(
+        #         n_splits=1, train_size=self.training_percentage, random_state=self.rand)
+        #     for train_index, test_index in stf.split(self.raw_working, self.raw_working[self.y_var]):
+        #         train_idx.append(train_index)
+        #         test_idx.append(test_index)
+        #     self._training, self._test = self.raw_working.iloc[train_idx[0],
+        #                                                         :].copy(), self.raw_working.iloc[test_idx[0], :].copy()
+        # else:  # regression
+        #     self._training, self._test, _, _ = training_test_spliter_final(
+        #         data=self.raw_working, random_state=self.rand, man_split=man_split, training_percent=self.training_percentage,
+        #         x_standardization=False, y_min_max_scaling=False)  # data transformation will be doen during modeling
+
     # normalization if needed
     # set the variables
-    training_scaler_X, training_scaler_Y, test_scaler_Y = None, None, None
+    training_standard_scaler_X, training_minmax_scaler_X, training_scaler_Y = None, None, None
     if x_standardization:
         if all(selected_col in data.columns for selected_col in x_scale_column_to_exclude):
-            training_scaler_X = StandardScaler()
-            training[training.columns[~training.columns.isin(x_scale_column_to_exclude)]] = training_scaler_X.fit_transform(
+            training_standard_scaler_X = StandardScaler()
+            training[training.columns[~training.columns.isin(x_scale_column_to_exclude)]] = training_standard_scaler_X.fit_transform(
                 training[training.columns[~training.columns.isin(x_scale_column_to_exclude)]])
-            test[test.columns[~test.columns.isin(x_scale_column_to_exclude)]] = training_scaler_X.transform(
+            test[test.columns[~test.columns.isin(x_scale_column_to_exclude)]] = training_standard_scaler_X.transform(
                 test[test.columns[~test.columns.isin(x_scale_column_to_exclude)]])
+
+            if x_min_max_scaling:
+                training_minmax_scaler_X = MinMaxScaler(
+                    feature_range=min_max_scale_range)
+                training[training.columns[~training.columns.isin(x_scale_column_to_exclude)]] = training_minmax_scaler_X.fit_transform(
+                    training[training.columns[~training.columns.isin(x_scale_column_to_exclude)]])
+                test[test.columns[~test.columns.isin(x_scale_column_to_exclude)]] = training_minmax_scaler_X.transform(
+                    test[test.columns[~test.columns.isin(x_scale_column_to_exclude)]])
         else:
             print(
                 'Not all columns are found in the input X. Proceed without X standardization. \n')
 
-    if y_min_max_scaling:
-        if all(selected_col in data.columns for selected_col in y_column_to_scale):
-            training_scaler_Y = MinMaxScaler(feature_range=y_scale_range)
-            training[training.columns[training.columns.isin(y_column_to_scale)]] = training_scaler_Y.fit_transform(
-                training[training.columns[training.columns.isin(y_column_to_scale)]])
-            test[test.columns[test.columns.isin(y_column_to_scale)]] = training_scaler_Y.transform(
-                test[test.columns[test.columns.isin(y_column_to_scale)]])
-        else:
-            print(
-                'Y column to scale not found. Proceed without Y scaling. \n')
+    if model_type == "regression":
+        if y_min_max_scaling:
+            if all(selected_col in data.columns for selected_col in y_column_to_scale):
+                training_scaler_Y = MinMaxScaler(
+                    feature_range=min_max_scale_range)
+                training[training.columns[training.columns.isin(y_column_to_scale)]] = training_scaler_Y.fit_transform(
+                    training[training.columns[training.columns.isin(y_column_to_scale)]])
+                test[test.columns[test.columns.isin(y_column_to_scale)]] = training_scaler_Y.transform(
+                    test[test.columns[test.columns.isin(y_column_to_scale)]])
+            else:
+                print(
+                    'Y column to scale not found. Proceed without Y scaling. \n')
 
-    return training, test, training_scaler_X, training_scaler_Y
+    return training, test, training_standard_scaler_X, training_minmax_scaler_X, training_scaler_Y
 
 
 # ------ GLOBAL variables -------
@@ -485,10 +513,10 @@ class DataLoader(object):
             # training and holdout test data split
             if man_split:
                 # manual data split: the checks happen in the training_test_spliter_final() function
-                self._training, self._test, _, _ = training_test_spliter_final(data=self.raw_working, random_state=self.rand,
-                                                                               man_split=man_split, man_split_colname=self.sample_id_var,
-                                                                               man_split_testset_value=self.holdout_samples,
-                                                                               x_standardization=False, y_min_max_scaling=False)
+                self._training, self._test, _, _, _ = training_test_spliter_final(data=self.raw_working, random_state=self.rand,
+                                                                                  man_split=man_split, man_split_colname=self.sample_id_var,
+                                                                                  man_split_testset_value=self.holdout_samples,
+                                                                                  x_standardization=False, y_min_max_scaling=False)
             else:
                 if self.model_type == 'classification':  # stratified
                     train_idx, test_idx = list(), list()
@@ -510,8 +538,6 @@ class DataLoader(object):
 
         self._training_x, self._test_x = self._training_x.to_numpy(), self._test_x.to_numpy()
         self._training_y, self._test_y = self._training_y.to_numpy(), self._test_y.to_numpy()
-
-        # scaling and normalization
 
         # output
         self._modelling_data = {
