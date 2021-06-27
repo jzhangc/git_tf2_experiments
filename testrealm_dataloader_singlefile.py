@@ -342,7 +342,7 @@ add_bool_arg(parser=arg_g2, name='x_standardize', input_type='flag',
              default='False',
              help='If to apply z-score stardardization for x. (Default: %(default)s)')
 add_bool_arg(parser=arg_g2, name='minmax', input_type='flag',
-             default='False'
+             default='False',
              help='If to apply min-max normalization for x and, if regression, y (to range 0~1). (Default: %(default)s)')
 
 # g3: modelling
