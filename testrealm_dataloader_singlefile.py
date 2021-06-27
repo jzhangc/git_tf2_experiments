@@ -129,7 +129,7 @@ def training_test_spliter_final(data, model_type='classification',
                                 x_min_max_scaling=False,
                                 x_scale_column_to_exclude=None,
                                 y_min_max_scaling=False,
-                                y_column_to_scale=None,
+                                y_column=None,
                                 min_max_scale_range=(0, 1)):
     """
     # Purpose:
@@ -150,7 +150,7 @@ def training_test_spliter_final(data, model_type='classification',
         x_scale_column_to_exclude: list. the name of the columns
                                 to remove from the X columns for scaling.
                                 makes sure to also inlcude the y column(s)
-        y_column_to_scale: list. column(s) to use as outcome for scaling
+        y_column: list. column(s) to use as outcome for scaling
         y_min_max_scaling: boolean. For regression study, if to do a Min_Max scaling to outcome
         y_scale_range: two-tuple. the Min_Max range.
     # Details:
@@ -170,7 +170,7 @@ def training_test_spliter_final(data, model_type='classification',
             x_standardization=True,
             x_scale_column_to_exclude=['subject', 'PCL', 'group'],
             y_min_max_scaling=True,
-            y_column_to_scale=['PCL'], y_scale_range=(0, 1))
+            y_column=['PCL'], y_scale_range=(0, 1))
     2. without noralization
         training, test, _, _ = training_test_spliter_final(
             data=raw, random_state=1,
@@ -187,9 +187,9 @@ def training_test_spliter_final(data, model_type='classification',
             raise ValueError(
                 'x_scale_column_to_exclude needs to be a list.')
     if y_min_max_scaling:
-        if not isinstance(y_column_to_scale, list):
+        if not isinstance(y_column, list):
             raise ValueError(
-                'y_column_to_scale needs to be a list.')
+                'y_column needs to be a list.')
 
     if man_split:
         if (not man_split_colname) or (not man_split_testset_value):
@@ -213,23 +213,23 @@ def training_test_spliter_final(data, model_type='classification',
         test = data.loc[data[man_split_colname].isin(
             man_split_testset_value), :].copy()
     else:
-        training = data.sample(frac=training_percent,
-                               random_state=random_state)
-        test = data.iloc[~data.index.isin(training.index), :].copy()
+        # training = data.sample(frac=training_percent,
+        #                        random_state=random_state)
+        # test = data.iloc[~data.index.isin(training.index), :].copy()
 
-        # if self.model_type == 'classification':  # stratified
-        #     train_idx, test_idx = list(), list()
-        #     stf = StratifiedShuffleSplit(
-        #         n_splits=1, train_size=self.training_percentage, random_state=self.rand)
-        #     for train_index, test_index in stf.split(self.raw_working, self.raw_working[self.y_var]):
-        #         train_idx.append(train_index)
-        #         test_idx.append(test_index)
-        #     self._training, self._test = self.raw_working.iloc[train_idx[0],
-        #                                                         :].copy(), self.raw_working.iloc[test_idx[0], :].copy()
-        # else:  # regression
-        #     self._training, self._test, _, _ = training_test_spliter_final(
-        #         data=self.raw_working, random_state=self.rand, man_split=man_split, training_percent=self.training_percentage,
-        #         x_standardization=False, y_min_max_scaling=False)  # data transformation will be doen during modeling
+        if model_type == 'classification':  # stratified resampling
+            train_idx, test_idx = list(), list()
+            stf = StratifiedShuffleSplit(
+                n_splits=1, train_size=training_percent, random_state=random_state)
+            for train_index, test_index in stf.split(data, data[y_column]):
+                train_idx.append(train_index)
+                test_idx.append(test_index)
+            training, test = data.iloc[train_idx[0],
+                                       :].copy(), data.iloc[test_idx[0], :].copy()
+        else:
+            training = data.sample(frac=training_percent,
+                                   random_state=random_state)
+            test = data.iloc[~data.index.isin(training.index), :].copy()
 
     # normalization if needed
     # set the variables
@@ -255,13 +255,13 @@ def training_test_spliter_final(data, model_type='classification',
 
     if model_type == "regression":
         if y_min_max_scaling:
-            if all(selected_col in data.columns for selected_col in y_column_to_scale):
+            if all(selected_col in data.columns for selected_col in y_column):
                 training_scaler_Y = MinMaxScaler(
                     feature_range=min_max_scale_range)
-                training[training.columns[training.columns.isin(y_column_to_scale)]] = training_scaler_Y.fit_transform(
-                    training[training.columns[training.columns.isin(y_column_to_scale)]])
-                test[test.columns[test.columns.isin(y_column_to_scale)]] = training_scaler_Y.transform(
-                    test[test.columns[test.columns.isin(y_column_to_scale)]])
+                training[training.columns[training.columns.isin(y_column)]] = training_scaler_Y.fit_transform(
+                    training[training.columns[training.columns.isin(y_column)]])
+                test[test.columns[test.columns.isin(y_column)]] = training_scaler_Y.transform(
+                    test[test.columns[test.columns.isin(y_column)]])
             else:
                 print(
                     'Y column to scale not found. Proceed without Y scaling. \n')
@@ -511,26 +511,34 @@ class DataLoader(object):
             self._training, self._test = self.raw_working, None
         else:
             # training and holdout test data split
-            if man_split:
-                # manual data split: the checks happen in the training_test_spliter_final() function
-                self._training, self._test, _, _, _ = training_test_spliter_final(data=self.raw_working, random_state=self.rand,
-                                                                                  man_split=man_split, man_split_colname=self.sample_id_var,
-                                                                                  man_split_testset_value=self.holdout_samples,
-                                                                                  x_standardization=False, y_min_max_scaling=False)
-            else:
-                if self.model_type == 'classification':  # stratified
-                    train_idx, test_idx = list(), list()
-                    stf = StratifiedShuffleSplit(
-                        n_splits=1, train_size=self.training_percentage, random_state=self.rand)
-                    for train_index, test_index in stf.split(self.raw_working, self.raw_working[self.y_var]):
-                        train_idx.append(train_index)
-                        test_idx.append(test_index)
-                    self._training, self._test = self.raw_working.iloc[train_idx[0],
-                                                                       :].copy(), self.raw_working.iloc[test_idx[0], :].copy()
-                else:  # regression
-                    self._training, self._test, _, _ = training_test_spliter_final(
-                        data=self.raw_working, random_state=self.rand, man_split=man_split, training_percent=self.training_percentage,
-                        x_standardization=False, y_min_max_scaling=False)  # data transformation will be doen during modeling
+            self._training, self._test, _, _, _ = training_test_spliter_final(data=self.raw_working, random_state=self.rand,
+                                                                              man_split=man_split, man_split_colname=self.sample_id_var,
+                                                                              man_split_testset_value=self.holdout_samples,
+                                                                              x_standardization=False,
+                                                                              x_min_max_scaling=self.minmax,
+                                                                              x_scale_column_to_exclude=[
+                                                                                  self.complete_annot_vars],
+                                                                              y_min_max_scaling=self.minmax, y_column=self.y_var)
+            # if man_split:
+            #     # manual data split: the checks happen in the training_test_spliter_final() function
+            #     self._training, self._test, _, _, _ = training_test_spliter_final(data=self.raw_working, random_state=self.rand,
+            #                                                                       man_split=man_split, man_split_colname=self.sample_id_var,
+            #                                                                       man_split_testset_value=self.holdout_samples,
+            #                                                                       x_standardization=False, y_min_max_scaling=False)
+            # else:
+            #     if self.model_type == 'classification':  # stratified
+            #         train_idx, test_idx = list(), list()
+            #         stf = StratifiedShuffleSplit(
+            #             n_splits=1, train_size=self.training_percentage, random_state=self.rand)
+            #         for train_index, test_index in stf.split(self.raw_working, self.raw_working[self.y_var]):
+            #             train_idx.append(train_index)
+            #             test_idx.append(test_index)
+            #         self._training, self._test = self.raw_working.iloc[train_idx[0],
+            #                                                            :].copy(), self.raw_working.iloc[test_idx[0], :].copy()
+            #     else:  # regression
+            #         self._training, self._test, _, _ = training_test_spliter_final(
+            #             data=self.raw_working, random_state=self.rand, man_split=man_split, training_percent=self.training_percentage,
+            #             x_standardization=False, y_min_max_scaling=False)  # data transformation will be doen during modeling
 
         self._training_x, self._test_x = self._training[self._training.columns[
             ~self._training.columns.isin(self.complete_annot_vars)]], self._test[self._test.columns[~self._test.columns.isin(self.complete_annot_vars)]]
@@ -547,9 +555,11 @@ class DataLoader(object):
 
 # below: ad-hoc testing
 mydata = DataLoader(file='./data/test_dat.csv', outcome_var='group', annotation_vars=['subject', 'PCL'], sample_id_var='subject',
-                    holdout_samples=None,
+                    holdout_samples=None, minmax=True,
                     model_type='classification', cv_only=False, man_split=False, training_percentage=0.8, random_state=1, verbose=True)
 
+
+mydata.modelling_data['test_x']
 
 # ------ process/__main__ statement ------
 # if __name__ == '__main__':
