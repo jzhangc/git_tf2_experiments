@@ -5,8 +5,8 @@ Current objectives:
     [x] Add groupped arguments
 [ ] Test output directory creation
 [x] Test file reading
-[ ] Test file processing
-    [ ] normalization and scalling
+[x] Test file processing
+    [x] normalization and scalling
     [x] converting to numpy arrays
 
 NOTE
