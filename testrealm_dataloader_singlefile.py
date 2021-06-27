@@ -338,9 +338,12 @@ add_g2_arg('-p', '--training_percentage', type=float, default=0.8,
            help='num, range: 0~1. Split percentage for training set when --no-man_split is set. (Default: %(default)s)')
 add_g2_arg('-r', '--random_state', type=int,
            default=1, help='int. Random state. (Default: %(default)s)')
+add_bool_arg(parser=arg_g2, name='x_standardize', input_type='flag',
+             default='False',
+             help='If to apply z-score stardardization for x. (Default: %(default)s)')
 add_bool_arg(parser=arg_g2, name='minmax', input_type='flag',
-             help='If to apply min-max normalization for x and, if regression, y (to range 0~1). (Default: %(default)s)',
-             default='False')
+             default='False'
+             help='If to apply min-max normalization for x and, if regression, y (to range 0~1). (Default: %(default)s)')
 
 # g3: modelling
 add_g3_arg('-m', '--model_type', type=str, choices=['regression', 'classification'],
@@ -396,6 +399,7 @@ class DataLoader(object):
                  model_type,
                  cv_only,
                  minmax,
+                 x_standardize,
                  man_split, holdout_samples, training_percentage, random_state, verbose):
         """
         # Arguments
@@ -468,6 +472,7 @@ class DataLoader(object):
         self.sample_id_var = sample_id_var
         self.holdout_samples = holdout_samples
         self.training_percentage = training_percentage
+        self.x_standardize = x_standardize
         self.minmax = minmax
 
         if verbose:
@@ -514,7 +519,7 @@ class DataLoader(object):
             self._training, self._test, _, _, _ = training_test_spliter_final(data=self.raw_working, random_state=self.rand,
                                                                               man_split=man_split, man_split_colname=self.sample_id_var,
                                                                               man_split_testset_value=self.holdout_samples,
-                                                                              x_standardization=False,
+                                                                              x_standardization=self.x_standardize,
                                                                               x_min_max_scaling=self.minmax,
                                                                               x_scale_column_to_exclude=[
                                                                                   self.complete_annot_vars],
