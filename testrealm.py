@@ -179,12 +179,10 @@ training, test = file.iloc[train_idx[0],
                            :].copy(), file.iloc[test_idx[0], :].copy()
 
 training, test, _, _, _ = training_test_spliter_final(data=file, random_state=1,
-                                                      man_split=False, model_type='classification',
-                                                      y_column=['group'],
+                                                      man_split=False, model_type='regression',
+                                                      y_column=['PCL'],
                                                       x_standardization=True,
                                                       x_min_max_scaling=True,
                                                       x_scale_column_to_exclude=[
                                                           'PCL', 'group', 'subject'],
                                                       y_min_max_scaling=False)
-
-test

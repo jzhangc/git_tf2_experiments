@@ -516,14 +516,14 @@ class DataLoader(object):
             self._training, self._test = self.raw_working, None
         else:
             # training and holdout test data split
-            self._training, self._test, _, _, _ = training_test_spliter_final(data=self.raw_working, random_state=self.rand,
-                                                                              man_split=man_split, man_split_colname=self.sample_id_var,
-                                                                              man_split_testset_value=self.holdout_samples,
-                                                                              x_standardization=self.x_standardize,
-                                                                              x_min_max_scaling=self.minmax,
-                                                                              x_scale_column_to_exclude=[
-                                                                                  self.complete_annot_vars],
-                                                                              y_min_max_scaling=self.minmax, y_column=self.y_var)
+            self._training, self._test, _, _, self._training_y_scaler = training_test_spliter_final(data=self.raw_working, random_state=self.rand,
+                                                                                                    model_type=self.model_type,
+                                                                                                    man_split=man_split, man_split_colname=self.sample_id_var,
+                                                                                                    man_split_testset_value=self.holdout_samples,
+                                                                                                    x_standardization=self.x_standardize,
+                                                                                                    x_min_max_scaling=self.minmax,
+                                                                                                    x_scale_column_to_exclude=self.complete_annot_vars,
+                                                                                                    y_min_max_scaling=self.minmax, y_column=self.y_var)
             # if man_split:
             #     # manual data split: the checks happen in the training_test_spliter_final() function
             #     self._training, self._test, _, _, _ = training_test_spliter_final(data=self.raw_working, random_state=self.rand,
@@ -555,16 +555,18 @@ class DataLoader(object):
         # output
         self._modelling_data = {
             'training_x': self._training_x, 'training_y': self._training_y,
+            'training_y_scaler': self._training_y_scaler,
             'test_x': self._test_x, 'test_y': self._test_y}
 
 
 # below: ad-hoc testing
-mydata = DataLoader(file='./data/test_dat.csv', outcome_var='group', annotation_vars=['subject', 'PCL'], sample_id_var='subject',
-                    holdout_samples=None, minmax=True,
-                    model_type='classification', cv_only=False, man_split=False, training_percentage=0.8, random_state=1, verbose=True)
+mydata = DataLoader(file='./data/test_dat.csv', outcome_var='PCL', annotation_vars=['subject', 'group'], sample_id_var='subject',
+                    holdout_samples=None, minmax=True, x_standardize=True,
+                    model_type='regression', cv_only=False, man_split=False, training_percentage=0.8, random_state=1, verbose=True)
 
-
-mydata.modelling_data['test_x']
+mydata.model_type
+mydata.modelling_data['training_y_scaler']
+mydata.modelling_data['test_y']
 
 # ------ process/__main__ statement ------
 # if __name__ == '__main__':
