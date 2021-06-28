@@ -2,9 +2,12 @@
 """
 Current objectives:
 [ ] Test argparse
+    [ ] Add groupped arguments
 [ ] Test output directory creation
 [ ] Test file reading
 [ ] Test file processing
+    [ ] normalization and scalling
+    [ ] converting to numpy arrays
 
 NOTE
 All the argparser inputs are loaded from method arguments, making the class more portable, i.e. not tied to
@@ -14,7 +17,7 @@ the application.
 import argparse
 import os
 import sys
-import numpy as np
+# import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler
@@ -93,43 +96,72 @@ def add_bool_arg(parser, name, help, input_type, default=False):
     parser.set_defaults(**{name: default})
 
 
-def training_test_spliter_final(data,
+def csv_path(string):
+    input_path = os.path.dirname(__file__)
+    full_path = os.path.normpath(os.path.join(input_path, string))
+
+    if os.path.isfile(full_path):
+        # return full_path
+        _, file_ext = os.path.splitext(full_path)
+        if file_ext != '.csv':
+            error('input file needs to be .csv type')
+        else:
+            return full_path
+    else:
+        error('invalid input file or input file not found.')
+
+
+def output_dir(string):
+    input_path = os.path.dirname(__file__)
+    full_path = os.path.normpath(os.path.join(input_path, string))
+
+    if os.path.isdir(full_path):
+        return full_path
+    else:
+        error("output directory not found.")
+
+
+def training_test_spliter_final(data, model_type='classification',
                                 training_percent=0.8, random_state=None,
                                 man_split=False, man_split_colname=None,
                                 man_split_testset_value=None,
                                 x_standardization=True,
+                                x_min_max_scaling=False,
                                 x_scale_column_to_exclude=None,
-                                y_min_max_scaling=False, y_column_to_scale=None,
-                                y_scale_range=(0, 1)):
+                                y_min_max_scaling=False,
+                                y_column=None,
+                                min_max_scale_range=(0, 1)):
     """
     # Purpose:
-        This is a final verion of the training_test_spliter. 
-        This version splits the data into training and test prior to Min-Max scaling.
-        The z score standardization is used for X standardization
+        This is a training_test_spliter, with data standardization and normalization functionalities
     # Return:
         Pandas DataFrame (for now) for training and test data.
-        Y scalers for training and test data sets are also returned.
-        Order: training (np.array), test (np.array), training_scaler_X, training_scaler_Y
+        Scalers for training and test data sets are also returned, if applicable.
+        Order: training (np.array), test (np.array), training_standard_scaler_X, training_minmax_scaler_X, training_scaler_Y
     # Arguments:
-        data: Pnadas DataFrame. Input data.
+        data: Pandas DataFrame. Input data.
+        model_type: string. Options are "classification" and "regression". 
         man_split: boolean. If to manually split the data into training/test sets.
         man_split_colname: string. Set only when fixed_split=True, the variable name for the column to use for manual splitting.
         man_split_testset_value: list. Set only when fixed_split=True, the splitting variable values for test set.
         training_percent: float. percentage of the full data to be the training
         random_state: int. seed for resampling RNG
-        x_standardization: boolean. if to center scale (z score standardization) the input X data 
+        x_standardization: boolean. if to center scale (z score standardization) the input X data
         x_scale_column_to_exclude: list. the name of the columns
                                 to remove from the X columns for scaling.
                                 makes sure to also inlcude the y column(s)
-        y_column_to_scale: list. column(s) to use as outcome for scaling
+        y_column: list. column(s) to use as outcome for scaling
         y_min_max_scaling: boolean. For regression study, if to do a Min_Max scaling to outcome
         y_scale_range: two-tuple. the Min_Max range.
     # Details:
         The data normalization is applied AFTER the training/test splitting
-        The x_standardization is z score standardization ("center and scale"): (x - mean(x))/SD
-        The y_min_max_scaling is min-max nomalization
+        "Standardization" is z score standardization ("center and scale"): (x - mean(x))/SD
+        "min_max_scaling" is min-max nomalization
         When x_standardization=True, the test data is standardized using training data mean and SD.
-        When y_min_max_scaling=True, the test data is scaled using training data max-min parameters.
+        When y_min_max_scaling=True, the test data is scaled using training data min-max parameters.
+        For X, both standardiation and min-max normalization can be applied.
+        For Y, only min-max normalization can be chosen. 
+        The z score standardization is used for X standardization.
     # Examples
     1. with normalization
         training, test, training_scaler_X, training_scaler_Y = training_test_spliter_final(
@@ -138,7 +170,7 @@ def training_test_spliter_final(data,
             x_standardization=True,
             x_scale_column_to_exclude=['subject', 'PCL', 'group'],
             y_min_max_scaling=True,
-            y_column_to_scale=['PCL'], y_scale_range=(0, 1))
+            y_column=['PCL'], y_scale_range=(0, 1))
     2. without noralization
         training, test, _, _ = training_test_spliter_final(
             data=raw, random_state=1,
@@ -155,9 +187,9 @@ def training_test_spliter_final(data,
             raise ValueError(
                 'x_scale_column_to_exclude needs to be a list.')
     if y_min_max_scaling:
-        if not isinstance(y_column_to_scale, list):
+        if not isinstance(y_column, list):
             raise ValueError(
-                'y_column_to_scale needs to be a list.')
+                'y_column needs to be a list.')
 
     if man_split:
         if (not man_split_colname) or (not man_split_testset_value):
@@ -181,171 +213,169 @@ def training_test_spliter_final(data,
         test = data.loc[data[man_split_colname].isin(
             man_split_testset_value), :].copy()
     else:
-        training = data.sample(frac=training_percent,
-                               random_state=random_state)
-        test = data.iloc[~data.index.isin(training.index), :].copy()
+        # training = data.sample(frac=training_percent,
+        #                        random_state=random_state)
+        # test = data.iloc[~data.index.isin(training.index), :].copy()
+
+        if model_type == 'classification':  # stratified resampling
+            train_idx, test_idx = list(), list()
+            stf = StratifiedShuffleSplit(
+                n_splits=1, train_size=training_percent, random_state=random_state)
+            for train_index, test_index in stf.split(data, data[y_column]):
+                train_idx.append(train_index)
+                test_idx.append(test_index)
+            training, test = data.iloc[train_idx[0],
+                                       :].copy(), data.iloc[test_idx[0], :].copy()
+        else:
+            training = data.sample(frac=training_percent,
+                                   random_state=random_state)
+            test = data.iloc[~data.index.isin(training.index), :].copy()
 
     # normalization if needed
     # set the variables
-    training_scaler_X, training_scaler_Y, test_scaler_Y = None, None, None
+    training_standard_scaler_X, training_minmax_scaler_X, training_scaler_Y = None, None, None
     if x_standardization:
         if all(selected_col in data.columns for selected_col in x_scale_column_to_exclude):
-            training_scaler_X = StandardScaler()
-            training[training.columns[~training.columns.isin(x_scale_column_to_exclude)]] = training_scaler_X.fit_transform(
+            training_standard_scaler_X = StandardScaler()
+            training[training.columns[~training.columns.isin(x_scale_column_to_exclude)]] = training_standard_scaler_X.fit_transform(
                 training[training.columns[~training.columns.isin(x_scale_column_to_exclude)]])
-            test[test.columns[~test.columns.isin(x_scale_column_to_exclude)]] = training_scaler_X.transform(
+            test[test.columns[~test.columns.isin(x_scale_column_to_exclude)]] = training_standard_scaler_X.transform(
                 test[test.columns[~test.columns.isin(x_scale_column_to_exclude)]])
+
+            if x_min_max_scaling:
+                training_minmax_scaler_X = MinMaxScaler(
+                    feature_range=min_max_scale_range)
+                training[training.columns[~training.columns.isin(x_scale_column_to_exclude)]] = training_minmax_scaler_X.fit_transform(
+                    training[training.columns[~training.columns.isin(x_scale_column_to_exclude)]])
+                test[test.columns[~test.columns.isin(x_scale_column_to_exclude)]] = training_minmax_scaler_X.transform(
+                    test[test.columns[~test.columns.isin(x_scale_column_to_exclude)]])
         else:
             print(
                 'Not all columns are found in the input X. Proceed without X standardization. \n')
 
-    if y_min_max_scaling:
-        if all(selected_col in data.columns for selected_col in y_column_to_scale):
-            training_scaler_Y = MinMaxScaler(feature_range=y_scale_range)
-            training[training.columns[training.columns.isin(y_column_to_scale)]] = training_scaler_Y.fit_transform(
-                training[training.columns[training.columns.isin(y_column_to_scale)]])
-            test[test.columns[test.columns.isin(y_column_to_scale)]] = training_scaler_Y.transform(
-                test[test.columns[test.columns.isin(y_column_to_scale)]])
-        else:
-            print(
-                'Y column to scale not found. Proceed without Y scaling. \n')
+    if model_type == "regression":
+        if y_min_max_scaling:
+            if all(selected_col in data.columns for selected_col in y_column):
+                training_scaler_Y = MinMaxScaler(
+                    feature_range=min_max_scale_range)
+                training[training.columns[training.columns.isin(y_column)]] = training_scaler_Y.fit_transform(
+                    training[training.columns[training.columns.isin(y_column)]])
+                test[test.columns[test.columns.isin(y_column)]] = training_scaler_Y.transform(
+                    test[test.columns[test.columns.isin(y_column)]])
+            else:
+                print(
+                    'Y column to scale not found. Proceed without Y scaling. \n')
 
-    return training, test, training_scaler_X, training_scaler_Y
+    return training, test, training_standard_scaler_X, training_minmax_scaler_X, training_scaler_Y
 
 
 # ------ GLOBAL variables -------
 __version__ = '0.1.0'
 AUTHOR = 'Jing Zhang, PhD'
 DESCRIPITON = """
---------------------------------- Description ---------------------------------
-Data loader for single CSV file data table for deep learning
--------------------------------------------------------------------------------
-"""
+{}--------------------------------- Description -------------------------------------------
+Data loader for single CSV file data table for deep learning. 
+The loaded CSV file is stored in numpy arrays. 
+This loader also handels the following:
+    1. Data resampling, e.g. traning/test split, cross validation
+    2. Data normalization
+-----------------------------------------------------------------------------------------{}
+""".format(colr.YELLOW, colr.ENDC)
 
 # ------ augment definition ------
-# set the arguments
+# - set up parser and argument groups -
 parser = AppArgParser(description=DESCRIPITON,
                       epilog='Written by: {}. Current version: {}\n\r'.format(
                           AUTHOR, __version__),
                       formatter_class=argparse.RawTextHelpFormatter)
+parser._optionals.title = "{}Help options{}".format(colr.CYAN_B, colr.ENDC)
 
-add_arg = parser.add_argument
-add_arg('file', nargs=1, default=[],
-        help='Input CSV file. Currently only one file is accepable.')
-add_arg('-w', "--working_dir", type=str, default=None,
-        help='str. Working directory if not the current one. (Default: %(default)s)')
+arg_g1 = parser.add_argument_group(
+    '{}Input and output{}'.format(colr.CYAN_B, colr.ENDC))
+arg_g2 = parser.add_argument_group(
+    '{}Resampling and normalization{}'.format(colr.CYAN_B, colr.ENDC))
+arg_g3 = parser.add_argument_group(
+    '{}Modelling{}'.format(colr.CYAN_B, colr.ENDC))
+arg_g4 = parser.add_argument_group('{}Other{}'.format(colr.CYAN_B, colr.ENDC))
 
-add_arg('-s', '--sample_id_var', type=str, default=None,
-        help='str. Vairable name for sample ID. NOTE: only needed with single file processing. (Default: %(default)s)')
-add_arg('-a', '--annotation_vars', type=str, nargs="+", default=[],
-        help='list of str. names of the annotation columns in the input data, excluding the outcome variable. (Default: %(default)s)')
-add_arg('-n', '--n_timepoints', type=int, default=None,
-        help='int. Number of timepoints. NOTE: only needed with single file processing. (Default: %(default)s)')
-add_arg('-cl', '--n_classes', type=int, default=None,
-        help='int. Number of class for classification models. (Default: %(default)s)')
-add_arg('-y', '--outcome_var', type=str, default=None,
-        help='str. Vairable name for outcome. NOTE: only needed with single file processing. (Default: %(default)s)')
-add_bool_arg(parser=parser, name='y_scale', input_type='flag', default=False,
+add_g1_arg = arg_g1.add_argument
+add_g2_arg = arg_g2.add_argument
+add_g3_arg = arg_g3.add_argument
+add_g4_arg = arg_g4.add_argument
+
+# - add arugments to the argument groups -
+# g1: inpout and ouput
+add_g1_arg('file', nargs=1, type=csv_path,
+           help='One and only one input CSV file. (Default: %(default)s)')
+
+add_g1_arg('-s', '--sample_id_var', type=str, default=None,
+           help='str. Vairable name for sample ID. NOTE: only needed with single file processing. (Default: %(default)s)')
+add_g1_arg('-a', '--annotation_vars', type=str, nargs="+", default=[],
+           help='list of str. names of the annotation columns in the input data, excluding the outcome variable. (Default: %(default)s)')
+# add_g1_arg('-cl', '--n_classes', type=int, default=None,
+#            help='int. Number of class for classification models. (Default: %(default)s)')
+add_g1_arg('-y', '--outcome_var', type=str, default=None,
+           help='str. Vairable name for outcome. NOTE: only needed with single file processing. (Default: %(default)s)')
+add_bool_arg(parser=arg_g1, name='y_scale', input_type='flag', default=False,
              help='str. If to min-max scale outcome for regression study. (Default: %(default)s)')
+add_g1_arg('-o', '--output_dir', type=output_dir,
+           default='.',
+           help='str. Output directory. NOTE: not an absolute path, only relative to working directory -w/--working_dir.')
 
-add_arg('-v', '--cv_type', type=str,
-        choices=['kfold', 'LOO', 'monte'], default='kfold',
-        help='str. Cross validation type. Default is \'kfold\'')
-add_arg('-kf', '--cv_fold', type=int, default=10,
-        help='int. Number of cross validation fold when --cv_type=\'kfold\'. (Default: %(default)s)')
-add_arg('-mn', '--n_monte', type=int, default=10,
-        help='int. Number of Monte Carlo cross validation iterations when --cv_type=\'monte\'. (Default: %(default)s)')
-add_arg('-mt', '--monte_test_rate', type=float, default=0.2,
-        help='float. Ratio for cv test data split when --cv_type=\'monte\'. (Default: %(default)s)')
-add_bool_arg(parser=parser, name='cv_only', input_type='flag',
+# g2: resampling and normalization
+add_g2_arg('-v', '--cv_type', type=str,
+           choices=['kfold', 'LOO', 'monte'], default='kfold',
+           help='str. Cross validation type. Default is \'kfold\'')
+add_bool_arg(parser=arg_g2, name='cv_only', input_type='flag',
              help='If to do cv_only mode for training, i.e. no holdout test split. (Default: %(default)s)',
              default=False)
-add_bool_arg(parser=parser, name='man_split', input_type='flag',
+add_bool_arg(parser=arg_g2, name='man_split', input_type='flag',
              help='Manually split data into training and test sets. When set, the split is on -s/--sample_id_var. (Default: %(default)s)',
              default=False)
-add_arg('-t', '--holdout_samples', nargs='+', type=str, default=[],
-        help='str. Sample IDs selected as holdout test group when --man_split was set. (Default: %(default)s)')
-add_arg('-p', '--training_percentage', type=float, default=0.8,
-        help='num, range: 0~1. Split percentage for training set when --no-man_split is set. (Default: %(default)s)')
-add_arg('-r', '--random_state', type=int, default=1, help='int. Random state.')
+add_g2_arg('-t', '--holdout_samples', nargs='+', type=str, default=[],
+           help='str. Sample IDs selected as holdout test group when --man_split was set. (Default: %(default)s)')
+add_g2_arg('-p', '--training_percentage', type=float, default=0.8,
+           help='num, range: 0~1. Split percentage for training set when --no-man_split is set. (Default: %(default)s)')
+add_g2_arg('-r', '--random_state', type=int,
+           default=1, help='int. Random state. (Default: %(default)s)')
+add_bool_arg(parser=arg_g2, name='x_standardize', input_type='flag',
+             default='False',
+             help='If to apply z-score stardardization for x. (Default: %(default)s)')
+add_bool_arg(parser=arg_g2, name='minmax', input_type='flag',
+             default='False',
+             help='If to apply min-max normalization for x and, if regression, y (to range 0~1). (Default: %(default)s)')
 
-add_arg('-m', '--model_type', type=str, choices=['regression', 'classification'],
-        default='classifciation',
-        help='str. Model type. Options: \'regression\' and \'classification\'. (Default: %(default)s)')
-add_arg('-l', '--lstm_type', type=str, choices=['simple', 'bidirectional'],
-        default='simple',
-        help='str. LSTM model type. \'simple\' also contains stacked strcuture. (Default: %(default)s)')
-add_arg('-ns', '--n_stack', type=int, default=1,
-        help='int. Number of LSTM stacks. 1 means no stack. (Default: %(default)s)')
-add_arg('-e', '--epochs', type=int, default=500,
-        help='int. Number of epochs for LSTM modelling. (Default: %(default)s)')
-add_arg('-b', '--batch_size', type=int, default=32,
-        help='int. The batch size for LSTM modeling. (Default: %(default)s)')
-add_arg('-d', '--dense_activation', type=str, choices=['relu', 'linear', 'sigmoid', 'softmax'],
-        default='linear', help='str. Acivitation function for the dense layer of the LSTM model. (Default: %(default)s)')
-add_arg('-c', '--loss', type=str,
-        choices=['mean_squared_error', 'binary_crossentropy',
-                 'categorical_crossentropy', 'sparse_categorical_crossentropy', 'hinge'],
-        default='mean_squared_error',
-        help='str. Loss function for LSTM models. (Default: %(default)s)')
-add_arg('-u', '--hidden_units', type=int, default=50,
-        help='int. Number of hidden unit for the LSTM network. (Default: %(default)s)')
-add_arg('-x', '--dropout_rate', type=float, default=0.0,
-        help='float, 0.0~1.0. Dropout rate for LSTM models . 0.0 means no dropout. (Default: %(default)s)')
-add_arg('-g', '--optimizer', type=str,
-        choices=['adam', 'sgd'], default='adam', help='str. Model optimizer. (Default: %(default)s)')
-add_arg('-lr', '--learning_rate', type=float, default=0.001,
-        help='foalt. Learning rate for the optimizer. Note: use 0.01 for sgd. (Default: %(default)s)')
-add_bool_arg(parser=parser, name='stateful', input_type='flag', default=False,
-             help="Use stateful LSTM for modelling. (Default: %(default)s)")
+# g3: modelling
+add_g3_arg('-m', '--model_type', type=str, choices=['regression', 'classification'],
+           default='classifciation',
+           help='str. Model type. Options: \'regression\' and \'classification\'. (Default: %(default)s)')
 
-add_arg('-o', '--output_dir', type=str,
-        default='.',
-        help='str. Output directory. NOTE: not an absolute path, only relative to working directory -w/--working_dir.')
-
-add_bool_arg(parser=parser, name='verbose', input_type='flag', default=False,
+# g4: others
+add_bool_arg(parser=arg_g4, name='verbose', input_type='flag', default=False,
              help='Verbose or not. (Default: %(default)s)')
 
-add_bool_arg(parser=parser, name='plot', input_type='flag', default=False,
-             help='Explort a scatter plot. (Default: %(default)s)')
-add_arg('-j', '--plot-type', type=str,
-        choices=['scatter', 'bar'], default='scatter', help='str. Plot type. (Default: %(default)s)')
-
 args = parser.parse_args()
-# check the arguments. did not use parser.error as error() has fancy colours
+
+# check arguments. did not use parser.error as error() has fancy colours
+print(args)
 if not args.sample_id_var:
     error('-s/--sample_id_var missing.',
-          'Be sure to set the following: -s/--sample_id_var, -n/--n_timepoints, -y/--outcome_var, -a/--annotation_vars')
-if not args.n_timepoints:
-    error('-n/--n_timepoints flag missing.',
-          'Be sure to set the following: -s/--sample_id_var, -n/--n_timepoints, -y/--outcome_var, -a/--annotation_vars')
+          'Be sure to set the following: -s/--sample_id_var, -y/--outcome_var, -a/--annotation_vars')
+
 if not args.outcome_var:
     error('-y/--outcome_var flag missing.',
-          'Be sure to set the following: -s/--sample_id_var, -n/--n_timepoints, -y/--outcome_var, -a/--annotation_vars')
+          'Be sure to set the following: -s/--sample_id_var, -y/--outcome_var, -a/--annotation_vars')
+
 if len(args.annotation_vars) < 1:
     error('-a/--annotation_vars missing.',
-          'Be sure to set the following: -s/--sample_id_var, -n/--n_timepoints, -y/--outcome_var, -a/--annotation_vars')
+          'Be sure to set the following: -s/--sample_id_var, -y/--outcome_var, -a/--annotation_vars')
 
 if args.man_split and len(args.holdout_samples) < 1:
     error('Set -t/--holdout_samples when --man_split was set.')
 
-if args.dropout_rate < 0.0 or args.dropout_rate > 1.0:
-    error('-x/--dropout_rate should be between 0.0 and 1.0.')
-
-if args.n_stack < 1:
-    error('-ns/--n_stack should be equal to or greater than 1.')
-
 if args.cv_type == 'monte':
     if args.monte_test_rate < 0.0 or args.monte_test_rate > 1.0:
         error('-mt/--monte_test_rate should be between 0.0 and 1.0.')
-
-if args.model_type == 'classification':
-    if args.n_classes is None:
-        error('Set -nc/n_classes when -m/--model_type=\'classification\'.')
-    elif args.n_classes < 1:
-        error('Set -nc/n_classes needs to be greater than 1 when -m/--model_type=\'classification\'.')
-    elif args.n_classes > 2 and args.loss == 'binary_crossentropy':
-        error('-l/--loss cannot be \'binary_crossentropy\' when -m/--model_type=\'classification\' and -nc/n_classes greater than 2.')
 
 
 # ------ loacl classes ------
@@ -364,19 +394,19 @@ class DataLoader(object):
             returns a dict object with 'training' and 'test' items
     """
 
-    def __init__(self, cwd, file,
-                 outcome_var, annotation_vars, n_timepoints, sample_id_var,
-                 model_type, n_classes,
+    def __init__(self, file,
+                 outcome_var, annotation_vars, sample_id_var,
+                 model_type,
                  cv_only,
+                 minmax,
+                 x_standardize,
                  man_split, holdout_samples, training_percentage, random_state, verbose):
         """
         # Arguments
-            cwd: str. working directory
             file: str. complete input file path. "args.file[0]" from argparser]
             outcome_var: str. variable nanme for outcome. Only one is accepted for this version. "args.outcome_var" from argparser
             annotation_vars: list of strings. Column names for the annotation variables in the input dataframe, EXCLUDING outcome variable.
                 "args.annotation_vars" from argparser
-            n_timepoints: int. number of timepoints. "args.n_timepoints" from argparser
             sample_id_var: str. variable used to identify samples. "args.sample_id_var" from argparser
             model_type: str. model type, classification or regression
             n_classes: int. number of classes when model_type='classification'
@@ -388,13 +418,11 @@ class DataLoader(object):
             verbose: bool. verbose. "args.verbose" from argparser
         # Public class attributes
             Below are attributes read from arguments
-                self.cwd
                 self.model_type
                 self.n_classes
                 self.file
                 self.outcome_var
                 self.annotation_vars
-                self.n_timepoints
                 self.cv_only
                 self.holdout_samples
                 self.training_percentage
@@ -411,51 +439,43 @@ class DataLoader(object):
             self._basename: str. complete file name (with extension), no path
             self._n_annot_col: int. number of annotation columns
         """
-        # setup working director
-        self.cwd = cwd
-
-        # random state
+        # random state and other settings
         self.rand = random_state
         self.verbose = verbose
 
         # load files
         self.model_type = model_type
-        self.n_classes = n_classes
         # convert to a list for training_test_spliter_final() to use
         self.outcome_var = outcome_var
         self.annotation_vars = annotation_vars
         self.y_var = [self.outcome_var]
 
         # args.file is a list. so use [0] to grab the string
-        self.file = os.path.join(self.cwd, file)
-        self._basename = os.path.basename(file)
-        self.filename,  self._name_ext = os.path.splitext(self._basename)[
-            0], os.path.splitext(self._basename)[1]
+        self.file = file
+        self._basename, self._file_ext = os.path.splitext(file)
+        # self.filename, self._name_ext = os.path.splitext(self._basename)[
+        #     0], os.path.splitext(self._basename)[1]
 
-        if self.verbose:
-            print('Loading file: ', self._basename, '...', end=' ')
+        self.raw = pd.read_csv(self.file, engine='python')
+        self.raw_working = self.raw.copy()  # value might be changed
+        self.complete_annot_vars = self.annotation_vars + self.y_var
+        self._n_annot_col = len(self.complete_annot_vars)
+        self.n_features = int(
+            (self.raw_working.shape[1] - self._n_annot_col))  # pd.shape[1]: ncol
 
-        if self._name_ext != ".csv":
-            error('The input file should be in csv format.',
-                  'Please check.')
-        elif not os.path.exists(self.file):
-            error('The input file or directory does not exist.',
-                  'Please check.')
+        if model_type == 'classification':
+            self.n_class = self.raw[outcome_var].nunique()
         else:
-            self.raw = pd.read_csv(self.file, engine='python')
-            self.raw_working = self.raw.copy()  # value might be changed
-            self.complete_annot_vars = self.annotation_vars + self.y_var
-            self._n_annot_col = len(self.complete_annot_vars)
-            self.n_timepoints = n_timepoints
-            self.n_features = int(
-                (self.raw_working.shape[1] - self._n_annot_col) // self.n_timepoints)  # pd.shape[1]: ncol
+            self.n_class = None
 
-            self.cv_only = cv_only
-            self.sample_id_var = sample_id_var
-            self.holdout_samples = holdout_samples
-            self.training_percentage = training_percentage
+        self.cv_only = cv_only
+        self.sample_id_var = sample_id_var
+        self.holdout_samples = holdout_samples
+        self.training_percentage = training_percentage
+        self.x_standardize = x_standardize
+        self.minmax = minmax
 
-        if self.verbose:
+        if verbose:
             print('done!')
 
         if self.model_type == 'classification':
@@ -465,16 +485,16 @@ class DataLoader(object):
                 self.raw_working[self.outcome_var])
             self.label_mapping = dict(
                 zip(self.le.classes_, self.le.transform(self.le.classes_)))
-            if self.verbose:
+            if verbose:
                 print('Class label encoding: ')
                 for i in self.label_mapping.items():
                     print('{}: {}'.format(i[0], i[1]))
 
         # call setter here
-        if self.verbose:
+        if verbose:
             print('Setting up modelling data...', end=' ')
         self.modelling_data = man_split
-        if self.verbose:
+        if verbose:
             print('done!')
 
     @property
@@ -491,62 +511,47 @@ class DataLoader(object):
             _test: pandas dataframe. holdout test data. Only available without the "--cv_only" flag
         """
         # print("called setter") # for debugging
+        # data resampling
         if self.cv_only:  # only training is stored
             self._training, self._test = self.raw_working, None
         else:
             # training and holdout test data split
-            if man_split:
-                # manual data split: the checks happen in the training_test_spliter_final() function
-                self._training, self._test, _, _ = training_test_spliter_final(data=self.raw_working, random_state=self.rand,
-                                                                               man_split=man_split, man_split_colname=self.sample_id_var,
-                                                                               man_split_testset_value=self.holdout_samples,
-                                                                               x_standardization=False, y_min_max_scaling=False)
-            else:
-                if self.model_type == 'classification':  # stratified
-                    train_idx, test_idx = list(), list()
-                    stf = StratifiedShuffleSplit(
-                        n_splits=1, train_size=self.training_percentage, random_state=self.rand)
-                    for train_index, test_index in stf.split(self.raw_working, self.raw_working[self.y_var]):
-                        train_idx.append(train_index)
-                        test_idx.append(test_index)
-                    self._training, self._test = self.raw_working.iloc[train_idx[0],
-                                                                       :].copy(), self.raw_working.iloc[test_idx[0], :].copy()
-                else:  # regression
-                    self._training, self._test, _, _ = training_test_spliter_final(
-                        data=self.raw_working, random_state=self.rand, man_split=man_split, training_percent=self.training_percentage,
-                        x_standardization=False, y_min_max_scaling=False)  # data transformation will be doen during modeling
+            self._training, self._test, _, _, self._training_y_scaler = training_test_spliter_final(data=self.raw_working, random_state=self.rand,
+                                                                                                    model_type=self.model_type,
+                                                                                                    man_split=man_split, man_split_colname=self.sample_id_var,
+                                                                                                    man_split_testset_value=self.holdout_samples,
+                                                                                                    x_standardization=self.x_standardize,
+                                                                                                    x_min_max_scaling=self.minmax,
+                                                                                                    x_scale_column_to_exclude=self.complete_annot_vars,
+                                                                                                    y_min_max_scaling=self.minmax, y_column=self.y_var)
+
+        self._training_x, self._test_x = self._training[self._training.columns[
+            ~self._training.columns.isin(self.complete_annot_vars)]], self._test[self._test.columns[~self._test.columns.isin(self.complete_annot_vars)]]
+        self._training_y, self._test_y = self._training[self.outcome_var], self._test[self.outcome_var]
+
+        self._training_x, self._test_x = self._training_x.to_numpy(), self._test_x.to_numpy()
+        self._training_y, self._test_y = self._training_y.to_numpy(), self._test_y.to_numpy()
+
+        # output
         self._modelling_data = {
-            'training': self._training, 'test': self._test}
+            'training_x': self._training_x, 'training_y': self._training_y,
+            'training_y_scaler': self._training_y_scaler,
+            'test_x': self._test_x, 'test_y': self._test_y}
 
 
-# ------ model evaluation when cv_only=True ------
-# below: single round lstm modelling
-# mylstm = lstmModel(n_timepoints=mydata.n_timepoints,
-#                    model_type=mydata.model_type, n_features=mydata.n_features,
-#                    n_stack=args.n_stack, hidden_units=args.hidden_units, epochs=args.epochs,
-#                    batch_size=args.batch_size, stateful=args.stateful, dropout=args.dropout_rate,
-#                    dense_activation=args.dense_activation, loss=args.loss,
-#                    optimizer=args.optimizer, learning_rate=args.learning_rate, verbose=True)
+# below: ad-hoc testing
+mydata = DataLoader(file='./data/test_dat.csv', outcome_var='PCL', annotation_vars=['subject', 'group'], sample_id_var='subject',
+                    holdout_samples=None, minmax=True, x_standardize=True,
+                    model_type='regression', cv_only=False, man_split=False, training_percentage=0.8, random_state=1, verbose=True)
 
-
-# # ------ model evaluation when cv_only=False ------
-# # below: model ensemble testing
-
-# # below: single production model testing
-# myfinal_lstm = lstmProduction(training=mydata.modelling_data['training'], n_timepoints=mydata.n_timepoints, n_features=mydata.n_features,
-#                               model_type=mydata.model_type, y_scale=args.y_scale, lstm_type=args.lstm_type, outcome_var=mydata.outcome_var,
-#                               annotation_vars=mydata.annotation_vars, random_state=mydata.rand, verbose=mydata.verbose)
-# # modelling
-# myfinal_lstm.productionRun(res_dir=res_dir, optim_epochs=math.ceil(mycv.cv_bestparam_epocs_mean), n_timepoints=mydata.n_timepoints,
-#                            n_stack=args.n_stack, hidden_units=args.hidden_units, batch_size=args.batch_size, stateful=args.stateful,
-#                            dropout=args.dropout, dense_activation=args.dense_activation, loss=args.loss, optimizer=args.optimizer,
-#                            learning_rate=args.learning_rate)
-
-# # prepare test data
-# test = mydata.modelling_data['test']
-
+mydata.model_type
+mydata.modelling_data['training_y_scaler']
+mydata.modelling_data['test_y']
 
 # ------ process/__main__ statement ------
-# ------ setup output folders ------
 # if __name__ == '__main__':
-#     mydata = DataLoader()
+#     mydata = DataLoader(file=args.file[0],
+#                         outcome_var=args.outcome_var, annotation_vars=args.annotation_vars, sample_id_var=args.sample_id_var,
+#                         holdout_samples=args.holdout_samples,
+#                         model_type=args.model_type, cv_only=args.cv_only, man_split=args.man_split, training_percentage=args.training_percentage,
+#                         random_state=args.random_state, verbose=args.verbose)
