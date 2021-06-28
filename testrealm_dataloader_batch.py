@@ -274,8 +274,8 @@ __version__ = '0.1.0'
 AUTHOR = 'Jing Zhang, PhD'
 DESCRIPITON = """
 {}--------------------------------- Description -------------------------------------------
-Data loader for single CSV file data table for deep learning. 
-The loaded CSV file is stored in numpy arrays. 
+Data loader for batch adjacency matrix CSV file data table for deep learning. 
+The loaded CSV files are stored in a 3D numpy array, with size: . 
 This loader also handels the following:
     1. Data resampling, e.g. traning/test split, cross validation
     2. Data normalization
