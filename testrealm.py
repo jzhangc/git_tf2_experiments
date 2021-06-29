@@ -8,12 +8,42 @@ import os
 import tqdm
 import pandas as pd
 from sklearn.model_selection import StratifiedShuffleSplit
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, LabelBinarizer
 
 
 # ------ function -------
+def list_files(basePath, validExts=None, contains=None):
+    """
+    Scan subdirs and extract file names. 
+    This is a modified version of imutils.list_files,
+        in which the function no longer verifies if the
+        file is a image. Instead, it optionally only grabs
+        files with the pre-set extension. 
+    """
+    if not os.path.isdir(basePath):
+        raise FileNotFoundError(f'Directory not found: {basePath}')
+
+    # loop over the directory structure
+    for (rootDir, dirNames, filenames) in os.walk(basePath):
+        # loop over the filenames in the current directory
+        for filename in filenames:
+            # if the contains string is not none and the filename does not contain
+            # the supplied string, then ignore the file
+            if contains is not None and filename.find(contains) == -1:
+                continue
+
+            # determine the file extension of the current file
+            ext = filename[filename.rfind("."):].lower()
+
+            # check to see if the file is an image and should be processed
+            if validExts is None or ext.endswith(validExts):
+                # construct the path to the image and yield it
+                filePath = os.path.join(rootDir, filename)
+                yield filePath  # yield is "return" without terminating the function
+
+
 def adjmat_annot_loader(path):
-    adjmat_paths = list(path)  # revise path
+    adjmat_paths = list(list_files(path))
     adjmat_annot = pd.DataFrame()
     labels = []
     for i, adjmat_path in tqdm(enumerate(adjmat_paths), len(adjmat_paths)):
@@ -26,12 +56,15 @@ def adjmat_annot_loader(path):
 
 # ------ test realm ------
 main_dir = os.path.abspath('./')
-dat_dir = os.path.join(main_dir, 'data/')
-file = pd.read_csv(os.path.join(
-    dat_dir, 'test_dat.csv'), engine='python')
+dat_dir = os.path.join(main_dir, 'data/tf_data')
 
+tst = adjmat_annot_loader(dat_dir)
 
-file[['PCL', 'group']]
+for (rootDir, dirNames, filenames) in os.walk(dat_dir):
+    # loop over the filenames in the current directory
+    for filename in filenames:
+        print(filename)
+        break
 
 
 # ------ ref ------
