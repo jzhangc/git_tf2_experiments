@@ -5,8 +5,8 @@ small things for data loaders
 
 # ------ modules ------
 import os
-import tqdm
 import pandas as pd
+from tqdm import tqdm
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, LabelBinarizer
 
@@ -42,30 +42,24 @@ def list_files(basePath, validExts=None, contains=None):
                 yield filePath  # yield is "return" without terminating the function
 
 
-def adjmat_annot_loader(path):
-    adjmat_paths = list(list_files(path))
+def adjmat_annot_loader(path, targetExt=None):
+    adjmat_paths = list(list_files(path, validExts=targetExt))
     adjmat_annot = pd.DataFrame()
     labels = []
-    for i, adjmat_path in tqdm(enumerate(adjmat_paths), len(adjmat_paths)):
-        label = os.path.splitext(adjmat_path)[-2]
-        adjmat_annot.iloc[i, 'image_path'] = adjmat_path
+    for i, adjmat_path in tqdm(enumerate(adjmat_paths), total=len(adjmat_paths)):
+        # os.path.sep returns "/" which is used for str.split
+        label = adjmat_path.split(os.path.sep)[-2]
+        adjmat_annot.loc[i, 'path'] = adjmat_path
         labels.append(label)
 
-    return adjmat_annot
+    return adjmat_annot, labels
 
 
 # ------ test realm ------
 main_dir = os.path.abspath('./')
 dat_dir = os.path.join(main_dir, 'data/tf_data')
 
-tst = adjmat_annot_loader(dat_dir)
-
-for (rootDir, dirNames, filenames) in os.walk(dat_dir):
-    # loop over the filenames in the current directory
-    for filename in filenames:
-        print(filename)
-        break
-
+tst, labels = adjmat_annot_loader(dat_dir)
 
 # ------ ref ------
 # # https://debuggercafe.com/creating-efficient-image-data-loaders-in-pytorch-for-deep-learning/
