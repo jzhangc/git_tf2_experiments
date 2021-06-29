@@ -72,3 +72,5 @@ file[['PCL', 'group']]
 
 # (xtrain, xtest, ytrain, ytest) = (train_test_split(X, y,
 #                                 test_size=0.25, random_state=42))
+
+# - tf.dataset reference: https://cs230.stanford.edu/blog/datapipeline/ -
