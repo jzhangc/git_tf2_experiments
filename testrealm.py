@@ -5,15 +5,22 @@ small things for data loaders
 
 # ------ modules ------
 import os
+import tqdm
 import pandas as pd
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 
 # ------ function -------
-def adjmat_annot_loader():
-    adjmat_path = list()
+def adjmat_annot_loader(path):
+    adjmat_paths = list(path)  # revise path
     adjmat_annot = pd.DataFrame()
+    labels = []
+    for i, adjmat_path in tqdm(enumerate(adjmat_paths), len(adjmat_paths)):
+        label = os.path.splitext(adjmat_path)[-2]
+        adjmat_annot.iloc[i, 'image_path'] = adjmat_path
+        labels.append(label)
+
     return adjmat_annot
 
 
