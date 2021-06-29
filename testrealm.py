@@ -14,11 +14,26 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler, LabelBinarizer
 # ------ function -------
 def list_files(basePath, validExts=None, contains=None):
     """
-    Scan subdirs and extract file names. 
-    This is a modified version of imutils.list_files,
-        in which the function no longer verifies if the
-        file is a image. Instead, it optionally only grabs
-        files with the pre-set extension. 
+    # Purpose:
+        Scan subdirs and extract file paths.
+
+    # Arguments:
+        basePath: str. Directory path to scan.
+        validExts: str. (Optional) File extension to target.
+        contains: str. String included in the file name to scan. 
+
+    # Return
+        A multi-line string containing file paths
+
+    # Details:
+        1. The functions scans both root and sub directories.
+
+        2. This is a modified version of imutils.list_files,
+            in which the function no longer verifies if the
+            file is a image. Instead, it optionally only grabs
+            files with the pre-set extension. 
+
+        3. When validExts=None, the funciton extracts all files.
     """
     if not os.path.isdir(basePath):
         raise FileNotFoundError(f'Directory not found: {basePath}')
@@ -42,24 +57,33 @@ def list_files(basePath, validExts=None, contains=None):
                 yield filePath  # yield is "return" without terminating the function
 
 
-def adjmat_annot_loader(path, targetExt=None):
+def adjmat_annot_loader(path, autoLabel=True, targetExt=None):
+    """
+    Funciton
+    """
     adjmat_paths = list(list_files(path, validExts=targetExt))
-    adjmat_annot = pd.DataFrame()
+    file_annot = pd.DataFrame()
+
     labels = []
     for i, adjmat_path in tqdm(enumerate(adjmat_paths), total=len(adjmat_paths)):
         # os.path.sep returns "/" which is used for str.split
         label = adjmat_path.split(os.path.sep)[-2]
-        adjmat_annot.loc[i, 'path'] = adjmat_path
+        file_annot.loc[i, 'path'] = adjmat_path
         labels.append(label)
 
-    return adjmat_annot, labels
+    if autoLabel:
+        return file_annot, labels
+    else:
+        return file_annot, None
 
 
 # ------ test realm ------
 main_dir = os.path.abspath('./')
 dat_dir = os.path.join(main_dir, 'data/tf_data')
 
-tst, labels = adjmat_annot_loader(dat_dir)
+file_annot, labels = adjmat_annot_loader(dat_dir, targetExt='txt')
+file_annot['path'][0]
+
 
 # ------ ref ------
 # # https://debuggercafe.com/creating-efficient-image-data-loaders-in-pytorch-for-deep-learning/
