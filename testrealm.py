@@ -57,11 +57,25 @@ def list_files(basePath, validExts=None, contains=None):
                 yield filePath  # yield is "return" without terminating the function
 
 
-def adjmat_annot_loader(path, autoLabel=True, targetExt=None):
+def adjmat_annot_loader(dir, autoLabel=True, targetExt=None):
     """
-    Funciton
+    # Purpose:
+        Scan and extract file paths. Optionally, the function can also construct file labels using
+            folder names. 
+
+    # Arguments:
+        path: str. The root directory path to scan.
+        autoLabel: bool. If to automatically construct file labels using folder names.
+        targetExt: str. Optionally set target file extension to extract.
+
+    # Return:
+        Pandas data frame containing all file paths. Optionially, a numpy array with all
+            file labels. Order: file_path, labels.
+
+    # Details:
+        When targetExt=None, the function scans root and sub directories. 
     """
-    adjmat_paths = list(list_files(path, validExts=targetExt))
+    adjmat_paths = list(list_files(dir, validExts=targetExt))
     file_annot = pd.DataFrame()
 
     labels = []
@@ -125,3 +139,4 @@ file_annot['path'][0]
 #                                 test_size=0.25, random_state=42))
 
 # - tf.dataset reference: https://cs230.stanford.edu/blog/datapipeline/ -
+# - real TF2 data loader example: https://github.com/HasnainRaz/SemSegPipeline/blob/master/dataloader.py -
