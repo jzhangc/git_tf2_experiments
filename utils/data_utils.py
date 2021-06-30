@@ -3,6 +3,7 @@
 # ------ modules ------
 import os
 import pandas as pd
+import numpy as np
 from tqdm import tqdm
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
@@ -57,8 +58,9 @@ def scan_files(basePath, validExts=None, contains=None):
 def adjmat_annot_loader(dir, autoLabel=True, targetExt=None):
     """
     # Purpose:
-        Scan and extract file paths. Optionally, the function can also construct file labels using
-            folder names. 
+        Scan and extract file paths (export as pandas data frame). 
+        Optionally, the function can also construct file labels using
+            folder names and exports as a numpy array. 
 
     # Arguments:
         path: str. The root directory path to scan.
@@ -82,7 +84,9 @@ def adjmat_annot_loader(dir, autoLabel=True, targetExt=None):
         file_annot.loc[i, 'path'] = adjmat_path
         labels.append(label)
 
+    labels = np.array(labels)
     if autoLabel:
+        file_annot['label'] = labels
         return file_annot, labels
     else:
         return file_annot, None

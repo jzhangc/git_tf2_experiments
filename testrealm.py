@@ -6,6 +6,7 @@ small things for data loaders
 # ------ modules ------
 import os
 import pandas as pd
+import numpy as np
 from tqdm import tqdm
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, LabelBinarizer
@@ -60,8 +61,9 @@ def scan_files(basePath, validExts=None, contains=None):
 def adjmat_annot_loader(dir, autoLabel=True, targetExt=None):
     """
     # Purpose:
-        Scan and extract file paths. Optionally, the function can also construct file labels using
-            folder names. 
+        Scan and extract file paths (export as pandas data frame). 
+        Optionally, the function can also construct file labels using
+            folder names and exports as a numpy array. 
 
     # Arguments:
         path: str. The root directory path to scan.
@@ -85,7 +87,9 @@ def adjmat_annot_loader(dir, autoLabel=True, targetExt=None):
         file_annot.loc[i, 'path'] = adjmat_path
         labels.append(label)
 
+    labels = np.array(labels)
     if autoLabel:
+        file_annot['label'] = labels
         return file_annot, labels
     else:
         return file_annot, None
@@ -97,6 +101,13 @@ dat_dir = os.path.join(main_dir, 'data/tf_data')
 
 file_annot, labels = adjmat_annot_loader(dat_dir, targetExt='txt')
 file_annot['path'][0]
+file_annot.loc[0:1]
+
+# below: create one hot encoding for multiclass labels
+lb_binarizer = LabelBinarizer()
+labels_binary = lb_binarizer.fit_transform(labels)
+
+# below: create one hot encoding for multilabel labels
 
 
 # ------ ref ------
