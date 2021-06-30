@@ -19,27 +19,13 @@ import os
 import sys
 # import numpy as np
 import pandas as pd
-from utils.other_utils import error, warn, flatten, add_bool_arg, csv_path, output_dir
+from utils.other_utils import error, warn, flatten, add_bool_arg, csv_path, output_dir, colr
 from utils.data_utils import training_test_spliter_final
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import LabelEncoder
 
 
 # ------ system classes ------
-class colr:
-    WHITE = '\033[0;97m'
-    WHITE_B = '\033[1;97m'
-    YELLOW = '\033[0;33m'
-    YELLOW_B = '\033[1;33m'
-    RED = '\033[0;31m'
-    RED_B = '\033[1;31m'
-    BLUE = '\033[0;94m'
-    BLUE_B = '\033[1;94m'
-    CYAN = '\033[0;36m'
-    CYAN_B = '\033[1;36m'
-    ENDC = '\033[0m'  # end colour
-
-
 class AppArgParser(argparse.ArgumentParser):
     """
     This is a sub class to argparse.ArgumentParser.

@@ -8,7 +8,7 @@ from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 
-# ------ function -------
+# ------ functions -------
 def list_files(basePath, validExts=None, contains=None):
     """
     # Purpose:
