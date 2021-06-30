@@ -13,6 +13,53 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler, LabelBinarizer
 
 
 # ------ function -------
+def multilabel_one_hot(labels_list, labels_map):
+    """
+    # Purpose\n
+        One hot encode for multilabel labels.
+
+    # Arguments\n
+        labels_list: list of strings. Input labels collection in the form of a list of strings.
+        labels_map: dict. A map of labels. 
+
+    # Return\n
+        A numpy array with one hot encoded mulitple labels, and can be used as the "y" input for tensorflow models.
+
+    # Details\n
+        1. labels_list can be created by the function multilabel_mapping from utils.data_utils.
+
+        2. Exmaple for labels_map (can be created by the function multilabel_mapping from utils.data_utils):
+            >>> labels_map
+            {'all': 0,
+            'alpha': 1,
+            'beta': 2,
+            'fmri': 3,
+            'hig': 4,
+            'megs': 5,
+            'pc': 6,
+            'pt': 7,
+            'sc': 8}
+    """
+    # - argument check -
+    if isinstance(labels_list, list):
+        raise TypeError('labels_list needs to be a list object.')
+
+    if isinstance(labels_map, dict):
+        raise TypeError('labels_map needs to be a dict type.')
+
+    # - one hot encoding -
+    one_hot_encoded = list()
+    for i in range(len(labels_list)):
+        encoding = np.zeros(len(labels_map), dtype='uint8')
+        for sample in labels_list[i]:  # one sample is a vector of labels
+            # mark 1 for each tag in the vector
+            encoding[labels_map[sample]] = 1
+
+        one_hot_encoded.append(encoding)
+
+    one_hot_encoded = np.asarray(one_hot_encoded, dtype='uint8')
+
+    return one_hot_encoded
 
 
 # ------ test realm ------
@@ -28,10 +75,12 @@ lb_binarizer = LabelBinarizer()
 labels_binary = lb_binarizer.fit_transform(labels)
 
 # - below: create one hot encoding for multilabel labels -
-lables_count, labels_map, labels_map_rev = multilabel_mapping(
+labels_list, lables_count, labels_map, labels_map_rev = multilabel_mapping(
     labels=labels, sep='_')
 
 # one hot encoding
+encoded_labels = multilabel_one_hot(
+    labels_list=labels_list, labels_map=labels_map)
 
 
 # ------ ref ------
