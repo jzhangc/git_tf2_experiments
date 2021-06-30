@@ -26,7 +26,7 @@ def list_files(basePath, validExts=None, contains=None):
         A multi-line string containing file paths
 
     # Details:
-        1. The functions scans both root and sub directories.
+        1. The function scans both root and sub directories.
 
         2. This is a modified version of imutils.list_files,
             in which the function no longer verifies if the
