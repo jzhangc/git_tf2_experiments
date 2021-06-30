@@ -19,9 +19,8 @@ import os
 import sys
 # import numpy as np
 import pandas as pd
-from tqdm import tqdm
-from sklearn.model_selection import StratifiedShuffleSplit
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler
+from utils.other_utils import error, warn, flatten, add_bool_arg, csv_path, output_dir
+from utils.data_utils import training_test_spliter_final
 
 
 # ------ system classes ------
@@ -52,119 +51,6 @@ class AppArgParser(argparse.ArgumentParser):
         print(string.format(colr.RED_B, colr.RED, colr.ENDC))
         self.print_help()
         sys.exit(2)
-
-
-# ------ custom functions ------
-# below: a lambda funciton to flatten the nested list into a single list
-def flatten(x): return [item for sublist in x for item in sublist]
-
-
-def error(message, *lines):
-    """
-    stole from: https://github.com/alexjc/neural-enhance
-    """
-    string = "\n{}ERROR: " + message + "{}\n" + \
-        "\n".join(lines) + ("{}\n" if lines else "{}")
-    print(string.format(colr.RED_B, colr.RED, colr.ENDC))
-    sys.exit(2)
-
-
-def warn(message, *lines):
-    """
-    stole from: https://github.com/alexjc/neural-enhance
-    """
-    string = "\n{}WARNING: " + message + "{}\n" + "\n".join(lines) + "{}\n"
-    print(string.format(colr.YELLOW_B, colr.YELLOW, colr.ENDC))
-
-
-def add_bool_arg(parser, name, help, input_type, default=False):
-    """
-    Purpose\n
-                    autmatically add a pair of mutually exclusive boolean arguments to the
-                    argparser
-    Arguments\n
-                    parser: a parser object
-                    name: str. the argument name
-                    help: str. the help message
-                    input_type: str. the value type for the argument
-                    default: the default value of the argument if not set
-    """
-    group = parser.add_mutually_exclusive_group(required=False)
-    group.add_argument('--' + name, dest=name,
-                       action='store_true', help=input_type + '. ' + help)
-    group.add_argument('--no-' + name, dest=name,
-                       action='store_false', help=input_type + '. ''(Not to) ' + help)
-    parser.set_defaults(**{name: default})
-
-
-def csv_path(string):
-    input_path = os.path.dirname(__file__)
-    full_path = os.path.normpath(os.path.join(input_path, string))
-
-    if os.path.isfile(full_path):
-        # return full_path
-        _, file_ext = os.path.splitext(full_path)
-        if file_ext != '.csv':
-            error('input file needs to be .csv type')
-        else:
-            return full_path
-    else:
-        error('invalid input file or input file not found.')
-
-
-def output_dir(string):
-    input_path = os.path.dirname(__file__)
-    full_path = os.path.normpath(os.path.join(input_path, string))
-
-    if os.path.isdir(full_path):
-        return full_path
-    else:
-        error("output directory not found.")
-
-
-def list_files(basePath, validExts=None, contains=None):
-    """
-    # Purpose:
-        Scan subdirs and extract file paths.
-
-    # Arguments:
-        basePath: str. Directory path to scan.
-        validExts: str. (Optional) File extension to target.
-        contains: str. String included in the file name to scan. 
-
-    # Return
-        A multi-line string containing file paths
-
-    # Details:
-        1. The functions scans both root and sub directories.
-
-        2. This is a modified version of imutils.list_files,
-            in which the function no longer verifies if the
-            file is a image. Instead, it optionally only grabs
-            files with the pre-set extension. 
-
-        3. When validExts=None, the funciton extracts all files.
-    """
-    if not os.path.isdir(basePath):
-        raise FileNotFoundError(f'Directory not found: {basePath}')
-
-    # loop over the directory structure
-    for (rootDir, dirNames, filenames) in os.walk(basePath):
-        # loop over the filenames in the current directory
-        for filename in filenames:
-            # if the contains string is not none and the filename does not contain
-            # the supplied string, then ignore the file
-            if contains is not None and filename.find(contains) == -1:
-                continue
-
-            # determine the file extension of the current file
-            ext = filename[filename.rfind("."):].lower()
-
-            # check to see if the file is an image and should be processed
-            if validExts is None or ext.endswith(validExts):
-                # construct the path to the image and yield it
-                filePath = os.path.join(rootDir, filename)
-                yield filePath  # yield is "return" without terminating the function
 
 
 # ------ GLOBAL variables -------
