@@ -7,148 +7,12 @@ small things for data loaders
 import os
 import pandas as pd
 import numpy as np
-from tqdm import tqdm
+from utils.data_utils import adjmat_annot_loader, multilabel_mapping
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, LabelBinarizer
 
 
 # ------ function -------
-def scan_files(basePath, validExts=None, contains=None):
-    """
-    # Purpose\n
-        Scan subdirs and extract file paths.
-
-    # Arguments\n
-        basePath: str. Directory path to scan.
-        validExts: str. (Optional) File extension to target.
-        contains: str. String included in the file name to scan. 
-
-    # Return\n
-        A multi-line string containing file paths
-
-    # Details\n
-        1. The function scans both root and sub directories.
-
-        2. This is a modified version of imutils.list_files,
-            in which the function no longer verifies if the
-            file is a image. Instead, it optionally only grabs
-            files with the pre-set extension. 
-
-        3. When validExts=None, the funciton extracts all files.
-    """
-    if not os.path.isdir(basePath):
-        raise FileNotFoundError(f'Directory not found: {basePath}')
-
-    # loop over the directory structure
-    for (rootDir, dirNames, filenames) in os.walk(basePath):
-        # loop over the filenames in the current directory
-        for filename in filenames:
-            # if the contains string is not none and the filename does not contain
-            # the supplied string, then ignore the file
-            if contains is not None and filename.find(contains) == -1:
-                continue
-
-            # determine the file extension of the current file
-            ext = filename[filename.rfind("."):].lower()
-
-            # check to see if the file is an image and should be processed
-            if validExts is None or ext.endswith(validExts):
-                # construct the path to the image and yield it
-                filePath = os.path.join(rootDir, filename)
-                yield filePath  # yield is "return" without terminating the function
-
-
-def adjmat_annot_loader(dir, autoLabel=True, targetExt=None):
-    """
-    # Purpose\n
-        Scan and extract file paths (export as pandas data frame). 
-        Optionally, the function can also construct file labels using
-            folder names and exports as a numpy array. 
-
-    # Arguments\n
-        path: str. The root directory path to scan.
-        autoLabel: bool. If to automatically construct file labels using folder names.
-        targetExt: str. Optionally set target file extension to extract.
-
-    # Return\n
-        Pandas data frame containing all file paths. Optionially, a numpy array with all
-            file labels. Order: file_path, labels.
-
-    # Details\n
-        When targetExt=None, the function scans root and sub directories. 
-    """
-    adjmat_paths = list(scan_files(dir, validExts=targetExt))
-    file_annot = pd.DataFrame()
-
-    labels = []
-    for i, adjmat_path in tqdm(enumerate(adjmat_paths), total=len(adjmat_paths)):
-        # os.path.sep returns "/" which is used for str.split
-        label = adjmat_path.split(os.path.sep)[-2]
-        file_annot.loc[i, 'path'] = adjmat_path
-        labels.append(label)
-
-    labels = np.array(labels)
-    if autoLabel:
-        file_annot['label'] = labels
-        return file_annot, labels
-    else:
-        return file_annot, None
-
-
-def multilabel_mapping(labels, sep=None, pd_labels_var_name=None):
-    """
-    # Purpose\n
-        Extract elements from a string collection using a pre-set seperator as mulitiple labels
-
-    # Arguments\n
-        labels: pandas DataFrame or numpy ndarray. Input label string collections
-        sep: str. Separator string. Default is ' '.
-        pd_labels_var_name: str. Set when labels is a pandas DataFrame, the variable/column name for label string collection.
-
-    # Return\n
-        Two dictionaries (in the following order): labels_map, labels_map_rev
-        labels_map: key is labels, with int series as values
-        labels_map_rev: key is int series, with key as values
-    """
-
-    # - argument check -
-    if isinstance(labels, pd.DataFrame):
-        if pd_labels_var_name is None:
-            raise TypeError(
-                'set pd_labels_var_name when labels is a pandas DataFrame.')
-        else:
-            lbs = labels[pd_labels_var_name].to_numpy()
-    elif isinstance(labels, np.ndarray):
-        lbs = labels
-    else:
-        raise TypeError(
-            'labels need to be ether a pandas DataFrame or numpy ndarray.')
-
-    # - initial variables -
-    if sep is None:
-        sep = ' '
-    else:
-        sep = str(sep)
-        sep = sep
-
-    # - map labels -
-    labels_collect = set()
-    for i in range(len(lbs)):
-        # convert sep separated label strings into an array of tags
-        tags = lbs[i].split(sep)
-        # add tags to the set of labels
-        # NOTE: set does not allow duplicated elements
-        labels_collect.update(tags)
-
-    # set (no order) needs to be converted to list (order) to be sorted.
-    labels_collect = list(labels_collect)
-    labels_collect.sort()
-
-    # set a label set dictionary for indexing
-    labels_map = {labels_collect[i]: i for i in range(len(labels_collect))}
-    labels_map_rev = {i: labels_collect[i] for i in range(len(labels_collect))}
-
-    return labels_map, labels_map_rev
 
 
 # ------ test realm ------
@@ -164,7 +28,10 @@ lb_binarizer = LabelBinarizer()
 labels_binary = lb_binarizer.fit_transform(labels)
 
 # - below: create one hot encoding for multilabel labels -
-labels_map, labels_map_rev = multilabel_mapping(labels=labels, sep='_')
+lables_count, labels_map, labels_map_rev = multilabel_mapping(
+    labels=labels, sep='_')
+
+# one hot encoding
 
 
 # ------ ref ------

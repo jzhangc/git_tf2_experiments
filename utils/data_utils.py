@@ -5,6 +5,7 @@ import os
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
+from utils.other_utils import flatten
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
@@ -103,9 +104,10 @@ def multilabel_mapping(labels, sep=None, pd_labels_var_name=None):
         pd_labels_var_name: str. Set when labels is a pandas DataFrame, the variable/column name for label string collection.
 
     # Return\n
-        Two dictionaries (in the following order): labels_map, labels_map_rev
+        Three dictionaries (in the following order): labels_count, labels_map, labels_map_rev
         labels_map: key is labels, with int series as values
         labels_map_rev: key is int series, with key as values
+        labels_count: key is labels, with counts as values
     """
 
     # - argument check -
@@ -130,12 +132,18 @@ def multilabel_mapping(labels, sep=None, pd_labels_var_name=None):
 
     # - map labels -
     labels_collect = set()
+    labels_list = list()
     for i in range(len(lbs)):
         # convert sep separated label strings into an array of tags
         tags = lbs[i].split(sep)
         # add tags to the set of labels
         # NOTE: set does not allow duplicated elements
         labels_collect.update(tags)
+        labels_list.append(tags)
+
+    # - count labels -
+    labels_list = flatten(labels_list)
+    labels_count = {i: labels_list.count(i) for i in labels_list}
 
     # set (no order) needs to be converted to list (order) to be sorted.
     labels_collect = list(labels_collect)
@@ -145,7 +153,7 @@ def multilabel_mapping(labels, sep=None, pd_labels_var_name=None):
     labels_map = {labels_collect[i]: i for i in range(len(labels_collect))}
     labels_map_rev = {i: labels_collect[i] for i in range(len(labels_collect))}
 
-    return labels_map, labels_map_rev
+    return labels_count, labels_map, labels_map_rev
 
 
 def training_test_spliter_final(data, model_type='classification',
