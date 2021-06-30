@@ -16,12 +16,13 @@ the application.
 # ------ import modules ------
 import argparse
 import os
+import sys
 # import numpy as np
 import pandas as pd
 from utils.other_utils import error, warn, flatten, add_bool_arg, csv_path, output_dir
 from utils.data_utils import training_test_spliter_final
 from sklearn.model_selection import StratifiedShuffleSplit
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler
+from sklearn.preprocessing import LabelEncoder
 
 
 # ------ system classes ------
