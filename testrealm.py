@@ -103,11 +103,22 @@ file_annot, labels = adjmat_annot_loader(dat_dir, targetExt='txt')
 file_annot['path'][0]
 file_annot.loc[0:1]
 
-# below: create one hot encoding for multiclass labels
+# - below: create one hot encoding for multiclass labels -
 lb_binarizer = LabelBinarizer()
 labels_binary = lb_binarizer.fit_transform(labels)
 
-# below: create one hot encoding for multilabel labels
+# - below: create one hot encoding for multilabel labels -
+labels_set = set()
+for i in range(len(labels)):
+    # convert "_" separated label strings into an array of tags
+    tags = labels[i].split("_")
+    # add tags to the set of labels
+    # NOTE: set does not allow duplicated elements
+    labels_set.update(tags)
+
+# set (no order) needs to be converted to list (order) to be sorted.
+labels_set = list(labels_set)
+labels_set.sort()
 
 
 # ------ ref ------
