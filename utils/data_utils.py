@@ -92,6 +92,62 @@ def adjmat_annot_loader(dir, autoLabel=True, targetExt=None):
         return file_annot, None
 
 
+def multilabel_mapping(labels, sep=None, pd_labels_var_name=None):
+    """
+    # Purpose\n
+        Extract elements from a string collection using a pre-set seperator as mulitiple labels
+
+    # Arguments\n
+        labels: pandas DataFrame or numpy ndarray. Input label string collections
+        sep: str. Separator string. Default is ' '.
+        pd_labels_var_name: str. Set when labels is a pandas DataFrame, the variable/column name for label string collection.
+
+    # Return\n
+        Two dictionaries (in the following order): labels_map, labels_map_rev
+        labels_map: key is labels, with int series as values
+        labels_map_rev: key is int series, with key as values
+    """
+
+    # - argument check -
+    if isinstance(labels, pd.DataFrame):
+        if pd_labels_var_name is None:
+            raise TypeError(
+                'set pd_labels_var_name when labels is a pandas DataFrame.')
+        else:
+            lbs = labels[pd_labels_var_name].to_numpy()
+    elif isinstance(labels, np.ndarray):
+        lbs = labels
+    else:
+        raise TypeError(
+            'labels need to be ether a pandas DataFrame or numpy ndarray.')
+
+    # - initial variables -
+    if sep is None:
+        sep = ' '
+    else:
+        sep = str(sep)
+        sep = sep
+
+    # - map labels -
+    labels_collect = set()
+    for i in range(len(lbs)):
+        # convert sep separated label strings into an array of tags
+        tags = lbs[i].split(sep)
+        # add tags to the set of labels
+        # NOTE: set does not allow duplicated elements
+        labels_collect.update(tags)
+
+    # set (no order) needs to be converted to list (order) to be sorted.
+    labels_collect = list(labels_collect)
+    labels_collect.sort()
+
+    # set a label set dictionary for indexing
+    labels_map = {labels_collect[i]: i for i in range(len(labels_collect))}
+    labels_map_rev = {i: labels_collect[i] for i in range(len(labels_collect))}
+
+    return labels_map, labels_map_rev
+
+
 def training_test_spliter_final(data, model_type='classification',
                                 training_percent=0.8, random_state=None,
                                 man_split=False, man_split_colname=None,

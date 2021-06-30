@@ -97,37 +97,36 @@ def adjmat_annot_loader(dir, autoLabel=True, targetExt=None):
 
 def multilabel_mapping(labels, sep=None, pd_labels_var_name=None):
     """
-    # Purpose:
+    # Purpose\n
         Extract elements from a string collection using a pre-set seperator as mulitiple labels
 
-    # Arguments:
-        labels:
-        sep:
+    # Arguments\n
+        labels: pandas DataFrame or numpy ndarray. Input label string collections
+        sep: str. Separator string. Default is ' '.
+        pd_labels_var_name: str. Set when labels is a pandas DataFrame, the variable/column name for label string collection.
 
-
-
-    # Return:
-
-    # Details:
-
+    # Return\n
+        Two dictionaries (in the following order): labels_map, labels_map_rev
+        labels_map: key is labels, with int series as values
+        labels_map_rev: key is int series, with key as values
     """
 
     # - argument check -
     if isinstance(labels, pd.DataFrame):
         if pd_labels_var_name is None:
             raise TypeError(
-                'set pd_labels_var_name when labels is a pandas.core.frame.DataFrame.')
+                'set pd_labels_var_name when labels is a pandas DataFrame.')
         else:
             lbs = labels[pd_labels_var_name].to_numpy()
     elif isinstance(labels, np.ndarray):
         lbs = labels
     else:
         raise TypeError(
-            'labels need to be ether a pandas.core.frame.DataFrame or numpy.ndarray.')
+            'labels need to be ether a pandas DataFrame or numpy ndarray.')
 
     # - initial variables -
     if sep is None:
-        sep = " "
+        sep = ' '
     else:
         sep = str(sep)
         sep = sep
