@@ -15,18 +15,18 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler, LabelBinarizer
 # ------ function -------
 def scan_files(basePath, validExts=None, contains=None):
     """
-    # Purpose:
+    # Purpose\n
         Scan subdirs and extract file paths.
 
-    # Arguments:
+    # Arguments\n
         basePath: str. Directory path to scan.
         validExts: str. (Optional) File extension to target.
         contains: str. String included in the file name to scan. 
 
-    # Return
+    # Return\n
         A multi-line string containing file paths
 
-    # Details:
+    # Details\n
         1. The function scans both root and sub directories.
 
         2. This is a modified version of imutils.list_files,
@@ -60,21 +60,21 @@ def scan_files(basePath, validExts=None, contains=None):
 
 def adjmat_annot_loader(dir, autoLabel=True, targetExt=None):
     """
-    # Purpose:
+    # Purpose\n
         Scan and extract file paths (export as pandas data frame). 
         Optionally, the function can also construct file labels using
             folder names and exports as a numpy array. 
 
-    # Arguments:
+    # Arguments\n
         path: str. The root directory path to scan.
         autoLabel: bool. If to automatically construct file labels using folder names.
         targetExt: str. Optionally set target file extension to extract.
 
-    # Return:
+    # Return\n
         Pandas data frame containing all file paths. Optionially, a numpy array with all
             file labels. Order: file_path, labels.
 
-    # Details:
+    # Details\n
         When targetExt=None, the function scans root and sub directories. 
     """
     adjmat_paths = list(scan_files(dir, validExts=targetExt))
@@ -95,6 +95,63 @@ def adjmat_annot_loader(dir, autoLabel=True, targetExt=None):
         return file_annot, None
 
 
+def multilabel_mapping(labels, sep=None, pd_labels_var_name=None):
+    """
+    # Purpose:
+        Extract elements from a string collection using a pre-set seperator as mulitiple labels
+
+    # Arguments:
+        labels:
+        sep:
+
+
+
+    # Return:
+
+    # Details:
+
+    """
+
+    # - argument check -
+    if isinstance(labels, pd.DataFrame):
+        if pd_labels_var_name is None:
+            raise TypeError(
+                'set pd_labels_var_name when labels is a pandas.core.frame.DataFrame.')
+        else:
+            lbs = labels[pd_labels_var_name].to_numpy()
+    elif isinstance(labels, np.ndarray):
+        lbs = labels
+    else:
+        raise TypeError(
+            'labels need to be ether a pandas.core.frame.DataFrame or numpy.ndarray.')
+
+    # - initial variables -
+    if sep is None:
+        sep = " "
+    else:
+        sep = str(sep)
+        sep = sep
+
+    # - map labels -
+    labels_collect = set()
+    for i in range(len(lbs)):
+        # convert sep separated label strings into an array of tags
+        tags = lbs[i].split(sep)
+        # add tags to the set of labels
+        # NOTE: set does not allow duplicated elements
+        labels_collect.update(tags)
+
+    # set (no order) needs to be converted to list (order) to be sorted.
+    labels_collect = list(labels_collect)
+    labels_collect.sort()
+
+    # set a label set dictionary for indexing
+    labels_map = {labels_collect[i]: i for i in range(len(labels_collect))}
+    labels_map_rev = {i: labels_collect[i] for i in range(len(labels_collect))}
+
+    return labels_map, labels_map_rev
+
+
 # ------ test realm ------
 main_dir = os.path.abspath('./')
 dat_dir = os.path.join(main_dir, 'data/tf_data')
@@ -108,17 +165,7 @@ lb_binarizer = LabelBinarizer()
 labels_binary = lb_binarizer.fit_transform(labels)
 
 # - below: create one hot encoding for multilabel labels -
-labels_set = set()
-for i in range(len(labels)):
-    # convert "_" separated label strings into an array of tags
-    tags = labels[i].split("_")
-    # add tags to the set of labels
-    # NOTE: set does not allow duplicated elements
-    labels_set.update(tags)
-
-# set (no order) needs to be converted to list (order) to be sorted.
-labels_set = list(labels_set)
-labels_set.sort()
+labels_map, labels_map_rev = multilabel_mapping(labels=labels, sep='_')
 
 
 # ------ ref ------

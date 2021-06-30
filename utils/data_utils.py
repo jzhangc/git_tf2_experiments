@@ -12,18 +12,18 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 # ------ functions -------
 def scan_files(basePath, validExts=None, contains=None):
     """
-    # Purpose:
+    # Purpose\n
         Scan subdirs and extract file paths.
 
-    # Arguments:
+    # Arguments\n
         basePath: str. Directory path to scan.
         validExts: str. (Optional) File extension to target.
         contains: str. String included in the file name to scan. 
 
-    # Return
+    # Return\n
         A multi-line string containing file paths
 
-    # Details:
+    # Details\n
         1. The function scans both root and sub directories.
 
         2. This is a modified version of imutils.list_files,
@@ -57,21 +57,21 @@ def scan_files(basePath, validExts=None, contains=None):
 
 def adjmat_annot_loader(dir, autoLabel=True, targetExt=None):
     """
-    # Purpose:
+    # Purpose\n
         Scan and extract file paths (export as pandas data frame). 
         Optionally, the function can also construct file labels using
             folder names and exports as a numpy array. 
 
-    # Arguments:
+    # Arguments\n
         path: str. The root directory path to scan.
         autoLabel: bool. If to automatically construct file labels using folder names.
         targetExt: str. Optionally set target file extension to extract.
 
-    # Return:
+    # Return\n
         Pandas data frame containing all file paths. Optionially, a numpy array with all
             file labels. Order: file_path, labels.
 
-    # Details:
+    # Details\n
         When targetExt=None, the function scans root and sub directories. 
     """
     adjmat_paths = list(scan_files(dir, validExts=targetExt))
@@ -103,13 +103,13 @@ def training_test_spliter_final(data, model_type='classification',
                                 y_column=None,
                                 min_max_scale_range=(0, 1)):
     """
-    # Purpose:
+    # Purpose\n
         This is a training_test_spliter, with data standardization and normalization functionalities
-    # Return:
+    # Return\n
         Pandas DataFrame (for now) for training and test data.
         Scalers for training and test data sets are also returned, if applicable.
         Order: training (np.array), test (np.array), training_standard_scaler_X, training_minmax_scaler_X, training_scaler_Y
-    # Arguments:
+    # Arguments\n
         data: Pandas DataFrame. Input data.
         model_type: string. Options are "classification" and "regression". 
         man_split: boolean. If to manually split the data into training/test sets.
@@ -124,7 +124,7 @@ def training_test_spliter_final(data, model_type='classification',
         y_column: list. column(s) to use as outcome for scaling
         y_min_max_scaling: boolean. For regression study, if to do a Min_Max scaling to outcome
         y_scale_range: two-tuple. the Min_Max range.
-    # Details:
+    # Details\n
         The data normalization is applied AFTER the training/test splitting
         "Standardization" is z score standardization ("center and scale"): (x - mean(x))/SD
         "min_max_scaling" is min-max nomalization
@@ -133,21 +133,22 @@ def training_test_spliter_final(data, model_type='classification',
         For X, both standardiation and min-max normalization can be applied.
         For Y, only min-max normalization can be chosen. 
         The z score standardization is used for X standardization.
-    # Examples
-    1. with normalization
-        training, test, training_scaler_X, training_scaler_Y = training_test_spliter_final(
-            data=raw, random_state=1,
-            man_split=True, man_split_colname='subject', man_split_testset_value=selected_features[0],
-            x_standardization=True,
-            x_scale_column_to_exclude=['subject', 'PCL', 'group'],
-            y_min_max_scaling=True,
-            y_column=['PCL'], y_scale_range=(0, 1))
-    2. without noralization
-        training, test, _, _ = training_test_spliter_final(
-            data=raw, random_state=1,
-            man_split=True, man_split_colname='subject', man_split_testset_value=selected_features[1],
-            x_standardization=False,
-            y_min_max_scaling=False)
+    # Examples\n
+        1. w normalization\n
+            training, test, training_scaler_X, training_scaler_Y = training_test_spliter_final(
+                data=raw, random_state=1,
+                man_split=True, man_split_colname='subject', man_split_testset_value=selected_features[0],
+                x_standardization=True,
+                x_scale_column_to_exclude=['subject', 'PCL', 'group'],
+                y_min_max_scaling=True,
+                y_column=['PCL'], y_scale_range=(0, 1))
+
+        2. w/o noralization\n
+            training, test, _, _ = training_test_spliter_final(
+                data=raw, random_state=1,
+                man_split=True, man_split_colname='subject', man_split_testset_value=selected_features[1],
+                x_standardization=False,
+                y_min_max_scaling=False)
     """
     # argument check
     if not isinstance(data, pd.DataFrame):
