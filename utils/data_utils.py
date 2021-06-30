@@ -9,7 +9,7 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 
 # ------ functions -------
-def list_files(basePath, validExts=None, contains=None):
+def scan_files(basePath, validExts=None, contains=None):
     """
     # Purpose:
         Scan subdirs and extract file paths.
@@ -72,7 +72,7 @@ def adjmat_annot_loader(dir, autoLabel=True, targetExt=None):
     # Details:
         When targetExt=None, the function scans root and sub directories. 
     """
-    adjmat_paths = list(list_files(dir, validExts=targetExt))
+    adjmat_paths = list(scan_files(dir, validExts=targetExt))
     file_annot = pd.DataFrame()
 
     labels = []
