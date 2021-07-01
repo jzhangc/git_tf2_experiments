@@ -24,8 +24,13 @@ file_annot['path'][0]
 file_annot.loc[0:1]
 
 # - below: create one hot encoding for multiclass labels -
-lb_binarizer = LabelBinarizer()
-labels_binary = lb_binarizer.fit_transform(labels)
+# lb_binarizer = LabelBinarizer()
+# labels_binary = lb_binarizer.fit_transform(labels)
+labels_list, lables_count, labels_map, labels_map_rev = multilabel_mapping(
+    labels=labels, sep=None)  # use None to not slice strings
+
+encoded_labels = multilabel_one_hot(
+    labels_list=labels_list, labels_map=labels_map)
 
 # - below: create one hot encoding for multilabel labels -
 labels_list, lables_count, labels_map, labels_map_rev = multilabel_mapping(
@@ -34,6 +39,13 @@ labels_list, lables_count, labels_map, labels_map_rev = multilabel_mapping(
 # one hot encoding
 encoded_labels = multilabel_one_hot(
     labels_list=labels_list, labels_map=labels_map)
+
+
+# - below: batch load data using tf.data.Dataset API -
+tst = file_annot['path'].to_list()
+
+# expand file_annot with one hot encoded labels
+file_annot[list(labels_map.keys())] = encoded_labels
 
 
 # ------ ref ------
@@ -77,3 +89,4 @@ encoded_labels = multilabel_one_hot(
 
 # - tf.dataset reference: https://cs230.stanford.edu/blog/datapipeline/ -
 # - real TF2 data loader example: https://github.com/HasnainRaz/SemSegPipeline/blob/master/dataloader.py -
+# - tf.data.Dataset API example: https://medium.com/deep-learning-with-keras/tf-data-build-efficient-tensorflow-input-pipelines-for-image-datasets-47010d2e4330 -

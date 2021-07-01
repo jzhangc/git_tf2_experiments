@@ -109,6 +109,9 @@ def multilabel_mapping(labels, sep=None, pd_labels_var_name=None):
         labels_map: key is labels, with int series as values
         labels_map_rev: key is int series, with key as values
         labels_count: key is labels, with counts as values
+
+    # Details\n
+        When sep=None, the function will no splice the label strings
     """
 
     # - argument check -
@@ -125,9 +128,7 @@ def multilabel_mapping(labels, sep=None, pd_labels_var_name=None):
             'labels need to be ether a pandas DataFrame or numpy ndarray.')
 
     # - initial variables -
-    if sep is None:
-        sep = ' '
-    else:
+    if sep is not None:
         sep = str(sep)
         sep = sep
 
