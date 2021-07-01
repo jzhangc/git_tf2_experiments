@@ -185,10 +185,10 @@ def multilabel_one_hot(labels_list, labels_map):
             'sc': 8}
     """
     # - argument check -
-    if isinstance(labels_list, list):
+    if not isinstance(labels_list, list):
         raise TypeError('labels_list needs to be a list object.')
 
-    if isinstance(labels_map, dict):
+    if not isinstance(labels_map, dict):
         raise TypeError('labels_map needs to be a dict type.')
 
     # - one hot encoding -
