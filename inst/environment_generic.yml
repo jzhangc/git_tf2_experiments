@@ -17,4 +17,3 @@ dependencies:
   - pandas
   - tqdm
   - matplotlib
-  - imutils
