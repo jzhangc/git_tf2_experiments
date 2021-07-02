@@ -125,8 +125,10 @@ class DataLoader(object):
     def __init__(self, random_state, shape, new_shape,
                  model_type='classification',
                  multilabel=False,
+                 training_percentage=0.8,
+                 shuffle=True,
                  cross_validation=False, k=10,
-                 shuffle=True, verbose=True):
+                 verbose=True):
         """
         TBC
         """
@@ -137,6 +139,7 @@ class DataLoader(object):
         self.new_shape = new_shape
 
         # resampling
+        self.train_percentage = training_percentage
         self.shuffle = shuffle
         self.cross_validation = cross_validation
         self.cv_k = k
