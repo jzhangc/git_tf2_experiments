@@ -17,6 +17,7 @@ the application.
 import argparse
 import os
 import sys
+from numpy.core.numeric import cross
 # import numpy as np
 import pandas as pd
 from utils.other_utils import error, warn, flatten, add_bool_arg, csv_path, output_dir, colr
@@ -121,19 +122,46 @@ class DataLoader(object):
             returns a dict object with 'training' and 'test' items
     """
 
-    def __init__(self, file,
-                 outcome_var, annotation_vars, sample_id_var,
-                 model_type,
-                 cv_only,
-                 minmax,
-                 x_standardize,
-                 man_split, holdout_samples, training_percentage, random_state, verbose):
+    def __init__(self, random_state, shape, new_shape,
+                 model_type='classification',
+                 multilabel=False,
+                 cross_validation=False, k=10,
+                 shuffle=True, verbose=True):
         """
         TBC
         """
+        # model information
+        self.model_type = model_type
+        self.multilabel = multilabel
+
+        self.new_shape = new_shape
+
+        # resampling
+        self.shuffle = shuffle
+        self.cross_validation = cross_validation
+        self.cv_k = k
+
         # random state and other settings
         self.rand = random_state
         self.verbose = verbose
+        self.original_shape = shape
+
+    def _data_process(self):
+        print('TBC')
+        return None
+
+    def _data_reshape(self):
+        print('TBC')
+        return None
+
+    def _data_resample(self):
+        """NTOE: multilabel and regression can not use stratified splitting"""
+        print('TBC')
+        return None
+
+    def _cross_val_split(self):
+        print('TBC')
+        return None
 
 
 # below: ad-hoc testing
