@@ -22,10 +22,8 @@ Apple has now implmented metal TF2.5 plugin for GPU acceleration. See [here](htt
 
 3. Create, setup and activate a conda environment
 
-        conda create --prefix ./conda_venv_tf_metal
+        conda env create -f ./inst/environment_generic.yml --prefix ./conda_venv_tf_metal
         conda activate ./conda_venv_tf_metal
-        
-        (intel only) conda install imutils
 
 4. (Apple chip) Install tensorflow dependencies
 
@@ -38,6 +36,12 @@ Apple has now implmented metal TF2.5 plugin for GPU acceleration. See [here](htt
 6. Install metal plugin
 
         python -m pip install tensorflow-metal
+
+7. Install other conda packages
+
+        conda install pandas scikit-learn jupyter matplotlib tqdm autopep8
+        (intel only) conda install imutils
+
 
 ## Install via conda enviroment (OLD)
 

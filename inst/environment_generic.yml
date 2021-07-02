@@ -4,15 +4,7 @@ channels:
   - nodefaults
 dependencies:
   - scikit-learn
-  - numpy
-  - setuptools
   - jupyter
-  - h5py
-  - opt_einsum
-  - pip
-  - python
-  - tensorboard
-  - wheel
   - autopep8
   - pandas
   - tqdm
