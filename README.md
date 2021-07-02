@@ -40,7 +40,10 @@ Apple has now implmented metal TF2.5 plugin for GPU acceleration. See [here](htt
 7. Install other conda packages
 
         conda install pandas scikit-learn jupyter matplotlib tqdm autopep8
-        (intel only) conda install imutils
+
+   Intel only:
+
+        conda install imutils
 
 ## Install via conda enviroment (OLD)
 
