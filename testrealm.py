@@ -87,18 +87,21 @@ for a, b in tst_dat.take(3):  # take 3 smaples
     break
 
 
-@tf.function
+# @tf.function
 def map_func(filepath: tf.Tensor, label: tf.Tensor):
     fname = filepath.numpy().decode('utf-8')
     f = np.loadtxt(fname).astype('float32')
     lb = label.numpy()
 
-    def processing(f, lb):
-        of = f/f.max()
-        ob = lb
-        return of, ob
+    f = tf.convert_to_tensor(f, dtype=tf.float32)
+    lb = tf.convert_to_tensor(lb, dtype=tf.uint8)
+    # def processing(f, lb):
+    #     of = f/f.max()
+    #     ob = lb
+    #     return of, ob
 
-    return tf.py_function(processing, [f, lb], [tf.float32, tf.int8])
+    # return tf.py_function(processing, [f, lb], [tf.float32, tf.int8])
+    return f, lb
 
 
 tst_dat_mapped = tst_dat.map(map_func, num_parallel_calls=tf.data.AUTOTUNE)
@@ -137,7 +140,6 @@ for train_idx, test_idx in kf.split(X_indices, encoded_labels):
     print(test_idx)
 
 # ------ ref ------
-# - initial: https://debuggercafe.com/creating-efficient-image-data-loaders-in-pytorch-for-deep-learning/ -
 # - tf.dataset reference: https://cs230.stanford.edu/blog/datapipeline/ -
 # - real TF2 data loader example: https://github.com/HasnainRaz/SemSegPipeline/blob/master/dataloader.py -
 # - tf.data.Dataset API example: https://medium.com/deep-learning-with-keras/tf-data-build-efficient-tensorflow-input-pipelines-for-image-datasets-47010d2e4330 -
