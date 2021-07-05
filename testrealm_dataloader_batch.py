@@ -18,8 +18,9 @@ import argparse
 import os
 import sys
 from numpy.core.numeric import cross
-# import numpy as np
+import numpy as np
 import pandas as pd
+import tensorflow as tf
 from utils.other_utils import error, warn, flatten, add_bool_arg, csv_path, output_dir, colr
 from utils.data_utils import training_test_spliter_final
 from sklearn.preprocessing import LabelEncoder
@@ -162,8 +163,20 @@ class DataLoader(object):
         print('TBC')
         return None
 
-    def _cross_val_split(self):
-        print('TBC')
+    def _map_func(self, filepath: tf.Tensor, label: tf.Tensor, processing=False):
+        # - read file and assign label -
+        fname = filepath.numpy().decode('utf-8')
+        f = np.loadtxt(fname).astype('float32')
+        lb = label
+
+        # - processing if needed -
+        if processing:
+            f = f/f.max()
+        f = tf.convert_to_tensor(f, dtype=tf.float32)
+
+        return f, lb
+
+    def get_data(self):
         return None
 
 

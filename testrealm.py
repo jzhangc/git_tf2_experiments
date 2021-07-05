@@ -76,33 +76,42 @@ tf.config.list_physical_devices()
 tst_dat = tf.data.Dataset.from_tensor_slices((file_path, encoded_labels))
 tst_data_size = tst_dat.cardinality().numpy()  # sample size: 250
 
+
+def map_func(filepath: tf.Tensor, label: tf.Tensor, processing=False):
+    # - read file and assign label -
+    fname = filepath.numpy().decode('utf-8')
+    f = np.loadtxt(fname).astype('float32')
+    lb = label
+
+    # - processing if needed -
+    if processing:
+        f = f/f.max()
+    f = tf.convert_to_tensor(f, dtype=tf.float32)
+
+    return f, lb
+
+
 for a, b in tst_dat.take(3):  # take 3 smaples
     fname = a.numpy().decode('utf-8')
-    flabel = b.numpy()
+
     # f = np.loadtxt(fname).astype('float32')
-    f = np.loadtxt(fname).astype('float32')
+    # f = tf.convert_to_tensor(f, dtype=tf.float32)
+    f, lb = map_func(a, b, processing=True)
+
+    print(type(a))
     print(fname)
-    print(f'label: {flabel}')
+    print(f'label: {lb}')
     print(f)
     break
 
+tst_dat_working = tst_dat.map(lambda x, y: tf.py_function(map_func, [x, y, True], [tf.float32, tf.uint8]),
+                              num_parallel_calls=tf.data.AUTOTUNE)
 
-# @tf.function
-def map_func(filepath: tf.Tensor, label: tf.Tensor):
-    fname = filepath.numpy().decode('utf-8')
-    f = np.loadtxt(fname).astype('float32')
-    lb = label.numpy()
 
-    f = tf.convert_to_tensor(f, dtype=tf.float32)
-    lb = tf.convert_to_tensor(lb, dtype=tf.uint8)
-    # def processing(f, lb):
-    #     of = f/f.max()
-    #     ob = lb
-    #     return of, ob
-
-    # return tf.py_function(processing, [f, lb], [tf.float32, tf.int8])
-    return f, lb
-
+for a, b in tst_dat_working.take(3):
+    print(a)
+    print(b)
+    break
 
 tst_dat_mapped = tst_dat.map(map_func, num_parallel_calls=tf.data.AUTOTUNE)
 
