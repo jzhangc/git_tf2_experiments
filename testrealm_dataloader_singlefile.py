@@ -8,6 +8,7 @@ Current objectives:
 [x] Test file processing
     [x] normalization and scalling
     [x] converting to numpy arrays
+[ ] use tf.data.experimental.make_csv_dataset() to reading
 
 NOTE
 All the argparser inputs are loaded from method arguments, making the class more portable, i.e. not tied to

@@ -45,6 +45,10 @@ Apple has now implmented metal TF2.5 plugin for GPU acceleration. See [here](htt
 
         conda install imutils
 
+8. Install other pip package(s)
+
+        python -m pip install scikit-multilearn
+
 ## Install via conda enviroment (OLD)
 
 1. (Apple and Intel chips) install miniforge3 (mini coda with forge channel as default)

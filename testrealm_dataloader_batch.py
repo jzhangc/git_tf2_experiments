@@ -17,12 +17,14 @@ the application.
 import argparse
 import os
 import sys
+from typing import Type
 from numpy.core.numeric import cross
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from utils.other_utils import error, warn, flatten, add_bool_arg, csv_path, output_dir, colr
-from utils.data_utils import training_test_spliter_final
+from utils.other_utils import error, warn, flatten, add_bool_arg, output_dir, colr
+from utils.data_utils import adjmat_annot_loader, label_mapping, label_one_hot, get_selected_dataset
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
 
@@ -123,21 +125,32 @@ class DataLoader(object):
             returns a dict object with 'training' and 'test' items
     """
 
-    def __init__(self, random_state, shape, new_shape,
+    def __init__(self, filepath,
+                 shape, new_shape,
+                 manual_labels=None, label_sep=None, pd_labels_var_name=None,
+                 target_ext=None,
                  model_type='classification',
                  multilabel=False,
+                 batch_size=None,
                  training_percentage=0.8,
                  shuffle=True,
                  cross_validation=False, k=10,
-                 verbose=True):
+                 verbose=True, random_state=1):
         """
         TBC
         """
         # model information
         self.model_type = model_type
         self.multilabel = multilabel
-
+        self.filepath = filepath
+        self.target_ext = target_ext
+        self.manual_labels = manual_labels
+        self.pd_labels_var_name = str(pd_labels_var_name)
+        self.label_sep = str(label_sep)
         self.new_shape = new_shape
+
+        # processing
+        self.batch_size = batch_size
 
         # resampling
         self.train_percentage = training_percentage
@@ -150,6 +163,44 @@ class DataLoader(object):
         self.verbose = verbose
         self.original_shape = shape
 
+    def _parse_file(self):
+        """
+        1. parse file path to get file path annotatin and, optionally, label information
+        2. set up manual label information
+        """
+        file_annot, labels = adjmat_annot_loader(
+            self.filepath, targetExt=self.target_ext)
+
+        if self.manual_labels is not None:  # update labels to the manually set array
+            if isinstance(self.manual_labels, pd.DataFrame):
+                if self.pd_labels_var_name is None:
+                    raise TypeError(
+                        'Set pd_labels_var_name when manual_labels is a pd.Dataframe.')
+                else:
+                    labels = self.manual_labels[self.pd_labels_var_name].to_numpy(
+                    )
+            elif isinstance(self.manual_labels, np.ndarray):
+                labels = self.manual_labels
+            else:
+                raise TypeError(
+                    'When not None, manual_labels needs to be pd.Dataframe or np.ndarray.')
+
+        return file_annot, labels
+
+    def _get_labels(self):
+        self._file_annot, _labels = self._parse_file()
+
+        if self.multilabel:
+            _labels_list, lables_count, _labels_map, labels_map_rev = label_mapping(
+                labels=_labels, sep=None)
+        else:
+            _labels_list, lables_count, _labels_map, labels_map_rev = label_mapping(
+                labels=_labels, sep=None)
+
+        encoded_labels = label_one_hot(_labels_list, _labels_map)
+
+        return encoded_labels, lables_count, labels_map_rev
+
     def _data_process(self):
         print('TBC')
         return None
@@ -160,7 +211,11 @@ class DataLoader(object):
 
     def _data_resample(self):
         """NTOE: multilabel and regression can not use stratified splitting"""
-        print('TBC')
+        _encoded_labels = self._get_labels()
+        if self.multilabel:
+            X_train_indices, X_test_indices, y_train_targets, y_test_targets = train_test_split(
+                X_indices, _encoded_labels, test_size=0.1, stratify=_encoded_labels, random_state=53)
+
         return None
 
     def _map_func(self, filepath: tf.Tensor, label: tf.Tensor, processing=False):
@@ -176,7 +231,8 @@ class DataLoader(object):
 
         return f, lb
 
-    def get_data(self):
+    def load_data(self, batch_size, shuffle=False):
+
         return None
 
 

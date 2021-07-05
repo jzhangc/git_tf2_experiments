@@ -4,6 +4,7 @@
 import os
 import pandas as pd
 import numpy as np
+import tensorflow as tf
 from tqdm import tqdm
 from utils.other_utils import flatten
 from sklearn.model_selection import StratifiedShuffleSplit
@@ -93,10 +94,10 @@ def adjmat_annot_loader(dir, autoLabel=True, targetExt=None):
         return file_annot, None
 
 
-def multilabel_mapping(labels, sep=None, pd_labels_var_name=None):
+def label_mapping(labels, sep=None, pd_labels_var_name=None):
     """
     # Purpose\n
-        Extract elements from a string collection using a pre-set seperator as mulitiple labels
+        Extract elements from a string collection using a pre-set seperator as labels (multiclass/multilabel/binary).
 
     # Arguments\n
         labels: pandas DataFrame or numpy ndarray. Input label string collections
@@ -158,10 +159,10 @@ def multilabel_mapping(labels, sep=None, pd_labels_var_name=None):
     return labels_list, labels_count, labels_map, labels_map_rev
 
 
-def multilabel_one_hot(labels_list, labels_map):
+def label_one_hot(labels_list, labels_map):
     """
     # Purpose\n
-        One hot encode for multilabel labels.
+        One hot encode for labels (multiclass/multilabel/binary).
 
     # Arguments\n
         labels_list: list of strings. Input labels collection in the form of a list of strings.
@@ -205,6 +206,38 @@ def multilabel_one_hot(labels_list, labels_map):
     one_hot_encoded = np.asarray(one_hot_encoded, dtype='uint8')
 
     return one_hot_encoded
+
+
+def get_selected_dataset(ds, X_indices_np):
+    """
+    modified from https://www.kaggle.com/tt195361/splitting-tensorflow-dataset-for-validation
+    """
+    # Make a tensor of type tf.int64 to match the one by Dataset.enumerate().
+    X_indices_ts = tf.constant(X_indices_np, dtype=tf.int64)
+
+    def is_index_in(index, rest):
+        # Returns True if the specified index value is included in X_indices_ts.
+        #
+        # '==' compares the specified index value with each values in X_indices_ts.
+        # The result is a boolean tensor, looks like [ False, True, ..., False ].
+        # reduce_any() returns Ture if True is included in the specified tensor.
+        return tf.math.reduce_any(index == X_indices_ts)
+
+    def drop_index(index, rest):
+        return rest
+
+    # Dataset.enumerate() is similter to Python's enumerate().
+    # The method adds indices to each elements. Then, the elements are filtered
+    # by using the specified indices. Finally unnecessary indices are dropped.
+    selected_ds = ds.enumerate().filter(is_index_in).map(drop_index)
+
+    # calculate number of samples
+    # cardinality would not work on "selected_ds"
+    n = 0
+    for e in selected_ds:
+        n += 1
+
+    return selected_ds, n
 
 
 def training_test_spliter_final(data, model_type='classification',
