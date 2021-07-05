@@ -187,19 +187,20 @@ class DataLoader(object):
 
         return file_annot, labels
 
-    def _get_labels(self):
-        self._file_annot, _labels = self._parse_file()
+    def _get_file_annot(self):
+        file_annot, labels = self._parse_file()
 
         if self.multilabel:
-            _labels_list, lables_count, _labels_map, labels_map_rev = label_mapping(
-                labels=_labels, sep=None)
+            labels_list, lables_count, labels_map, labels_map_rev = label_mapping(
+                labels=labels, sep=None)
         else:
-            _labels_list, lables_count, _labels_map, labels_map_rev = label_mapping(
-                labels=_labels, sep=None)
+            labels_list, lables_count, labels_map, labels_map_rev = label_mapping(
+                labels=labels, sep=None)
 
-        encoded_labels = label_one_hot(_labels_list, _labels_map)
+        encoded_labels = label_one_hot(labels_list, labels_map)
+        filepath_list = file_annot['path'].to_list()
 
-        return encoded_labels, lables_count, labels_map_rev
+        return filepath_list, encoded_labels, lables_count, labels_map_rev
 
     def _data_process(self):
         print('TBC')
