@@ -217,7 +217,11 @@ class DataLoader(object):
             X_train_indices, X_test_indices, y_train_targets, y_test_targets = train_test_split(
                 X_indices, _encoded_labels, test_size=0.1, stratify=_encoded_labels, random_state=53)
 
-        return None
+        else:
+            train_ds = None
+            test_ds = None
+
+        return train_ds, train_n, test_ds, test_n
 
     def _map_func(self, filepath: tf.Tensor, label: tf.Tensor, processing=False):
         # - read file and assign label -
