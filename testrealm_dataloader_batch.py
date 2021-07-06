@@ -286,15 +286,21 @@ class DataLoader(object):
 
     def load_data(self, batch_size, shuffle=False):
         # - load paths -
-        filepath_list, encoded_labels, lables_count, labels_map_rev = self._get_file_annot()
+        filepath_list, encoded_labels, self.lables_count, self.labels_map_rev = self._get_file_annot()
         total_ds = tf.data.Dataset.from_tensor_slices(
             (filepath_list, encoded_labels))
-
-        # - load data -
+        self.n_total_sample = total_ds.cardinality().numpy()
 
         # - resample data -
+        train_ds, self.train_n, test_ds, self.test_n = self._data_resample(
+            total_ds, self.n_total_sample)
 
-        return train_ds, train_n, test_ds, test_n
+        # - load data -
+        train_set = train_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
+                                 num_parallel_calls=tf.data.AUTOTUNE)
+        test_set = test_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
+                               num_parallel_calls=tf.data.AUTOTUNE)
+        return train_set, test_set
 
 
 # below: ad-hoc testing
