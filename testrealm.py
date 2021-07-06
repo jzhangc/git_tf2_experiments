@@ -25,6 +25,10 @@ def map_func(filepath: tf.Tensor, label: tf.Tensor, processing=False):
     # - processing if needed -
     if processing:
         f = f/f.max()
+        # f_std = (f - f.min(axis=0)) / (f.max(axis=0) - f.min(axis=0))
+        # f = f_std * (1 - 0) + 0
+        # print(f.shape[:])
+        f = np.reshape(f, (f.shape[0], f.shape[1], 1))
     f = tf.convert_to_tensor(f, dtype=tf.float32)
 
     return f, lb
@@ -82,6 +86,14 @@ for a, b in tst_dat.take(3):  # take 3 smaples
 tst_dat_working = tst_dat.map(lambda x, y: tf.py_function(map_func, [x, y, True], [tf.float32, tf.uint8]),
                               num_parallel_calls=tf.data.AUTOTUNE)
 
+for a, b in tst_dat_working.take(3):  # take 3 smaples
+    print(type(a))
+    print(fname)
+    print(f'label: {lb}')
+    print(f)
+    break
+
+
 # - resampling -
 X_indices = np.arange(tst_data_size)
 
@@ -91,7 +103,8 @@ X_train_indices, X_val_indices, y_train_targets, y_val_targets = train_test_spli
 
 tst_test, test_n = getSelectedDataset(tst_dat, X_val_indices)
 
-
+t = (0, 1)
+t2 = t[:]+(2)
 # # multilabel
 # X_indices_reshap = X_indices.reshape((len(X_indices), 1))
 # X_train_indices, y_train_targets, X_val_indices, y_val_targets = iterative_train_test_split(

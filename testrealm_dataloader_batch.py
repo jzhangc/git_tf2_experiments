@@ -128,7 +128,7 @@ class DataLoader(object):
                  manual_labels=None, label_sep=None, pd_labels_var_name=None,
                  target_ext=None,
                  model_type='classification', multilabel=False,
-                 x_min_max_scale=None,
+                 x_scaling="none", x_min_max_range=(0, 1),
                  resmaple_method="random",
                  batch_size=None,
                  training_percentage=0.8,
@@ -138,7 +138,8 @@ class DataLoader(object):
         """
         # Arguments\n
             resample_method: str. options: "random", "stratified" and "balanced".
-            x_min_max_scale: two tuple. (min, max). Default is None (i.e. not scaling data).
+            x_scaling: str. Options are "none", "max", or "minmax". Default is None (i.e. not scaling data).
+            x_min_max_range: two tuple. set when x_scaling="minmax", (min, max) range.
 
         # Details\n
             1. resample_method is automatically set to "random" when model_type='regression'.
@@ -149,12 +150,13 @@ class DataLoader(object):
         self.filepath = filepath
         self.target_ext = target_ext
         self.manual_labels = manual_labels
-        self.pd_labels_var_name = str(pd_labels_var_name)
-        self.label_sep = str(label_sep)
+        self.pd_labels_var_name = pd_labels_var_name
+        self.label_sep = label_sep
         self.new_shape = new_shape
 
         # processing
-        self.x_min_max_scale = x_min_max_scale
+        self.x_scaling = x_scaling
+        self.x_min_max_range = x_min_max_range
         self.batch_size = batch_size
 
         # resampling
@@ -222,7 +224,7 @@ class DataLoader(object):
 
         return filepath_list, encoded_labels, lables_count, labels_map_rev
 
-    def _x_data_process(self, x_array, min_max_scaling=False, min_max_scale_range=(0, 1)):
+    def _x_data_process(self, x_array):
         """NOTE: reshaping to (_, _, 1) is mandatory"""
         # - variables -
         if isinstance(x_array, np.ndarray):
@@ -230,17 +232,18 @@ class DataLoader(object):
         else:
             raise TypeError('data processing function should be a np.ndarray.')
 
-        Min = self.x_min_max_scale[0]
-        Max = self.x_min_max_scale[1]
-
-        if self.x_min_max_scale is not None:  # rescale
+        if self.x_scaling == 'max':
+            X = X/X.max()
+        elif self.x_scaling == 'minmax':
+            Min = self.x_min_max_range[0]
+            Max = self.x_min_max_range[1]
             X_std = (X - X.min(axis=0)) / (X.max(axis=0) - X.min(axis=0))
             X = X_std * (Max - Min) + Min
 
         if self.new_shape is not None:  # reshape
-            X = X.reshape(self.new_shape)
+            X = np.reshape(X, self.new_shape)
         else:
-            X = X.reshape((X.shape, 1))
+            X = np.reshape(X, (X.shape[0], X.shape[1], 1))
 
         return X
 
