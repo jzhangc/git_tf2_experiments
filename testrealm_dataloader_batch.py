@@ -17,8 +17,6 @@ the application.
 import argparse
 import os
 import sys
-from typing import Type
-from numpy.core.numeric import cross
 import numpy as np
 import pandas as pd
 import tensorflow as tf

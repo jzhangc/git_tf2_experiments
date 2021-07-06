@@ -119,7 +119,7 @@ def label_mapping(labels, sep=None, pd_labels_var_name=None):
     if isinstance(labels, pd.DataFrame):
         if pd_labels_var_name is None:
             raise TypeError(
-                'set pd_labels_var_name when labels is a pandas DataFrame.')
+                'Set pd_labels_var_name when labels is a pandas DataFrame.')
         else:
             lbs = labels[pd_labels_var_name].to_numpy()
     elif isinstance(labels, np.ndarray):
