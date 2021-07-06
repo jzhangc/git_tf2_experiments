@@ -301,26 +301,6 @@ class DataLoader(object):
                                                                                                     x_min_max_scaling=self.minmax,
                                                                                                     x_scale_column_to_exclude=self.complete_annot_vars,
                                                                                                     y_min_max_scaling=self.minmax, y_column=self.y_var)
-            # if man_split:
-            #     # manual data split: the checks happen in the training_test_spliter_final() function
-            #     self._training, self._test, _, _, _ = training_test_spliter_final(data=self.raw_working, random_state=self.rand,
-            #                                                                       man_split=man_split, man_split_colname=self.sample_id_var,
-            #                                                                       man_split_testset_value=self.holdout_samples,
-            #                                                                       x_standardization=False, y_min_max_scaling=False)
-            # else:
-            #     if self.model_type == 'classification':  # stratified
-            #         train_idx, test_idx = list(), list()
-            #         stf = StratifiedShuffleSplit(
-            #             n_splits=1, train_size=self.training_percentage, random_state=self.rand)
-            #         for train_index, test_index in stf.split(self.raw_working, self.raw_working[self.y_var]):
-            #             train_idx.append(train_index)
-            #             test_idx.append(test_index)
-            #         self._training, self._test = self.raw_working.iloc[train_idx[0],
-            #                                                            :].copy(), self.raw_working.iloc[test_idx[0], :].copy()
-            #     else:  # regression
-            #         self._training, self._test, _, _ = training_test_spliter_final(
-            #             data=self.raw_working, random_state=self.rand, man_split=man_split, training_percent=self.training_percentage,
-            #             x_standardization=False, y_min_max_scaling=False)  # data transformation will be doen during modeling
 
         self._training_x, self._test_x = self._training[self._training.columns[
             ~self._training.columns.isin(self.complete_annot_vars)]], self._test[self._test.columns[~self._test.columns.isin(self.complete_annot_vars)]]
