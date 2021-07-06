@@ -20,8 +20,8 @@ import sys
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from utils.other_utils import error, warn, flatten, add_bool_arg, output_dir, colr
-from utils.data_utils import adjmat_annot_loader, label_mapping, label_one_hot, get_selected_dataset
+from utils.other_utils import error, warn, flatten, addBoolArg, outputDir, csvPath, colr
+from utils.data_utils import adjmatAnnotLoader, labelMapping, labelOneHot, getSelectedDataset
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
@@ -78,7 +78,7 @@ add_g4_arg = arg_g4.add_argument
 
 # - add arugments to the argument groups -
 # g1: inpout and ouput
-add_g1_arg('file', nargs=1, type=csv_path,
+add_g1_arg('file', nargs=1, type=csvPath,
            help='One and only one input CSV file. (Default: %(default)s)')
 
 add_g1_arg('-s', '--sample_id_var', type=str, default=None,
@@ -89,15 +89,15 @@ add_g1_arg('-a', '--annotation_vars', type=str, nargs="+", default=[],
 #            help='int. Number of class for classification models. (Default: %(default)s)')
 add_g1_arg('-y', '--outcome_var', type=str, default=None,
            help='str. Vairable name for outcome. NOTE: only needed with single file processing. (Default: %(default)s)')
-add_bool_arg(parser=arg_g1, name='y_scale', input_type='flag', default=False,
-             help='str. If to min-max scale outcome for regression study. (Default: %(default)s)')
-add_g1_arg('-o', '--output_dir', type=output_dir,
+addBoolArg(parser=arg_g1, name='y_scale', input_type='flag', default=False,
+           help='str. If to min-max scale outcome for regression study. (Default: %(default)s)')
+add_g1_arg('-o', '--output_dir', type=outputDir,
            default='.',
            help='str. Output directory. NOTE: not an absolute path, only relative to working directory -w/--working_dir.')
 
 # g4: others
-add_bool_arg(parser=arg_g4, name='verbose', input_type='flag', default=False,
-             help='Verbose or not. (Default: %(default)s)')
+addBoolArg(parser=arg_g4, name='verbose', input_type='flag', default=False,
+           help='Verbose or not. (Default: %(default)s)')
 
 args = parser.parse_args()
 
@@ -166,7 +166,7 @@ class DataLoader(object):
         1. parse file path to get file path annotatin and, optionally, label information
         2. set up manual label information
         """
-        file_annot, labels = adjmat_annot_loader(
+        file_annot, labels = adjmatAnnotLoader(
             self.filepath, targetExt=self.target_ext)
 
         if self.manual_labels is not None:  # update labels to the manually set array
@@ -189,13 +189,13 @@ class DataLoader(object):
         file_annot, labels = self._parse_file()
 
         if self.multilabel:
-            labels_list, lables_count, labels_map, labels_map_rev = label_mapping(
+            labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
                 labels=labels, sep=None)
         else:
-            labels_list, lables_count, labels_map, labels_map_rev = label_mapping(
+            labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
                 labels=labels, sep=None)
 
-        encoded_labels = label_one_hot(labels_list, labels_map)
+        encoded_labels = labelOneHot(labels_list, labels_map)
         filepath_list = file_annot['path'].to_list()
 
         return filepath_list, encoded_labels, lables_count, labels_map_rev
@@ -208,9 +208,10 @@ class DataLoader(object):
         print('TBC')
         return None
 
-    def _data_resample(self):
+    def _data_resample(self, n_total_sample):
         """NTOE: multilabel and regression can not use stratified splitting"""
-        _encoded_labels = self._get_labels()
+        encoded_labels = self._get_labels()
+        X_indices
         if self.multilabel:
             X_train_indices, X_test_indices, y_train_targets, y_test_targets = train_test_split(
                 X_indices, _encoded_labels, test_size=0.1, stratify=_encoded_labels, random_state=53)

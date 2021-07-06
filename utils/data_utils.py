@@ -12,7 +12,7 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 
 # ------ functions -------
-def scan_files(basePath, validExts=None, contains=None):
+def ScanFiles(basePath, validExts=None, contains=None):
     """
     # Purpose\n
         Scan subdirs and extract file paths.
@@ -57,7 +57,7 @@ def scan_files(basePath, validExts=None, contains=None):
                 yield filePath  # yield is "return" without terminating the function
 
 
-def adjmat_annot_loader(dir, autoLabel=True, targetExt=None):
+def adjmatAnnotLoader(dir, autoLabel=True, targetExt=None):
     """
     # Purpose\n
         Scan and extract file paths (export as pandas data frame). 
@@ -76,7 +76,7 @@ def adjmat_annot_loader(dir, autoLabel=True, targetExt=None):
     # Details\n
         When targetExt=None, the function scans root and sub directories. 
     """
-    adjmat_paths = list(scan_files(dir, validExts=targetExt))
+    adjmat_paths = list(ScanFiles(dir, validExts=targetExt))
     file_annot = pd.DataFrame()
 
     labels = []
@@ -94,7 +94,7 @@ def adjmat_annot_loader(dir, autoLabel=True, targetExt=None):
         return file_annot, None
 
 
-def label_mapping(labels, sep=None, pd_labels_var_name=None):
+def labelMapping(labels, sep=None, pd_labels_var_name=None):
     """
     # Purpose\n
         Extract elements from a string collection using a pre-set seperator as labels (multiclass/multilabel/binary).
@@ -159,7 +159,7 @@ def label_mapping(labels, sep=None, pd_labels_var_name=None):
     return labels_list, labels_count, labels_map, labels_map_rev
 
 
-def label_one_hot(labels_list, labels_map):
+def labelOneHot(labels_list, labels_map):
     """
     # Purpose\n
         One hot encode for labels (multiclass/multilabel/binary).
@@ -208,7 +208,7 @@ def label_one_hot(labels_list, labels_map):
     return one_hot_encoded
 
 
-def get_selected_dataset(ds, X_indices_np):
+def getSelectedDataset(ds, X_indices_np):
     """
     modified from https://www.kaggle.com/tt195361/splitting-tensorflow-dataset-for-validation
     """
@@ -240,16 +240,16 @@ def get_selected_dataset(ds, X_indices_np):
     return selected_ds, n
 
 
-def training_test_spliter_final(data, model_type='classification',
-                                training_percent=0.8, random_state=None,
-                                man_split=False, man_split_colname=None,
-                                man_split_testset_value=None,
-                                x_standardization=True,
-                                x_min_max_scaling=False,
-                                x_scale_column_to_exclude=None,
-                                y_min_max_scaling=False,
-                                y_column=None,
-                                min_max_scale_range=(0, 1)):
+def trainingtestSpliterFinal(data, model_type='classification',
+                             training_percent=0.8, random_state=None,
+                             man_split=False, man_split_colname=None,
+                             man_split_testset_value=None,
+                             x_standardization=True,
+                             x_min_max_scaling=False,
+                             x_scale_column_to_exclude=None,
+                             y_min_max_scaling=False,
+                             y_column=None,
+                             min_max_scale_range=(0, 1)):
     """
     # Purpose\n
         This is a training_test_spliter, with data standardization and normalization functionalities

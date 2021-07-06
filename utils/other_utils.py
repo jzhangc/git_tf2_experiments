@@ -43,7 +43,7 @@ def warn(message, *lines):
     print(string.format(colr.YELLOW_B, colr.YELLOW, colr.ENDC))
 
 
-def add_bool_arg(parser, name, help, input_type, default=False):
+def addBoolArg(parser, name, help, input_type, default=False):
     """
     Purpose\n
                     autmatically add a pair of mutually exclusive boolean arguments to the
@@ -63,7 +63,7 @@ def add_bool_arg(parser, name, help, input_type, default=False):
     parser.set_defaults(**{name: default})
 
 
-def csv_path(string):
+def csvPath(string):
     input_path = os.path.dirname(__file__)
     full_path = os.path.normpath(os.path.join(input_path, string))
 
@@ -78,7 +78,7 @@ def csv_path(string):
         error('invalid input file or input file not found.')
 
 
-def output_dir(string):
+def outputDir(string):
     input_path = os.path.dirname(__file__)
     full_path = os.path.normpath(os.path.join(input_path, string))
 

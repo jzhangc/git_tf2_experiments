@@ -20,8 +20,8 @@ import os
 import sys
 # import numpy as np
 import pandas as pd
-from utils.other_utils import error, warn, flatten, add_bool_arg, csv_path, output_dir, colr
-from utils.data_utils import training_test_spliter_final
+from utils.other_utils import error, warn, flatten, addBoolArg, csvPath, outputDir, colr
+from utils.data_utils import trainingtestSpliterFinal
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import LabelEncoder
 
@@ -82,7 +82,7 @@ add_g4_arg = arg_g4.add_argument
 
 # - add arugments to the argument groups -
 # g1: inpout and ouput
-add_g1_arg('file', nargs=1, type=csv_path,
+add_g1_arg('file', nargs=1, type=csvPath,
            help='One and only one input CSV file. (Default: %(default)s)')
 
 add_g1_arg('-s', '--sample_id_var', type=str, default=None,
@@ -93,9 +93,9 @@ add_g1_arg('-a', '--annotation_vars', type=str, nargs="+", default=[],
 #            help='int. Number of class for classification models. (Default: %(default)s)')
 add_g1_arg('-y', '--outcome_var', type=str, default=None,
            help='str. Vairable name for outcome. NOTE: only needed with single file processing. (Default: %(default)s)')
-add_bool_arg(parser=arg_g1, name='y_scale', input_type='flag', default=False,
-             help='str. If to min-max scale outcome for regression study. (Default: %(default)s)')
-add_g1_arg('-o', '--output_dir', type=output_dir,
+addBoolArg(parser=arg_g1, name='y_scale', input_type='flag', default=False,
+           help='str. If to min-max scale outcome for regression study. (Default: %(default)s)')
+add_g1_arg('-o', '--output_dir', type=outputDir,
            default='.',
            help='str. Output directory. NOTE: not an absolute path, only relative to working directory -w/--working_dir.')
 
@@ -103,24 +103,24 @@ add_g1_arg('-o', '--output_dir', type=output_dir,
 add_g2_arg('-v', '--cv_type', type=str,
            choices=['kfold', 'LOO', 'monte'], default='kfold',
            help='str. Cross validation type. Default is \'kfold\'')
-add_bool_arg(parser=arg_g2, name='cv_only', input_type='flag',
-             help='If to do cv_only mode for training, i.e. no holdout test split. (Default: %(default)s)',
-             default=False)
-add_bool_arg(parser=arg_g2, name='man_split', input_type='flag',
-             help='Manually split data into training and test sets. When set, the split is on -s/--sample_id_var. (Default: %(default)s)',
-             default=False)
+addBoolArg(parser=arg_g2, name='cv_only', input_type='flag',
+           help='If to do cv_only mode for training, i.e. no holdout test split. (Default: %(default)s)',
+           default=False)
+addBoolArg(parser=arg_g2, name='man_split', input_type='flag',
+           help='Manually split data into training and test sets. When set, the split is on -s/--sample_id_var. (Default: %(default)s)',
+           default=False)
 add_g2_arg('-t', '--holdout_samples', nargs='+', type=str, default=[],
            help='str. Sample IDs selected as holdout test group when --man_split was set. (Default: %(default)s)')
 add_g2_arg('-p', '--training_percentage', type=float, default=0.8,
            help='num, range: 0~1. Split percentage for training set when --no-man_split is set. (Default: %(default)s)')
 add_g2_arg('-r', '--random_state', type=int,
            default=1, help='int. Random state. (Default: %(default)s)')
-add_bool_arg(parser=arg_g2, name='x_standardize', input_type='flag',
-             default='False',
-             help='If to apply z-score stardardization for x. (Default: %(default)s)')
-add_bool_arg(parser=arg_g2, name='minmax', input_type='flag',
-             default='False',
-             help='If to apply min-max normalization for x and, if regression, y (to range 0~1). (Default: %(default)s)')
+addBoolArg(parser=arg_g2, name='x_standardize', input_type='flag',
+           default='False',
+           help='If to apply z-score stardardization for x. (Default: %(default)s)')
+addBoolArg(parser=arg_g2, name='minmax', input_type='flag',
+           default='False',
+           help='If to apply min-max normalization for x and, if regression, y (to range 0~1). (Default: %(default)s)')
 
 # g3: modelling
 add_g3_arg('-m', '--model_type', type=str, choices=['regression', 'classification'],
@@ -128,8 +128,8 @@ add_g3_arg('-m', '--model_type', type=str, choices=['regression', 'classificatio
            help='str. Model type. Options: \'regression\' and \'classification\'. (Default: %(default)s)')
 
 # g4: others
-add_bool_arg(parser=arg_g4, name='verbose', input_type='flag', default=False,
-             help='Verbose or not. (Default: %(default)s)')
+addBoolArg(parser=arg_g4, name='verbose', input_type='flag', default=False,
+           help='Verbose or not. (Default: %(default)s)')
 
 args = parser.parse_args()
 
@@ -222,7 +222,7 @@ class DataLoader(object):
 
         # load files
         self.model_type = model_type
-        # convert to a list for training_test_spliter_final() to use
+        # convert to a list for trainingtestSpliterFinal() to use
         self.outcome_var = outcome_var
         self.annotation_vars = annotation_vars
         self.y_var = [self.outcome_var]
@@ -293,14 +293,14 @@ class DataLoader(object):
             self._training, self._test = self.raw_working, None
         else:
             # training and holdout test data split
-            self._training, self._test, _, _, self._training_y_scaler = training_test_spliter_final(data=self.raw_working, random_state=self.rand,
-                                                                                                    model_type=self.model_type,
-                                                                                                    man_split=man_split, man_split_colname=self.sample_id_var,
-                                                                                                    man_split_testset_value=self.holdout_samples,
-                                                                                                    x_standardization=self.x_standardize,
-                                                                                                    x_min_max_scaling=self.minmax,
-                                                                                                    x_scale_column_to_exclude=self.complete_annot_vars,
-                                                                                                    y_min_max_scaling=self.minmax, y_column=self.y_var)
+            self._training, self._test, _, _, self._training_y_scaler = trainingtestSpliterFinal(data=self.raw_working, random_state=self.rand,
+                                                                                                 model_type=self.model_type,
+                                                                                                 man_split=man_split, man_split_colname=self.sample_id_var,
+                                                                                                 man_split_testset_value=self.holdout_samples,
+                                                                                                 x_standardization=self.x_standardize,
+                                                                                                 x_min_max_scaling=self.minmax,
+                                                                                                 x_scale_column_to_exclude=self.complete_annot_vars,
+                                                                                                 y_min_max_scaling=self.minmax, y_column=self.y_var)
 
         self._training_x, self._test_x = self._training[self._training.columns[
             ~self._training.columns.isin(self.complete_annot_vars)]], self._test[self._test.columns[~self._test.columns.isin(self.complete_annot_vars)]]
