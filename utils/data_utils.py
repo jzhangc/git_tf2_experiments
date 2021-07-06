@@ -208,6 +208,50 @@ def labelOneHot(labels_list, labels_map):
     return one_hot_encoded
 
 
+def labelOneHotRev(onehot_labels, labels_map_rev):
+    """
+    # Purpuuse\n
+        Convert a list of one hot encoded labels back to a list the labels.
+
+    # Arguments\n
+        onehot_labels: list or np.ndarray. A list of one hot encoded labels.
+        labels_map_rev: dict. A dict of enumerated labels. 
+
+    # Details\n
+        The labels_map_rev input can be obtained from labelMapping(). 
+
+        Example:
+        >>> labels_map_rev
+        {0: 'all_megs_pc',
+        1: 'all_megs_pt',
+        2: 'sc_fmri_alpha_beta_pc',
+        3: 'sc_fmri_alpha_beta_pt',
+        4: 'sc_fmri_beta_hig_pc',
+        5: 'sc_fmri_beta_hig_pt',
+        6: 'sc_fmri_beta_pc',
+        7: 'sc_fmri_beta_pt',
+        8: 'sc_fmri_megs_pc',
+        9: 'sc_fmri_megs_pt'}
+    """
+    # - check argumments -
+    if not isinstance(labels_map_rev, dict):
+        raise TypeError('labels_map_rev needs to be a dict.')
+
+    if not isinstance(onehot_labels, (list, np.ndarray)):
+        raise TypeError(
+            'onehot_labels needs to be ether a list or a np.ndarray.')
+
+    # - conversion -
+    converted_labels = list()
+    for i, label in labels_map_rev.items():
+        for onehot in onehot_labels:
+            if onehot[i]:
+                print(label)
+                converted_labels.append(label)
+
+    return converted_labels
+
+
 def getSelectedDataset(ds, X_indices_np):
     """
     modified from https://www.kaggle.com/tt195361/splitting-tensorflow-dataset-for-validation

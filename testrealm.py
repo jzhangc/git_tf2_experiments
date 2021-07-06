@@ -86,10 +86,10 @@ for a, b in tst_dat.take(3):  # take 3 smaples
 tst_dat_working = tst_dat.map(lambda x, y: tf.py_function(map_func, [x, y, True], [tf.float32, tf.uint8]),
                               num_parallel_calls=tf.data.AUTOTUNE)
 
-for a, b in tst_dat_working.take(3):  # take 3 smaples
+for a, b in tst_dat_working:  # take 3 smaples
     print(type(a))
-    print(fname)
-    print(f'label: {lb}')
+    print(a.shape)
+    print(f'label: {b}')
     print(f)
     break
 
