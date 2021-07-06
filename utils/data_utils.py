@@ -12,7 +12,7 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 
 # ------ functions -------
-def ScanFiles(basePath, validExts=None, contains=None):
+def scanFiles(basePath, validExts=None, contains=None):
     """
     # Purpose\n
         Scan subdirs and extract file paths.
@@ -76,7 +76,7 @@ def adjmatAnnotLoader(dir, autoLabel=True, targetExt=None):
     # Details\n
         When targetExt=None, the function scans root and sub directories. 
     """
-    adjmat_paths = list(ScanFiles(dir, validExts=targetExt))
+    adjmat_paths = list(scanFiles(dir, validExts=targetExt))
     file_annot = pd.DataFrame()
 
     labels = []
@@ -220,18 +220,18 @@ def labelOneHotRev(onehot_labels, labels_map_rev):
     # Details\n
         The labels_map_rev input can be obtained from labelMapping(). 
 
-        Example:
-        >>> labels_map_rev
-        {0: 'all_megs_pc',
-        1: 'all_megs_pt',
-        2: 'sc_fmri_alpha_beta_pc',
-        3: 'sc_fmri_alpha_beta_pt',
-        4: 'sc_fmri_beta_hig_pc',
-        5: 'sc_fmri_beta_hig_pt',
-        6: 'sc_fmri_beta_pc',
-        7: 'sc_fmri_beta_pt',
-        8: 'sc_fmri_megs_pc',
-        9: 'sc_fmri_megs_pt'}
+            Example:
+            >>> labels_map_rev
+            {0: 'all_megs_pc',
+            1: 'all_megs_pt',
+            2: 'sc_fmri_alpha_beta_pc',
+            3: 'sc_fmri_alpha_beta_pt',
+            4: 'sc_fmri_beta_hig_pc',
+            5: 'sc_fmri_beta_hig_pt',
+            6: 'sc_fmri_beta_pc',
+            7: 'sc_fmri_beta_pt',
+            8: 'sc_fmri_megs_pc',
+            9: 'sc_fmri_megs_pt'}
     """
     # - check argumments -
     if not isinstance(labels_map_rev, dict):
