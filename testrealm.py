@@ -138,10 +138,6 @@ for train_idx, test_idx in kf.split(X_indices, encoded_labels):
     print(train_idx)
     print(test_idx)
 
-
-X, y, _, _ = load_dataset('scene', 'undivided')
-
-
 # ------ ref ------
 # - tf.dataset reference: https://cs230.stanford.edu/blog/datapipeline/ -
 # - real TF2 data loader example: https://github.com/HasnainRaz/SemSegPipeline/blob/master/dataloader.py -
