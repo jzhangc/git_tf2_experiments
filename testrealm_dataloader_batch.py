@@ -227,7 +227,7 @@ class DataLoader(object):
     def _x_data_process(self, x_array):
         """NOTE: reshaping to (_, _, 1) is mandatory"""
         # - variables -
-        if isinstance(x_array, np.ndarray):
+        if isinstance(x_array, np.ndarray):  # this check can be done outside of the classs
             X = x_array
         else:
             raise TypeError('data processing function should be a np.ndarray.')
