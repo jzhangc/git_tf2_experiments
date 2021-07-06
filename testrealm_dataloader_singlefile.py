@@ -158,14 +158,14 @@ if args.cv_type == 'monte':
 # ------ loacl classes ------
 class DataLoader(object):
     """
-    # Purpose
+    # Purpose\n
         Data loading class.
-    # Methods
+    # Methods\n
         __init__: load data and other information from argparser, as well as class label encoding for classification study
-    # Details
+    # Details\n
         This class is designed to load the data and set up data for training LSTM models.
         This class uses the custom error() function. So be sure to load it.
-    # Class property
+    # Class property\n
         modelling_data: dict. data for model training. data is split if necessary.
             No data splitting for the "CV only" mode.
             returns a dict object with 'training' and 'test' items
@@ -179,7 +179,7 @@ class DataLoader(object):
                  x_standardize,
                  man_split, holdout_samples, training_percentage, random_state, verbose):
         """
-        # Arguments
+        # Arguments\n
             file: str. complete input file path. "args.file[0]" from argparser]
             outcome_var: str. variable nanme for outcome. Only one is accepted for this version. "args.outcome_var" from argparser
             annotation_vars: list of strings. Column names for the annotation variables in the input dataframe, EXCLUDING outcome variable.
@@ -193,7 +193,7 @@ class DataLoader(object):
             training_percentage: float, betwen 0 and 1. percentage for training data, when man_split=False. "args.training_percentage" from argparser
             random_state: int. random state
             verbose: bool. verbose. "args.verbose" from argparser
-        # Public class attributes
+        # Public class attributes\n
             Below are attributes read from arguments
                 self.model_type
                 self.n_classes
@@ -212,7 +212,7 @@ class DataLoader(object):
             self.n_features: int. number of features
             self.le: sklearn LabelEncoder for classification study
             self.label_mapping: dict. Class label mapping codes, when model_type='classification'
-        # Private class attributes (excluding class properties)
+        # Private class attributes (excluding class properties)\n
             self._basename: str. complete file name (with extension), no path
             self._n_annot_col: int. number of annotation columns
         """
@@ -282,7 +282,7 @@ class DataLoader(object):
     @modelling_data.setter
     def modelling_data(self, man_split):
         """
-        Private attributes for the property
+        Private attributes for the property\n
             _m_data: dict. output dictionary
             _training: pandas dataframe. data for model training.
             _test: pandas dataframe. holdout test data. Only available without the "--cv_only" flag

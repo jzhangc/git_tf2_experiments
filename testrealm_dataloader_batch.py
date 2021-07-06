@@ -47,8 +47,8 @@ __version__ = '0.1.0'
 AUTHOR = 'Jing Zhang, PhD'
 DESCRIPITON = """
 {}--------------------------------- Description -------------------------------------------
-Data loader for batch adjacency matrix CSV file data table for deep learning. 
-The loaded CSV files are stored in a 3D numpy array, with size: . 
+Data loader for batch adjacency matrix CSV file data table for deep learning.
+The loaded CSV files are stored in a 3D numpy array, with size: .
 This loader also handels the following:
     1. Data resampling, e.g. traning/test split, cross validation
     2. Data normalization
@@ -110,32 +110,38 @@ if args.man_split and len(args.holdout_samples) < 1:
 # ------ loacl classes ------
 class DataLoader(object):
     """
-    # Purpose
+    # Purpose\n
         Data loading class.
-    # Methods
+    # Methods\n
         __init__: load data and other information from argparser, as well as class label encoding for classification study
-    # Details
+    # Details\n
         This class is designed to load the data and set up data for training LSTM models.
         This class uses the custom error() function. So be sure to load it.
-    # Class property
+    # Class property\n
         modelling_data: dict. data for model training. data is split if necessary.
             No data splitting for the "CV only" mode.
             returns a dict object with 'training' and 'test' items
     """
 
     def __init__(self, filepath,
-                 shape, new_shape,
+                 new_shape=None,
                  manual_labels=None, label_sep=None, pd_labels_var_name=None,
                  target_ext=None,
-                 model_type='classification',
-                 multilabel=False,
+                 model_type='classification', multilabel=False,
+                 x_min_max_scale=None,
+                 resmaple_method="random",
                  batch_size=None,
                  training_percentage=0.8,
                  shuffle=True,
                  cross_validation=False, k=10,
                  verbose=True, random_state=1):
         """
-        TBC
+        # Arguments\n
+            resample_method: str. options: "random", "stratified" and "balanced".
+            x_min_max_scale: two tuple. (min, max). Default is None (i.e. not scaling data).
+
+        # Details\n
+            1. resample_method is automatically set to "random" when model_type='regression'.
         """
         # model information
         self.model_type = model_type
@@ -148,10 +154,13 @@ class DataLoader(object):
         self.new_shape = new_shape
 
         # processing
+        self.x_min_max_scale = x_min_max_scale
         self.batch_size = batch_size
 
         # resampling
+        self.resample_method = resmaple_method
         self.train_percentage = training_percentage
+        self.test_percentage = 1 - training_percentage
         self.shuffle = shuffle
         self.cross_validation = cross_validation
         self.cv_k = k
@@ -159,15 +168,22 @@ class DataLoader(object):
         # random state and other settings
         self.rand = random_state
         self.verbose = verbose
-        self.original_shape = shape
 
     def _parse_file(self):
         """
         1. parse file path to get file path annotatin and, optionally, label information
         2. set up manual label information
         """
-        file_annot, labels = adjmatAnnotLoader(
-            self.filepath, targetExt=self.target_ext)
+
+        if self.model_type == 'classification':
+            file_annot, labels = adjmatAnnotLoader(
+                self.filepath, targetExt=self.target_ext)
+        else:  # regeression
+            file_annot, _ = adjmatAnnotLoader(
+                self.filepath, targetExt=self.target_ext, autoLabel=False)
+            if self.manual_labels is None:
+                raise TypeError(
+                    'Set manual_labels when model_type=\"regression\".')
 
         if self.manual_labels is not None:  # update labels to the manually set array
             if isinstance(self.manual_labels, pd.DataFrame):
@@ -183,42 +199,72 @@ class DataLoader(object):
                 raise TypeError(
                     'When not None, manual_labels needs to be pd.Dataframe or np.ndarray.')
 
+            labels = self.manual_labels
+
         return file_annot, labels
 
     def _get_file_annot(self):
         file_annot, labels = self._parse_file()
 
-        if self.multilabel:
-            labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
-                labels=labels, sep=None)
+        if self.model_type == 'classification':
+            if self.multilabel:
+                labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
+                    labels=labels, sep=self.label_sep)
+            else:
+                labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
+                    labels=labels, sep=None)
+            encoded_labels = labelOneHot(labels_list, labels_map)
         else:
-            labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
-                labels=labels, sep=None)
+            encoded_labels = labels
+            lables_count, labels_map_rev = None, None
 
-        encoded_labels = labelOneHot(labels_list, labels_map)
         filepath_list = file_annot['path'].to_list()
 
         return filepath_list, encoded_labels, lables_count, labels_map_rev
 
-    def _data_process(self):
-        print('TBC')
-        return None
-
-    def _data_reshape(self):
-        print('TBC')
-        return None
-
-    def _data_resample(self, n_total_sample):
-        """NTOE: multilabel and regression can not use stratified splitting"""
-        encoded_labels = self._get_labels()
-        X_indices
-        if self.multilabel:
-            X_train_indices, X_test_indices, y_train_targets, y_test_targets = train_test_split(
-                X_indices, _encoded_labels, test_size=0.1, stratify=_encoded_labels, random_state=53)
-
+    def _x_data_process(self, x_array, min_max_scaling=False, min_max_scale_range=(0, 1)):
+        """NOTE: reshaping to (_, _, 1) is mandatory"""
+        # - variables -
+        if isinstance(x_array, np.ndarray):
+            X = x_array
         else:
-            train_ds = None
-            test_ds = None
+            raise TypeError('data processing function should be a np.ndarray.')
+
+        Min = self.x_min_max_scale[0]
+        Max = self.x_min_max_scale[1]
+
+        if self.x_min_max_scale is not None:  # rescale
+            X_std = (X - X.min(axis=0)) / (X.max(axis=0) - X.min(axis=0))
+            X = X_std * (Max - Min) + Min
+
+        if self.new_shape is not None:  # reshape
+            X = X.reshape(self.new_shape)
+        else:
+            X = X.reshape((X.shape, 1))
+
+        return X
+
+    def _data_resample(self, total_data, n_total_sample):
+        """
+        NOTE: regression cannot use stratified splitting
+        NOTE: "stratified" (keep class ratios) is NOT the same as "balanced" (make class ratio=1)
+        NOTE: "balanced" mode will be implemented at a later time
+        NOTE: depending on how "balanced" is implemented, the if/else block could be implified
+        """
+        _, encoded_labels, _, _ = self._get_file_annot()
+        X_indices = np.arange(n_total_sample)
+        if self.resample_method == 'random':
+            X_train_indices, X_test_indices, _, _ = train_test_split(
+                X_indices, encoded_labels, test_size=self.test_percentage, stratify=None, random_state=self.rand)
+        elif self.resample_method == 'stratified':
+            X_train_indices, X_test_indices, _, _ = train_test_split(
+                X_indices, encoded_labels, test_size=self.test_percentage, stratify=encoded_labels, random_state=self.rand)
+        else:
+            raise NotImplementedError(
+                '\"balanced\" resmapling method has not been implemented.')
+
+        train_ds, train_n = getSelectedDataset(total_data, X_train_indices)
+        test_ds, test_n = getSelectedDataset(total_data, X_test_indices)
 
         return train_ds, train_n, test_ds, test_n
 
@@ -230,9 +276,9 @@ class DataLoader(object):
 
         # - processing if needed -
         if processing:
-            f = f/f.max()
-        f = tf.convert_to_tensor(f, dtype=tf.float32)
+            f = self._x_data_process(f)
 
+        f = tf.convert_to_tensor(f, dtype=tf.float32)
         return f, lb
 
     def load_data(self, batch_size, shuffle=False):
