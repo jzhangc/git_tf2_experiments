@@ -247,6 +247,19 @@ class DataLoader(object):
 
         return X
 
+    def _map_func(self, filepath: tf.Tensor, label: tf.Tensor, processing=False):
+        # - read file and assign label -
+        fname = filepath.numpy().decode('utf-8')
+        f = np.loadtxt(fname).astype('float32')
+        lb = label
+
+        # - processing if needed -
+        if processing:
+            f = self._x_data_process(f)
+
+        f = tf.convert_to_tensor(f, dtype=tf.float32)
+        return f, lb
+
     def _data_resample(self, total_data, n_total_sample):
         """
         NOTE: regression cannot use stratified splitting
@@ -270,19 +283,6 @@ class DataLoader(object):
         test_ds, test_n = getSelectedDataset(total_data, X_test_indices)
 
         return train_ds, train_n, test_ds, test_n
-
-    def _map_func(self, filepath: tf.Tensor, label: tf.Tensor, processing=False):
-        # - read file and assign label -
-        fname = filepath.numpy().decode('utf-8')
-        f = np.loadtxt(fname).astype('float32')
-        lb = label
-
-        # - processing if needed -
-        if processing:
-            f = self._x_data_process(f)
-
-        f = tf.convert_to_tensor(f, dtype=tf.float32)
-        return f, lb
 
     def load_data(self, batch_size, shuffle=False):
 
