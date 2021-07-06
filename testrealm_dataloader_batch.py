@@ -285,8 +285,16 @@ class DataLoader(object):
         return train_ds, train_n, test_ds, test_n
 
     def load_data(self, batch_size, shuffle=False):
+        # - load paths -
+        filepath_list, encoded_labels, lables_count, labels_map_rev = self._get_file_annot()
+        total_ds = tf.data.Dataset.from_tensor_slices(
+            (filepath_list, encoded_labels))
 
-        return None
+        # - load data -
+
+        # - resample data -
+
+        return train_ds, train_n, test_ds, test_n
 
 
 # below: ad-hoc testing
