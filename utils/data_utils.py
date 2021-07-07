@@ -12,6 +12,53 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 
 # ------ functions -------
+def getSingleCsvDataset(csv_path, label_var, column_to_exclude=None,
+                        batch_size=5, **kwargs):
+    """
+    # Purpose\n
+        Write in a single CSV file into a tf.dataset object
+
+    # Argument\n
+        csv_path: str. File path. 
+        label_var: str. Variable name.
+        column_to_exclude: None, or list of str. A list of the variable names to exclude.
+        batch_size: int. Batch size.
+
+    # Return\n
+        Two items (in following order): tf.dataset, feature list.
+
+    # Details\n
+        1. pd.read_csv is used to read in the header of the CSV file.
+        2. label_var only supports one label, i.e. only binary and multi-class are supported.
+    """
+
+    # - write in only the header information -
+    csv_header = pd.read_csv(csv_path, index_col=0,
+                             nrows=0).columns.tolist()
+
+    # - subset columns and establish feature list -
+    if column_to_exclude is not None:
+        column_to_include = [
+            element for element in csv_header if element not in column_to_exclude]
+        feature_list = column_to_include
+    else:
+        column_to_include = None
+        feature_list = csv_header
+
+    # - set up tf.dataset -
+    ds = tf.data.experimental.make_csv_dataset(
+        csv_path,
+        batch_size=batch_size,
+        label_name=label_var,
+        na_value="?",
+        num_epochs=1,
+        ignore_errors=True,
+        select_columns=column_to_include,
+        **kwargs)
+
+    return ds, feature_list
+
+
 def scanFiles(basePath, validExts=None, contains=None):
     """
     # Purpose\n

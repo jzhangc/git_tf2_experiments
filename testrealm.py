@@ -15,6 +15,10 @@ from sklearn.model_selection import train_test_split, StratifiedKFold, KFold
 # from skmultilearn.model_selection import iterative_train_test_split
 
 
+# ------ check device ------
+tf.config.list_physical_devices()
+
+
 # ------ function -------
 def map_func(filepath: tf.Tensor, label: tf.Tensor, processing=False):
     # - read file and assign label -
@@ -65,7 +69,6 @@ file_annot[list(labels_map.keys())] = encoded_labels
 file_path = file_annot['path'].to_list()
 
 # test: load using the tf.data.Dataset API
-tf.config.list_physical_devices()
 tst_dat = tf.data.Dataset.from_tensor_slices((file_path, encoded_labels))
 tst_data_size = tst_dat.cardinality().numpy()  # sample size: 250
 

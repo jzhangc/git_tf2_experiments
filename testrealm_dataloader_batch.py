@@ -8,6 +8,8 @@ Current objectives:
 [ ] Test file processing
     [ ] normalization and scalling
     [ ] converting to numpy arrays
+[ ] Implement "balanced" data resampling
+[ ] Implement data resampling for cross-validation (maybe move this out of the dataloader)
 
 NOTE
 All the argparser inputs are loaded from method arguments, making the class more portable, i.e. not tied to
@@ -108,7 +110,7 @@ if args.man_split and len(args.holdout_samples) < 1:
 
 
 # ------ loacl classes ------
-class DataLoader(object):
+class batchDataLoader(object):
     """
     # Purpose\n
         Data loading class.
