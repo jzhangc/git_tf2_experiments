@@ -156,7 +156,7 @@ if args.cv_type == 'monte':
 
 
 # ------ loacl classes ------
-class singleDataLoader(object):
+class SingleDataLoader(object):
     """
     # Purpose\n
         Data loading class.
@@ -282,7 +282,7 @@ class singleDataLoader(object):
 
 
 # below: ad-hoc testing
-mydata = singleDataLoader(file='./data/test_dat.csv', outcome_var='PCL', annotation_vars=['subject', 'group'], sample_id_var='subject',
+mydata = SingleDataLoader(file='./data/test_dat.csv', outcome_var='PCL', annotation_vars=['subject', 'group'], sample_id_var='subject',
                           holdout_samples=None, minmax=True, x_standardize=True,
                           model_type='regression', cv_only=False, man_split=False, training_percentage=0.8, random_state=1, verbose=True)
 

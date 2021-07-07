@@ -110,7 +110,7 @@ if args.man_split and len(args.holdout_samples) < 1:
 
 
 # ------ loacl classes ------
-class batchDataLoader(object):
+class BatchDataLoader(object):
     """
     # Purpose\n
         Data loading class.
@@ -306,9 +306,9 @@ class batchDataLoader(object):
 
 
 # below: ad-hoc testing
-mydata = DataLoader(file='./data/test_dat.csv', outcome_var='PCL', annotation_vars=['subject', 'group'], sample_id_var='subject',
-                    holdout_samples=None, minmax=True, x_standardize=True,
-                    model_type='regression', cv_only=False, man_split=False, training_percentage=0.8, random_state=1, verbose=True)
+mydata = BatchDataLoader(file='./data/test_dat.csv', outcome_var='PCL', annotation_vars=['subject', 'group'], sample_id_var='subject',
+                         holdout_samples=None, minmax=True, x_standardize=True,
+                         model_type='regression', cv_only=False, man_split=False, training_percentage=0.8, random_state=1, verbose=True)
 
 # ------ process/__main__ statement ------
 # if __name__ == '__main__':
