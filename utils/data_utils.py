@@ -31,7 +31,6 @@ def getSingleCsvDataset(csv_path, label_var, column_to_exclude=None,
         1. pd.read_csv is used to read in the header of the CSV file.
         2. label_var only supports one label, i.e. only binary and multi-class are supported.
     """
-
     # - write in only the header information -
     csv_header = pd.read_csv(csv_path, index_col=0,
                              nrows=0).columns.tolist()
