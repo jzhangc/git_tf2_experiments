@@ -43,17 +43,21 @@ main_dir = os.path.abspath('./')
 file_path = os.path.join(main_dir, 'data/test_dat.csv')
 
 # - test: load using the tf.data.Dataset API -
-tst_dat = getSingleCsvDataset(
-    file_path, label_var='group', column_to_exclude=['subject', 'PCL'])
+tst_dat, feature_list = getSingleCsvDataset(
+    file_path, batch_size=1,
+    label_var='group', column_to_exclude=['subject', 'PCL'])
 
-feature_names = []
-for batch, label in tst_dat.take(1):
-    for key, value in batch.items():
-        print(f"{key:20s}: {value}")
-        # feature_names.append(key)
+
+n = 0  # batches
+for i in tst_dat:
+    n += 1
+n
+
+for a, b in tst_dat.take(2):
+    print(a)
+    print(b)
     print()
-    print(f"{'label':20s}: {label}")
-
+    # break
 
 # - below: create one hot encoding for multiclass labels -
 
