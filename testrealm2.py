@@ -43,14 +43,6 @@ main_dir = os.path.abspath('./')
 file_path = os.path.join(main_dir, 'data/test_dat.csv')
 
 # - test: load using the tf.data.Dataset API -
-tst_dat = tf.data.experimental.make_csv_dataset(file_path,
-                                                batch_size=5, label_name='group')
-
-for a in tst_dat:  # take 3 smaples
-    print(a)
-    break
-
-
 tst_dat = getSingleCsvDataset(
     file_path, label_var='group', column_to_exclude=['subject', 'PCL'])
 
