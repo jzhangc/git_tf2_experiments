@@ -8,7 +8,7 @@ Current objectives:
 [x] Test file processing
     [x] normalization and scalling
     [x] converting to numpy arrays
-[ ] use convert to tf.dataset
+[x] use convert to tf.dataset
 
 NOTE
 All the argparser inputs are loaded from method arguments, making the class more portable, i.e. not tied to
@@ -95,6 +95,8 @@ add_g1_arg('-a', '--annotation_vars', type=str, nargs="+", default=[],
 #            help='int. Number of class for classification models. (Default: %(default)s)')
 add_g1_arg('-y', '--label_var', type=str, default=None,
            help='str. Vairable name for label. NOTE: only needed with single file processing. (Default: %(default)s)')
+add_g1_arg('-c', '--label_string_sep', type=str, default=None,
+           help='str. Separator to separate label string, to create multilabel labels. (Default: %(default)s)')
 addBoolArg(parser=arg_g1, name='y_scale', input_type='flag', default=False,
            help='str. If to min-max scale label for regression study. (Default: %(default)s)')
 add_g1_arg('-o', '--output_dir', type=outputDir,
