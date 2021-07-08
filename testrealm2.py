@@ -1,6 +1,6 @@
 """
 Current objectives:
-test smalls things for implementing 
+test smalls things for implementing single file "out of memory" data loading
 """
 
 # ------ modules ------
@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 from utils.data_utils import getSelectedDataset, getSingleCsvDataset
+from utils.other_utils import error
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, LabelBinarizer
 from sklearn.model_selection import train_test_split
@@ -61,18 +62,6 @@ for a, b in tst_dat.take(6):
 
 # - below: create one hot encoding for multiclass labels -
 
-
-# - resampling -
-X_indices = np.arange(tst_data_size)
-
-# multiclass
-X_train_indices, X_val_indices, y_train_targets, y_val_targets = train_test_split(
-    X_indices, encoded_labels, test_size=0.1, stratify=encoded_labels, random_state=53)
-
-tst_test, test_n = getSelectedDataset(tst_dat, X_val_indices)
-
-t = (0, 1)
-t2 = t[:]+(2)
 
 # ------ ref ------
 # - tf.dataset reference: https://cs230.stanford.edu/blog/datapipeline/ -
