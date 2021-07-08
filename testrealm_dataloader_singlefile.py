@@ -20,10 +20,11 @@ import os
 import sys
 # import numpy as np
 import pandas as pd
+import numpy as np
 import tensorflow as tf
 from utils.other_utils import error, warn, flatten, addBoolArg, csvPath, outputDir, colr
-from utils.data_utils import trainingtestSpliterFinal
-from sklearn.model_selection import StratifiedShuffleSplit
+from utils.data_utils import labelMapping, trainingtestSpliterFinal, labelOneHot
+from sklearn.model_selection import StratifiedShuffleSplit, train_test_split
 from sklearn.preprocessing import LabelEncoder
 
 
@@ -101,12 +102,12 @@ add_g1_arg('-o', '--output_dir', type=outputDir,
            help='str. Output directory. NOTE: not an absolute path, only relative to working directory -w/--working_dir.')
 
 # g2: resampling and normalization
-add_g2_arg('-v', '--cv_type', type=str,
-           choices=['kfold', 'LOO', 'monte'], default='kfold',
-           help='str. Cross validation type. Default is \'kfold\'')
 addBoolArg(parser=arg_g2, name='cv_only', input_type='flag',
            help='If to do cv_only mode for training, i.e. no holdout test split. (Default: %(default)s)',
            default=False)
+add_g2_arg('-v', '--cv_type', type=str,
+           choices=['kfold', 'LOO', 'monte'], default='kfold',
+           help='str. Cross validation type. Default is \'kfold\'')
 addBoolArg(parser=arg_g2, name='man_split', input_type='flag',
            help='Manually split data into training and test sets. When set, the split is on -s/--sample_id_var. (Default: %(default)s)',
            default=False)
@@ -114,6 +115,9 @@ add_g2_arg('-t', '--holdout_samples', nargs='+', type=str, default=[],
            help='str. Sample IDs selected as holdout test group when --man_split was set. (Default: %(default)s)')
 add_g2_arg('-p', '--training_percentage', type=float, default=0.8,
            help='num, range: 0~1. Split percentage for training set when --no-man_split is set. (Default: %(default)s)')
+add_g2_arg('-m', '--resample_method', type=str,
+           choices=['random', 'stratified', 'balanced'], default='random',
+           help='str. training-test split method. (Default: %(default)s)')
 add_g2_arg('-r', '--random_state', type=int,
            default=1, help='int. Random state. (Default: %(default)s)')
 addBoolArg(parser=arg_g2, name='x_standardize', input_type='flag',
@@ -178,7 +182,9 @@ class singleCsvMemoLoader(object):
                  cv_only,
                  minmax,
                  x_standardize,
-                 man_split, holdout_samples, training_percentage, random_state, verbose):
+                 man_split, holdout_samples, training_percentage,
+                 resample_method='random',
+                 label_string_sep=None, random_state=1, verbose=True):
         """
         # Arguments\n
             file: str. complete input file path. "args.file[0]" from argparser]
@@ -217,57 +223,48 @@ class singleCsvMemoLoader(object):
             self._basename: str. complete file name (with extension), no path
             self._n_annot_col: int. number of annotation columns
         """
-        # random state and other settings
+        # - random state and other settings -
         self.rand = random_state
         self.verbose = verbose
 
-        # load files
+        # - model and data info -
         self.model_type = model_type
         # convert to a list for trainingtestSpliterFinal() to use
         self.label_var = label_var
+        self.label_sep = label_string_sep
         self.annotation_vars = annotation_vars
-        self.y_var = [self.label_var]
-
-        # args.file is a list. so use [0] to grab the string
-        self.file = file
-        self._basename, self._file_ext = os.path.splitext(file)
-        # self.filename, self._name_ext = os.path.splitext(self._basename)[
-        #     0], os.path.splitext(self._basename)[1]
-
-        self.raw = pd.read_csv(self.file, engine='python')
-        self.raw_working = self.raw.copy()  # value might be changed
+        self.y_var = [self.label_var]  # might not need this anymore
         self.complete_annot_vars = self.annotation_vars + self.y_var
         self._n_annot_col = len(self.complete_annot_vars)
+
+        # - args.file is a list. so use [0] to grab the string -
+        self.file = file
+        self._basename, self._file_ext = os.path.splitext(file)
+
+        # - parse file -
+        self.raw = pd.read_csv(self.file, engine='python')
+        self.raw_working = self.raw.copy()  # value might be changed
         self.n_features = int(
             (self.raw_working.shape[1] - self._n_annot_col))  # pd.shape[1]: ncol
         self.total_n = self.raw_working.shape[0]
-
         if model_type == 'classification':
             self.n_class = self.raw[label_var].nunique()
         else:
             self.n_class = None
 
+        self.x = self.raw_working[self.raw_working.columns[
+            ~self.raw_working.columns.isin(self.complete_annot_vars)]].to_numpy()
+        self.labels = self.raw_working[self.label_var].to_numpy()
+
+        # - resampling settings -
         self.cv_only = cv_only
+        self.resample_method = resample_method
         self.sample_id_var = sample_id_var
         self.holdout_samples = holdout_samples
         self.training_percentage = training_percentage
+        self.test_percentage = 1 - training_percentage
         self.x_standardize = x_standardize
         self.minmax = minmax
-
-        if verbose:
-            print('done!')
-
-        if self.model_type == 'classification':
-            self.le = LabelEncoder()
-            self.le.fit(self.raw_working[self.label_var])
-            self.raw_working[self.label_var] = self.le.transform(
-                self.raw_working[self.label_var])
-            self.label_mapping = dict(
-                zip(self.le.classes_, self.le.transform(self.le.classes_)))
-            if verbose:
-                print('Class label encoding: ')
-                for i in self.label_mapping.items():
-                    print('{}: {}'.format(i[0], i[1]))
 
         # call setter here
         if verbose:
@@ -275,6 +272,15 @@ class singleCsvMemoLoader(object):
         self.modelling_data = man_split
         if verbose:
             print('done!')
+
+    def _label_onehot_encode(self, labels):
+        """one hot encoding for labels. labels: shoud be a np.ndarray"""
+        labels_list, labels_count, labels_map, labels_map_rev = labelMapping(
+            labels, sep=self.label_sep)
+
+        onehot_encoded = labelOneHot(labels_list, labels_map)
+
+        return onehot_encoded, labels_count, labels_map_rev
 
     @property
     def modelling_data(self):
@@ -293,38 +299,49 @@ class singleCsvMemoLoader(object):
             2. tf.datasets for training and (if applicable) test sets
         """
         # print("called setter") # for debugging
-        # data resampling
+        if self.model_type == 'classification':  # one hot encoding
+            self.labels_working, self.labels_count, self.labels_rev = self._label_onehot_encode(
+                self.labels)
+        else:
+            self.labels_working, self.labels_count, self.labels_rev = self.labels, None, None
+
+        # - data resampling -
         if self.cv_only:  # only training is stored
-            self._training, self._test = self.raw_working, None
-            self._training_x = self._training[self._training.columns[
-                ~self._training.columns.isin(self.complete_annot_vars)]]
-            self._training_y = self._training[self.label_var]
+            # training set prep
+            self._training_x = self.x
+            self._training_y = self.labels_working
+
+            # test set prep
             self._test_x, self._test_y = None, None
             self.training_y_scaler = None
-            self.train_n = self.total_n
             self.test_n = None
-        else:
-            # training and holdout test data split
-            self._training, self._test, _, _, self.training_y_scaler = trainingtestSpliterFinal(data=self.raw_working, random_state=self.rand,
-                                                                                                model_type=self.model_type,
-                                                                                                man_split=man_split, man_split_colname=self.sample_id_var,
-                                                                                                man_split_testset_value=self.holdout_samples,
-                                                                                                x_standardization=self.x_standardize,
-                                                                                                x_min_max_scaling=self.minmax,
-                                                                                                x_scale_column_to_exclude=self.complete_annot_vars,
-                                                                                                y_min_max_scaling=self.minmax, y_column=self.y_var)
-            self._training_x, self._test_x = self._training[self._training.columns[
-                ~self._training.columns.isin(self.complete_annot_vars)]], self._test[self._test.columns[~self._test.columns.isin(self.complete_annot_vars)]]
-            self._training_y, self._test_y = self._training[
-                self.label_var], self._test[self.label_var]
+        else:  # training and holdout test data split
+            # self._training, self._test, _, _, self.training_y_scaler = trainingtestSpliterFinal(data=self.raw_working, random_state=self.rand,
+            #                                                                                     model_type=self.model_type,
+            #                                                                                     man_split=man_split, man_split_colname=self.sample_id_var,
+            #                                                                                     man_split_testset_value=self.holdout_samples,
+            #                                                                                     x_standardization=self.x_standardize,
+            #                                                                                     x_min_max_scaling=self.minmax,
+            #                                                                                     x_scale_column_to_exclude=self.complete_annot_vars,
+            #                                                                                     y_min_max_scaling=self.minmax, y_column=self.y_var)
+            # self._training_x, self._test_x = self._training[self._training.columns[
+            #     ~self._training.columns.isin(self.complete_annot_vars)]], self._test[self._test.columns[~self._test.columns.isin(self.complete_annot_vars)]]
+            # self._training_y, self._test_y = self._training[
+            #     self.label_var], self._test[self.label_var]
 
-        self._training_x, self._training_y = self._training_x.to_numpy(
-        ), self._training_y.to_numpy()
+            X_indices = np.arange(self.total_n)
+            if self.resample_method == 'random':
+                X_train_indices, X_test_indices, self._training_y, self._test_y = train_test_split(
+                    X_indices, self.labels_working, test_size=self.test_percentage, stratify=None, random_state=self.rand)
+            elif self.resample_method == 'stratified':
+                X_train_indices, X_test_indices, self._training_y, self._test_y = train_test_split(
+                    X_indices, self.labels_working, test_size=self.test_percentage, stratify=self.labels_working, random_state=self.rand)
+            else:
+                raise NotImplementedError(
+                    '\"balanced\" resmapling method has not been implemented.')
+            self._training_x, self._test_x = self.x[X_train_indices], self.x[X_test_indices]
 
-        self._test_x = self._test_x.to_numpy() if self._test_x is not None else None
-        self._test_y = self._test_y.to_numpy() if self._test_y is not None else None
-
-        # output
+        # - output -
         self.train_ds = tf.data.Dataset.from_tensor_slices(
             (self._training_x, self._training_y))
         self.train_n = self.train_ds.cardinality().numpy()
