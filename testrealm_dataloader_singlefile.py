@@ -291,6 +291,11 @@ class singleCsvMemoLoader(object):
         # data resampling
         if self.cv_only:  # only training is stored
             self._training, self._test = self.raw_working, None
+            self._training_x = self._training[self._training.columns[
+                ~self._training.columns.isin(self.complete_annot_vars)]]
+            self._training_y = self._training[self.outcome_var]
+            self._test_x, self._test_y = None, None
+            self._training_y_scaler = None
         else:
             # training and holdout test data split
             self._training, self._test, _, _, self._training_y_scaler = trainingtestSpliterFinal(data=self.raw_working, random_state=self.rand,
@@ -301,13 +306,15 @@ class singleCsvMemoLoader(object):
                                                                                                  x_min_max_scaling=self.minmax,
                                                                                                  x_scale_column_to_exclude=self.complete_annot_vars,
                                                                                                  y_min_max_scaling=self.minmax, y_column=self.y_var)
+            self._training_x, self._test_x = self._training[self._training.columns[
+                ~self._training.columns.isin(self.complete_annot_vars)]], self._test[self._test.columns[~self._test.columns.isin(self.complete_annot_vars)]]
+            self._training_y, self._test_y = self._training[
+                self.outcome_var], self._test[self.outcome_var]
 
-        self._training_x, self._test_x = self._training[self._training.columns[
-            ~self._training.columns.isin(self.complete_annot_vars)]], self._test[self._test.columns[~self._test.columns.isin(self.complete_annot_vars)]]
-        self._training_y, self._test_y = self._training[self.outcome_var], self._test[self.outcome_var]
-
-        self._training_x, self._test_x = self._training_x.to_numpy(), self._test_x.to_numpy()
-        self._training_y, self._test_y = self._training_y.to_numpy(), self._test_y.to_numpy()
+        self._training_x, self._training_y = self._training_x.to_numpy(
+        ), self._training_y.to_numpy()
+        self._test_x = self._test_x.to_numpy() if self._test_x else None
+        self._test_y = self._test_y.to_numpy() if self._test_y else None
 
         # output
         self._modelling_data = {
@@ -319,11 +326,13 @@ class singleCsvMemoLoader(object):
 # below: ad-hoc testing
 mydata = singleCsvMemoLoader(file='./data/test_dat.csv', outcome_var='PCL', annotation_vars=['subject', 'group'], sample_id_var='subject',
                              holdout_samples=None, minmax=True, x_standardize=True,
-                             model_type='regression', cv_only=False, man_split=False, training_percentage=0.8, random_state=1, verbose=True)
+                             model_type='regression', cv_only=True, man_split=False, training_percentage=0.8, random_state=1, verbose=True)
 
 mydata.model_type
 mydata.modelling_data['training_y_scaler']
 mydata.modelling_data['test_y']
+
+mydata.modelling_data['training_x'].shape
 
 # ------ process/__main__ statement ------
 # if __name__ == '__main__':
