@@ -88,13 +88,13 @@ add_g1_arg('file', nargs=1, type=csvPath,
 add_g1_arg('-s', '--sample_id_var', type=str, default=None,
            help='str. Vairable name for sample ID. NOTE: only needed with single file processing. (Default: %(default)s)')
 add_g1_arg('-a', '--annotation_vars', type=str, nargs="+", default=[],
-           help='list of str. names of the annotation columns in the input data, excluding the outcome variable. (Default: %(default)s)')
+           help='list of str. names of the annotation columns in the input data, excluding the label variable. (Default: %(default)s)')
 # add_g1_arg('-cl', '--n_classes', type=int, default=None,
 #            help='int. Number of class for classification models. (Default: %(default)s)')
-add_g1_arg('-y', '--outcome_var', type=str, default=None,
-           help='str. Vairable name for outcome. NOTE: only needed with single file processing. (Default: %(default)s)')
+add_g1_arg('-y', '--label_var', type=str, default=None,
+           help='str. Vairable name for label. NOTE: only needed with single file processing. (Default: %(default)s)')
 addBoolArg(parser=arg_g1, name='y_scale', input_type='flag', default=False,
-           help='str. If to min-max scale outcome for regression study. (Default: %(default)s)')
+           help='str. If to min-max scale label for regression study. (Default: %(default)s)')
 add_g1_arg('-o', '--output_dir', type=outputDir,
            default='.',
            help='str. Output directory. NOTE: not an absolute path, only relative to working directory -w/--working_dir.')
@@ -137,15 +137,15 @@ args = parser.parse_args()
 print(args)
 if not args.sample_id_var:
     error('-s/--sample_id_var missing.',
-          'Be sure to set the following: -s/--sample_id_var, -y/--outcome_var, -a/--annotation_vars')
+          'Be sure to set the following: -s/--sample_id_var, -y/--label_var, -a/--annotation_vars')
 
-if not args.outcome_var:
-    error('-y/--outcome_var flag missing.',
-          'Be sure to set the following: -s/--sample_id_var, -y/--outcome_var, -a/--annotation_vars')
+if not args.label_var:
+    error('-y/--label_var flag missing.',
+          'Be sure to set the following: -s/--sample_id_var, -y/--label_var, -a/--annotation_vars')
 
 if len(args.annotation_vars) < 1:
     error('-a/--annotation_vars missing.',
-          'Be sure to set the following: -s/--sample_id_var, -y/--outcome_var, -a/--annotation_vars')
+          'Be sure to set the following: -s/--sample_id_var, -y/--label_var, -a/--annotation_vars')
 
 if args.man_split and len(args.holdout_samples) < 1:
     error('Set -t/--holdout_samples when --man_split was set.')
@@ -172,7 +172,7 @@ class singleCsvMemoLoader(object):
     """
 
     def __init__(self, file,
-                 outcome_var, annotation_vars, sample_id_var,
+                 label_var, annotation_vars, sample_id_var,
                  model_type,
                  cv_only,
                  minmax,
@@ -181,8 +181,8 @@ class singleCsvMemoLoader(object):
         """
         # Arguments\n
             file: str. complete input file path. "args.file[0]" from argparser]
-            outcome_var: str. variable nanme for outcome. Only one is accepted for this version. "args.outcome_var" from argparser
-            annotation_vars: list of strings. Column names for the annotation variables in the input dataframe, EXCLUDING outcome variable.
+            label_var: str. variable nanme for label. Only one is accepted for this version. "args.label_var" from argparser
+            annotation_vars: list of strings. Column names for the annotation variables in the input dataframe, EXCLUDING label variable.
                 "args.annotation_vars" from argparser
             sample_id_var: str. variable used to identify samples. "args.sample_id_var" from argparser
             model_type: str. model type, classification or regression
@@ -198,17 +198,17 @@ class singleCsvMemoLoader(object):
                 self.model_type
                 self.n_classes
                 self.file
-                self.outcome_var
+                self.label_var
                 self.annotation_vars
                 self.cv_only
                 self.holdout_samples
                 self.training_percentage
                 self.rand: int. random state
-            self.y_var: single str list. variable nanme for outcome
+            self.y_var: single str list. variable nanme for label
             self.filename: str. input file name without extension
             self.raw: pandas dataframe. input data
             self.raw_working: pands dataframe. working input data
-            self.complete_annot_vars: list of strings. column names for the annotation variables in the input dataframe, INDCLUDING outcome varaible
+            self.complete_annot_vars: list of strings. column names for the annotation variables in the input dataframe, INDCLUDING label varaible
             self.n_features: int. number of features
             self.le: sklearn LabelEncoder for classification study
             self.label_mapping: dict. Class label mapping codes, when model_type='classification'
@@ -223,9 +223,9 @@ class singleCsvMemoLoader(object):
         # load files
         self.model_type = model_type
         # convert to a list for trainingtestSpliterFinal() to use
-        self.outcome_var = outcome_var
+        self.label_var = label_var
         self.annotation_vars = annotation_vars
-        self.y_var = [self.outcome_var]
+        self.y_var = [self.label_var]
 
         # args.file is a list. so use [0] to grab the string
         self.file = file
@@ -241,7 +241,7 @@ class singleCsvMemoLoader(object):
             (self.raw_working.shape[1] - self._n_annot_col))  # pd.shape[1]: ncol
 
         if model_type == 'classification':
-            self.n_class = self.raw[outcome_var].nunique()
+            self.n_class = self.raw[label_var].nunique()
         else:
             self.n_class = None
 
@@ -257,9 +257,9 @@ class singleCsvMemoLoader(object):
 
         if self.model_type == 'classification':
             self.le = LabelEncoder()
-            self.le.fit(self.raw_working[self.outcome_var])
-            self.raw_working[self.outcome_var] = self.le.transform(
-                self.raw_working[self.outcome_var])
+            self.le.fit(self.raw_working[self.label_var])
+            self.raw_working[self.label_var] = self.le.transform(
+                self.raw_working[self.label_var])
             self.label_mapping = dict(
                 zip(self.le.classes_, self.le.transform(self.le.classes_)))
             if verbose:
@@ -293,7 +293,7 @@ class singleCsvMemoLoader(object):
             self._training, self._test = self.raw_working, None
             self._training_x = self._training[self._training.columns[
                 ~self._training.columns.isin(self.complete_annot_vars)]]
-            self._training_y = self._training[self.outcome_var]
+            self._training_y = self._training[self.label_var]
             self._test_x, self._test_y = None, None
             self._training_y_scaler = None
         else:
@@ -309,7 +309,7 @@ class singleCsvMemoLoader(object):
             self._training_x, self._test_x = self._training[self._training.columns[
                 ~self._training.columns.isin(self.complete_annot_vars)]], self._test[self._test.columns[~self._test.columns.isin(self.complete_annot_vars)]]
             self._training_y, self._test_y = self._training[
-                self.outcome_var], self._test[self.outcome_var]
+                self.label_var], self._test[self.label_var]
 
         self._training_x, self._training_y = self._training_x.to_numpy(
         ), self._training_y.to_numpy()
@@ -324,9 +324,9 @@ class singleCsvMemoLoader(object):
 
 
 # below: ad-hoc testing
-mydata = singleCsvMemoLoader(file='./data/test_dat.csv', outcome_var='PCL', annotation_vars=['subject', 'group'], sample_id_var='subject',
+mydata = singleCsvMemoLoader(file='./data/test_dat.csv', label_var='group', annotation_vars=['subject', 'group'], sample_id_var='subject',
                              holdout_samples=None, minmax=True, x_standardize=True,
-                             model_type='regression', cv_only=True, man_split=False, training_percentage=0.8, random_state=1, verbose=True)
+                             model_type='classification', cv_only=True, man_split=False, training_percentage=0.8, random_state=1, verbose=True)
 
 mydata.model_type
 mydata.modelling_data['training_y_scaler']
@@ -337,7 +337,7 @@ mydata.modelling_data['training_x'].shape
 # ------ process/__main__ statement ------
 # if __name__ == '__main__':
 #     mydata = DataLoader(file=args.file[0],
-#                         outcome_var=args.outcome_var, annotation_vars=args.annotation_vars, sample_id_var=args.sample_id_var,
+#                         label_var=args.label_var, annotation_vars=args.annotation_vars, sample_id_var=args.sample_id_var,
 #                         holdout_samples=args.holdout_samples,
 #                         model_type=args.model_type, cv_only=args.cv_only, man_split=args.man_split, training_percentage=args.training_percentage,
 #                         random_state=args.random_state, verbose=args.verbose)
