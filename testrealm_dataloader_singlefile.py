@@ -22,10 +22,9 @@ import sys
 import pandas as pd
 import numpy as np
 import tensorflow as tf
-from utils.other_utils import error, warn, flatten, addBoolArg, csvPath, outputDir, colr
-from utils.data_utils import labelMapping, trainingtestSpliterFinal, labelOneHot
-from sklearn.model_selection import StratifiedShuffleSplit, train_test_split
-from sklearn.preprocessing import LabelEncoder
+from utils.other_utils import error, warn, addBoolArg, csvPath, outputDir, colr
+from utils.data_utils import labelMapping, labelOneHot
+from sklearn.model_selection import train_test_split
 
 
 # ------ system classes ------
