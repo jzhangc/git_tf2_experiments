@@ -283,6 +283,22 @@ class singleCsvMemLoader(object):
 
         return onehot_encoded, labels_count, labels_map_rev
 
+    def _x_minmax(self, x_array):
+        """NOTE: reshaping to (_, _, 1) is mandatory"""
+        # - variables -
+        if isinstance(x_array, np.ndarray):  # this check can be done outside of the classs
+            X = x_array
+        else:
+            raise TypeError('data processing function should be a np.ndarray.')
+
+        # - minmax -
+        Min = 0
+        Max = 1
+        X_std = (X - X.min(axis=0)) / (X.max(axis=0) - X.min(axis=0))
+        X = X_std * (Max - Min) + Min
+
+        return X
+
     @property
     def modelling_data(self):
         # print("called getter") # for debugging
@@ -306,10 +322,13 @@ class singleCsvMemLoader(object):
         else:
             self.labels_working, self.labels_count, self.labels_rev = self.labels, None, None
 
+        if self.minmax:
+            self.x_working = self._x_minmax(self.x)
+
         # - data resampling -
         if self.cv_only:  # only training is stored
             # training set prep
-            self._training_x = self.x
+            self._training_x = self.x_working
             self._training_y = self.labels_working
 
             # test set prep
@@ -340,7 +359,8 @@ class singleCsvMemLoader(object):
             else:
                 raise NotImplementedError(
                     '\"balanced\" resmapling method has not been implemented.')
-            self._training_x, self._test_x = self.x[X_train_indices], self.x[X_test_indices]
+            self._training_x, self._test_x = self.x_working[
+                X_train_indices], self.x_working[X_test_indices]
 
         # - output -
         self.train_ds = tf.data.Dataset.from_tensor_slices(
