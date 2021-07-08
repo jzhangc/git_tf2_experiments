@@ -8,7 +8,7 @@ Current objectives:
 [x] Test file processing
     [x] normalization and scalling
     [x] converting to numpy arrays
-[ ] use tf.data.experimental.make_csv_dataset() to reading
+[ ] use convert to tf.dataset
 
 NOTE
 All the argparser inputs are loaded from method arguments, making the class more portable, i.e. not tied to
@@ -156,10 +156,10 @@ if args.cv_type == 'monte':
 
 
 # ------ loacl classes ------
-class DataLoader(object):
+class singleCsvMemoLoader(object):
     """
     # Purpose\n
-        Data loading class.
+        In memory data loader for single file CSV.
     # Methods\n
         __init__: load data and other information from argparser, as well as class label encoding for classification study
     # Details\n
@@ -317,9 +317,9 @@ class DataLoader(object):
 
 
 # below: ad-hoc testing
-mydata = DataLoader(file='./data/test_dat.csv', outcome_var='PCL', annotation_vars=['subject', 'group'], sample_id_var='subject',
-                    holdout_samples=None, minmax=True, x_standardize=True,
-                    model_type='regression', cv_only=False, man_split=False, training_percentage=0.8, random_state=1, verbose=True)
+mydata = singleCsvMemoLoader(file='./data/test_dat.csv', outcome_var='PCL', annotation_vars=['subject', 'group'], sample_id_var='subject',
+                             holdout_samples=None, minmax=True, x_standardize=True,
+                             model_type='regression', cv_only=False, man_split=False, training_percentage=0.8, random_state=1, verbose=True)
 
 mydata.model_type
 mydata.modelling_data['training_y_scaler']

@@ -44,7 +44,7 @@ file_path = os.path.join(main_dir, 'data/test_dat.csv')
 
 # - test: load using the tf.data.Dataset API -
 tst_dat, feature_list = getSingleCsvDataset(
-    file_path, batch_size=1,
+    file_path, batch_size=32,
     label_var='group', column_to_exclude=['subject', 'PCL'])
 
 
@@ -53,11 +53,11 @@ for i in tst_dat:
     n += 1
 n
 
-for a, b in tst_dat.take(2):
+for a, b in tst_dat.take(6):
     print(a)
     print(b)
     print()
-    # break
+    break
 
 # - below: create one hot encoding for multiclass labels -
 
