@@ -20,6 +20,7 @@ import os
 import sys
 # import numpy as np
 import pandas as pd
+import tensorflow as tf
 from utils.other_utils import error, warn, flatten, addBoolArg, csvPath, outputDir, colr
 from utils.data_utils import trainingtestSpliterFinal
 from sklearn.model_selection import StratifiedShuffleSplit
@@ -239,6 +240,7 @@ class singleCsvMemoLoader(object):
         self._n_annot_col = len(self.complete_annot_vars)
         self.n_features = int(
             (self.raw_working.shape[1] - self._n_annot_col))  # pd.shape[1]: ncol
+        self.total_n = self.raw_working.shape[0]
 
         if model_type == 'classification':
             self.n_class = self.raw[label_var].nunique()
@@ -277,7 +279,7 @@ class singleCsvMemoLoader(object):
     @property
     def modelling_data(self):
         # print("called getter") # for debugging
-        return self._modelling_data
+        return self.train_ds, self.test_ds, self.train_n, self.test_n
 
     @modelling_data.setter
     def modelling_data(self, man_split):
@@ -286,6 +288,9 @@ class singleCsvMemoLoader(object):
             _m_data: dict. output dictionary
             _training: pandas dataframe. data for model training.
             _test: pandas dataframe. holdout test data. Only available without the "--cv_only" flag
+        Return\n
+            1. self.training_y_scaler
+            2. tf.datasets for training and (if applicable) test sets
         """
         # print("called setter") # for debugging
         # data resampling
@@ -295,17 +300,19 @@ class singleCsvMemoLoader(object):
                 ~self._training.columns.isin(self.complete_annot_vars)]]
             self._training_y = self._training[self.label_var]
             self._test_x, self._test_y = None, None
-            self._training_y_scaler = None
+            self.training_y_scaler = None
+            self.train_n = self.total_n
+            self.test_n = None
         else:
             # training and holdout test data split
-            self._training, self._test, _, _, self._training_y_scaler = trainingtestSpliterFinal(data=self.raw_working, random_state=self.rand,
-                                                                                                 model_type=self.model_type,
-                                                                                                 man_split=man_split, man_split_colname=self.sample_id_var,
-                                                                                                 man_split_testset_value=self.holdout_samples,
-                                                                                                 x_standardization=self.x_standardize,
-                                                                                                 x_min_max_scaling=self.minmax,
-                                                                                                 x_scale_column_to_exclude=self.complete_annot_vars,
-                                                                                                 y_min_max_scaling=self.minmax, y_column=self.y_var)
+            self._training, self._test, _, _, self.training_y_scaler = trainingtestSpliterFinal(data=self.raw_working, random_state=self.rand,
+                                                                                                model_type=self.model_type,
+                                                                                                man_split=man_split, man_split_colname=self.sample_id_var,
+                                                                                                man_split_testset_value=self.holdout_samples,
+                                                                                                x_standardization=self.x_standardize,
+                                                                                                x_min_max_scaling=self.minmax,
+                                                                                                x_scale_column_to_exclude=self.complete_annot_vars,
+                                                                                                y_min_max_scaling=self.minmax, y_column=self.y_var)
             self._training_x, self._test_x = self._training[self._training.columns[
                 ~self._training.columns.isin(self.complete_annot_vars)]], self._test[self._test.columns[~self._test.columns.isin(self.complete_annot_vars)]]
             self._training_y, self._test_y = self._training[
@@ -313,26 +320,24 @@ class singleCsvMemoLoader(object):
 
         self._training_x, self._training_y = self._training_x.to_numpy(
         ), self._training_y.to_numpy()
-        self._test_x = self._test_x.to_numpy() if self._test_x else None
-        self._test_y = self._test_y.to_numpy() if self._test_y else None
+
+        self._test_x = self._test_x.to_numpy() if self._test_x is not None else None
+        self._test_y = self._test_y.to_numpy() if self._test_y is not None else None
 
         # output
-        self._modelling_data = {
-            'training_x': self._training_x, 'training_y': self._training_y,
-            'training_y_scaler': self._training_y_scaler,
-            'test_x': self._test_x, 'test_y': self._test_y}
+        self.train_ds = tf.data.Dataset.from_tensor_slices(
+            (self._training_x, self._training_y))
+        self.train_n = self.train_ds.cardinality().numpy()
+        self.test_ds = tf.data.Dataset.from_tensor_slices(
+            (self._test_x, self._test_y)) if (self._test_x is not None) and (self._test_y is not None) else None
+        self.test_n = self.test_ds.cardinality().numpy() if self.test_ds is not None else None
 
 
 # below: ad-hoc testing
-mydata = singleCsvMemoLoader(file='./data/test_dat.csv', label_var='group', annotation_vars=['subject', 'group'], sample_id_var='subject',
+mydata = singleCsvMemoLoader(file='./data/test_dat.csv', label_var='group', annotation_vars=['subject', 'PCL'], sample_id_var='subject',
                              holdout_samples=None, minmax=True, x_standardize=True,
-                             model_type='classification', cv_only=True, man_split=False, training_percentage=0.8, random_state=1, verbose=True)
+                             model_type='classification', cv_only=False, man_split=False, training_percentage=0.8, random_state=1, verbose=True)
 
-mydata.model_type
-mydata.modelling_data['training_y_scaler']
-mydata.modelling_data['test_y']
-
-mydata.modelling_data['training_x'].shape
 
 # ------ process/__main__ statement ------
 # if __name__ == '__main__':
