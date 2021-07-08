@@ -352,8 +352,8 @@ def trainingtestSpliterFinal(data, model_type='classification',
         data: Pandas DataFrame. Input data.
         model_type: string. Options are "classification" and "regression". 
         man_split: boolean. If to manually split the data into training/test sets.
-        man_split_colname: string. Set only when fixed_split=True, the variable name for the column to use for manual splitting.
-        man_split_testset_value: list. Set only when fixed_split=True, the splitting variable values for test set.
+        man_split_colname: string. Set only when man_split=True, the identity variable name for the column to use for manual splitting.
+        man_split_testset_value: list. Set only when man_split=True, the identity variable values for test set.
         training_percent: float. percentage of the full data to be the training
         random_state: int. seed for resampling RNG
         x_standardization: boolean. if to center scale (z score standardization) the input X data
