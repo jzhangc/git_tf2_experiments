@@ -162,7 +162,7 @@ if args.cv_type == 'monte':
 
 
 # ------ loacl classes ------
-class singleCsvMemoLoader(object):
+class singleCsvMemLoader(object):
     """
     # Purpose\n
         In memory data loader for single file CSV.
@@ -352,9 +352,9 @@ class singleCsvMemoLoader(object):
 
 
 # below: ad-hoc testing
-mydata = singleCsvMemoLoader(file='./data/test_dat.csv', label_var='group', annotation_vars=['subject', 'PCL'], sample_id_var='subject',
-                             holdout_samples=None, minmax=True, x_standardize=True,
-                             model_type='classification', cv_only=False, man_split=False, training_percentage=0.8, random_state=1, verbose=True)
+mydata = singleCsvMemLoader(file='./data/test_dat.csv', label_var='group', annotation_vars=['subject', 'PCL'], sample_id_var='subject',
+                            holdout_samples=None, minmax=True, x_standardize=True,
+                            model_type='classification', cv_only=False, man_split=False, training_percentage=0.8, random_state=1, verbose=True)
 
 
 # ------ process/__main__ statement ------
