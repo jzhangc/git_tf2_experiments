@@ -4,12 +4,12 @@ Current objectives:
 [ ] Test argparse
     [ ] Add groupped arguments
 [ ] Test output directory creation
-[ ] Test file reading
-[ ] Test file processing
-    [ ] normalization and scalling
-    [ ] converting to numpy arrays
+[x] Test file reading
+[x] Test file processing
+    [x] normalization and scalling
+    [x] converting to numpy arrays
 [ ] Implement "balanced" data resampling
-[ ] Implement data resampling for cross-validation (maybe move this out of the dataloader)
+[x] Implement data resampling for cross-validation (maybe move this out of the dataloader)
 
 NOTE
 All the argparser inputs are loaded from method arguments, making the class more portable, i.e. not tied to
