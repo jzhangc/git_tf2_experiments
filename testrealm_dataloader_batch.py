@@ -113,6 +113,26 @@ print(args)
 if args.man_split and len(args.holdout_samples) < 1:
     error('Set -t/--holdout_samples when --man_split was set.')
 
+# - load arguments -
+args = parser.parse_args()
+print(args)
+
+# ------- check arguments -------
+# below: we use custom script to check this file (not csvPath function) for custom error messages.
+if args.manual_label_file is not None:
+    if os.path.isfile(args.manual_label_file):
+        # return full_path
+        _, file_ext = os.path.splitext(args.manual_label_file)
+        if file_ext != '.csv':
+            error('Manual label file needs to be .csv type.')
+        else:
+            manual_label_file = os.path.normpath(os.path.abspath(
+                os.path.expanduser(args.manual_label_file)))
+    else:
+        error('Invalid manual label file or file not found.')
+else:
+    manual_label_file = args.manual_label_file
+
 
 # ------ loacl classes ------
 class BatchDataLoader(object):
@@ -314,26 +334,6 @@ class BatchDataLoader(object):
 
         return train_set, test_set
 
-
-# - load arguments -
-args = parser.parse_args()
-print(args)
-
-# - check arguments -
-# below: we use custom script to check this file (not csvPath function) for custom error messages.
-if args.manual_label_file is not None:
-    if os.path.isfile(args.manual_label_file):
-        # return full_path
-        _, file_ext = os.path.splitext(args.manual_label_file)
-        if file_ext != '.csv':
-            error('Manual label file needs to be .csv type.')
-        else:
-            manual_label_file = os.path.normpath(os.path.abspath(
-                os.path.expanduser(args.manual_label_file)))
-    else:
-        error('Invalid manual label file or file not found.')
-else:
-    manual_label_file = args.manual_label_file
 
 # ------ process/__main__ statement ------
 # if __name__ == '__main__':
