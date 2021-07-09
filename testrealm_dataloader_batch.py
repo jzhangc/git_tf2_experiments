@@ -106,13 +106,6 @@ add_g2_arg('-se', '--random_state', type=int,
 addBoolArg(parser=arg_g4, name='verbose', input_type='flag', default=False,
            help='Verbose or not. (Default: %(default)s)')
 
-args = parser.parse_args()
-
-# check arguments. did not use parser.error as error() has fancy colours
-print(args)
-if args.man_split and len(args.holdout_samples) < 1:
-    error('Set -t/--holdout_samples when --man_split was set.')
-
 # - load arguments -
 args = parser.parse_args()
 print(args)
