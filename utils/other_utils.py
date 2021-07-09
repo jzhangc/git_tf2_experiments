@@ -71,18 +71,18 @@ def csvPath(string):
         # return full_path
         _, file_ext = os.path.splitext(full_path)
         if file_ext != '.csv':
-            error('input file needs to be .csv type')
+            error('Input file needs to be .csv type.')
         else:
             return full_path
     else:
-        error('invalid input file or input file not found.')
+        error('Invalid input file or input file not found.')
 
 
-def outputDir(string):
+def fileDir(string):
     input_path = os.path.dirname(__file__)
     full_path = os.path.normpath(os.path.join(input_path, string))
 
     if os.path.isdir(full_path):
         return full_path
     else:
-        error("output directory not found.")
+        error("Directory not found.")

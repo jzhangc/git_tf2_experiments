@@ -22,7 +22,7 @@ import sys
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from utils.other_utils import error, warn, flatten, addBoolArg, outputDir, csvPath, colr
+from utils.other_utils import error, warn, flatten, addBoolArg, outputDir, csvPath, fileDir, colr
 from utils.data_utils import adjmatAnnotLoader, labelMapping, labelOneHot, getSelectedDataset
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -73,29 +73,32 @@ arg_g3 = parser.add_argument_group(
     '{}Modelling{}'.format(colr.CYAN_B, colr.ENDC))
 arg_g4 = parser.add_argument_group('{}Other{}'.format(colr.CYAN_B, colr.ENDC))
 
-add_g1_arg = arg_g1.add_argument
-add_g2_arg = arg_g2.add_argument
-add_g3_arg = arg_g3.add_argument
-add_g4_arg = arg_g4.add_argument
+add_g1_arg = arg_g1.add_argument  # input/output
+add_g2_arg = arg_g2.add_argument  # processing and resampling
+add_g3_arg = arg_g3.add_argument  # modelling
+add_g4_arg = arg_g4.add_argument  # others
 
 # - add arugments to the argument groups -
 # g1: inpout and ouput
-add_g1_arg('file', nargs=1, type=csvPath,
-           help='One and only one input CSV file. (Default: %(default)s)')
-
-add_g1_arg('-s', '--sample_id_var', type=str, default=None,
-           help='str. Vairable name for sample ID. NOTE: only needed with single file processing. (Default: %(default)s)')
-add_g1_arg('-a', '--annotation_vars', type=str, nargs="+", default=[],
-           help='list of str. names of the annotation columns in the input data, excluding the outcome variable. (Default: %(default)s)')
-# add_g1_arg('-cl', '--n_classes', type=int, default=None,
-#            help='int. Number of class for classification models. (Default: %(default)s)')
-add_g1_arg('-y', '--outcome_var', type=str, default=None,
-           help='str. Vairable name for outcome. NOTE: only needed with single file processing. (Default: %(default)s)')
+add_g1_arg('path', nargs=1, type=fileDir,
+           help='Directory contains all input files. (Default: %(default)s)')
+add_g1_arg('manual_labels', nargs=2, type=csvPath, default=None,
+           help='Optional one manual labels CSV file. (Default: %(default)s)')  # will have to work on this thing
+add_g1_arg('-e', '--target_file_ext', type=str, default=None,
+           help='str. When manual labels are provided and imported as a pandas dataframe, the label variable name for this pandas dataframe. (Default: %(default)s)')
+add_g1_arg('-b', '--pd_labels_var_name', type=str, default=None,
+           help='str. When manual labels are provided and imported as a pandas dataframe, the label variable name for this pandas dataframe. (Default: %(default)s)')
+add_g1_arg('-c', '--label_string_sep', type=str, default=None,
+           help='str. Separator to separate label string, to create multilabel labels. (Default: %(default)s)')
 addBoolArg(parser=arg_g1, name='y_scale', input_type='flag', default=False,
-           help='str. If to min-max scale outcome for regression study. (Default: %(default)s)')
+           help='str. If to min-max scale label for regression study. (Default: %(default)s)')
 add_g1_arg('-o', '--output_dir', type=outputDir,
            default='.',
            help='str. Output directory. NOTE: not an absolute path, only relative to working directory -w/--working_dir.')
+
+# g2: processing and resampling
+add_g2_arg('-s', '--new_shape', type=str, default=None,
+           help='str. Optional new shape tuple. (Default: %(default)s)')
 
 # g4: others
 addBoolArg(parser=arg_g4, name='verbose', input_type='flag', default=False,
@@ -127,8 +130,8 @@ class BatchDataLoader(object):
 
     def __init__(self, filepath,
                  new_shape=None,
+                 target_file_ext=None,
                  manual_labels=None, label_sep=None, pd_labels_var_name=None,
-                 target_ext=None,
                  model_type='classification', multilabel=False,
                  x_scaling="none", x_min_max_range=(0, 1),
                  cv_only=False,
@@ -150,7 +153,7 @@ class BatchDataLoader(object):
         self.model_type = model_type
         self.multilabel = multilabel
         self.filepath = filepath
-        self.target_ext = target_ext
+        self.target_ext = target_file_ext
         self.manual_labels = manual_labels
         self.pd_labels_var_name = pd_labels_var_name
         self.label_sep = label_sep
@@ -311,14 +314,11 @@ class BatchDataLoader(object):
 
 
 # below: ad-hoc testing
-mydata = BatchDataLoader(file='./data/test_dat.csv', outcome_var='PCL', annotation_vars=['subject', 'group'], sample_id_var='subject',
-                         holdout_samples=None, minmax=True, x_standardize=True,
-                         model_type='regression', cv_only=False, man_split=False, training_percentage=0.8, random_state=1, verbose=True)
 
 # ------ process/__main__ statement ------
 # if __name__ == '__main__':
 #     mydata = DataLoader(file=args.file[0],
-#                         outcome_var=args.outcome_var, annotation_vars=args.annotation_vars, sample_id_var=args.sample_id_var,
+#                         label_var=args.label_var, annotation_vars=args.annotation_vars, sample_id_var=args.sample_id_var,
 #                         holdout_samples=args.holdout_samples,
 #                         model_type=args.model_type, cv_only=args.cv_only, man_split=args.man_split, training_percentage=args.training_percentage,
 #                         random_state=args.random_state, verbose=args.verbose)

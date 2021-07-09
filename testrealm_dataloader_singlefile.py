@@ -25,7 +25,7 @@ import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
 from utils.data_utils import labelMapping, labelOneHot
-from utils.other_utils import addBoolArg, colr, csvPath, error, outputDir, warn
+from utils.other_utils import addBoolArg, colr, csvPath, error, fileDir, warn
 
 
 # ------ system classes ------
@@ -77,10 +77,10 @@ arg_g3 = parser.add_argument_group(
     '{}Modelling{}'.format(colr.CYAN_B, colr.ENDC))
 arg_g4 = parser.add_argument_group('{}Other{}'.format(colr.CYAN_B, colr.ENDC))
 
-add_g1_arg = arg_g1.add_argument
-add_g2_arg = arg_g2.add_argument
-add_g3_arg = arg_g3.add_argument
-add_g4_arg = arg_g4.add_argument
+add_g1_arg = arg_g1.add_argument  # input/output
+add_g2_arg = arg_g2.add_argument  # processing and resampling
+add_g3_arg = arg_g3.add_argument  # modelling
+add_g4_arg = arg_g4.add_argument  # others
 
 # - add arugments to the argument groups -
 # g1: inpout and ouput
@@ -99,7 +99,7 @@ add_g1_arg('-c', '--label_string_sep', type=str, default=None,
            help='str. Separator to separate label string, to create multilabel labels. (Default: %(default)s)')
 addBoolArg(parser=arg_g1, name='y_scale', input_type='flag', default=False,
            help='str. If to min-max scale label for regression study. (Default: %(default)s)')
-add_g1_arg('-o', '--output_dir', type=outputDir,
+add_g1_arg('-o', '--output_dir', type=fileDir,
            default='.',
            help='str. Output directory. NOTE: not an absolute path, only relative to working directory -w/--working_dir.')
 
@@ -117,7 +117,7 @@ add_g2_arg('-t', '--holdout_samples', nargs='+', type=str, default=[],
            help='str. Sample IDs selected as holdout test group when --man_split was set. (Default: %(default)s)')
 add_g2_arg('-p', '--training_percentage', type=float, default=0.8,
            help='num, range: 0~1. Split percentage for training set when --no-man_split is set. (Default: %(default)s)')
-add_g2_arg('-m', '--resample_method', type=str,
+add_g2_arg('-g', '--resample_method', type=str,
            choices=['random', 'stratified', 'balanced'], default='random',
            help='str. training-test split method. (Default: %(default)s)')
 add_g2_arg('-r', '--random_state', type=int,
