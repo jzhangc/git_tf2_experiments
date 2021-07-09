@@ -25,7 +25,7 @@ import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
 from utils.data_utils import labelMapping, labelOneHot
-from utils.other_utils import addBoolArg, colr, csvPath, error, fileDir, warn
+from utils.other_utils import addBoolArg, colr, csvPath, error, warn
 
 
 # ------ system classes ------
@@ -87,19 +87,19 @@ add_g4_arg = arg_g4.add_argument  # others
 add_g1_arg('file', nargs=1, type=csvPath,
            help='One and only one input CSV file. (Default: %(default)s)')
 
-add_g1_arg('-s', '--sample_id_var', type=str, default=None,
+add_g1_arg('-sv', '--sample_id_var', type=str, default=None,
            help='str. Vairable name for sample ID. NOTE: only needed with single file processing. (Default: %(default)s)')
-add_g1_arg('-a', '--annotation_vars', type=str, nargs="+", default=[],
+add_g1_arg('-av', '--annotation_vars', type=str, nargs="+", default=[],
            help='list of str. names of the annotation columns in the input data, excluding the label variable. (Default: %(default)s)')
 # add_g1_arg('-cl', '--n_classes', type=int, default=None,
 #            help='int. Number of class for classification models. (Default: %(default)s)')
 add_g1_arg('-y', '--label_var', type=str, default=None,
            help='str. Vairable name for label. NOTE: only needed with single file processing. (Default: %(default)s)')
-add_g1_arg('-c', '--label_string_sep', type=str, default=None,
+add_g1_arg('-ls', '--label_string_sep', type=str, default=None,
            help='str. Separator to separate label string, to create multilabel labels. (Default: %(default)s)')
 addBoolArg(parser=arg_g1, name='y_scale', input_type='flag', default=False,
            help='str. If to min-max scale label for regression study. (Default: %(default)s)')
-add_g1_arg('-o', '--output_dir', type=fileDir,
+add_g1_arg('-o', '--output_dir', type=str,
            default='.',
            help='str. Output directory. NOTE: not an absolute path, only relative to working directory -w/--working_dir.')
 
@@ -107,20 +107,20 @@ add_g1_arg('-o', '--output_dir', type=fileDir,
 addBoolArg(parser=arg_g2, name='cv_only', input_type='flag',
            help='If to do cv_only mode for training, i.e. no holdout test split. (Default: %(default)s)',
            default=False)
-add_g2_arg('-v', '--cv_type', type=str,
+add_g2_arg('-cv', '--cv_type', type=str,
            choices=['kfold', 'LOO', 'monte'], default='kfold',
            help='str. Cross validation type. Default is \'kfold\'')
 addBoolArg(parser=arg_g2, name='man_split', input_type='flag',
            help='Manually split data into training and test sets. When set, the split is on -s/--sample_id_var. (Default: %(default)s)',
            default=False)
-add_g2_arg('-t', '--holdout_samples', nargs='+', type=str, default=[],
+add_g2_arg('-hs', '--holdout_samples', nargs='+', type=str, default=[],
            help='str. Sample IDs selected as holdout test group when --man_split was set. (Default: %(default)s)')
-add_g2_arg('-p', '--training_percentage', type=float, default=0.8,
+add_g2_arg('-tp', '--training_percentage', type=float, default=0.8,
            help='num, range: 0~1. Split percentage for training set when --no-man_split is set. (Default: %(default)s)')
-add_g2_arg('-g', '--resample_method', type=str,
+add_g2_arg('-gm', '--resample_method', type=str,
            choices=['random', 'stratified', 'balanced'], default='random',
            help='str. training-test split method. (Default: %(default)s)')
-add_g2_arg('-r', '--random_state', type=int,
+add_g2_arg('-se', '--random_state', type=int,
            default=1, help='int. Random state. (Default: %(default)s)')
 addBoolArg(parser=arg_g2, name='x_standardize', input_type='flag',
            default='False',
@@ -130,7 +130,7 @@ addBoolArg(parser=arg_g2, name='minmax', input_type='flag',
            help='If to apply min-max normalization for x and, if regression, y (to range 0~1). (Default: %(default)s)')
 
 # g3: modelling
-add_g3_arg('-m', '--model_type', type=str, choices=['regression', 'classification'],
+add_g3_arg('-mt', '--model_type', type=str, choices=['regression', 'classification'],
            default='classifciation',
            help='str. Model type. Options: \'regression\' and \'classification\'. (Default: %(default)s)')
 
@@ -139,9 +139,16 @@ addBoolArg(parser=arg_g4, name='verbose', input_type='flag', default=False,
            help='Verbose or not. (Default: %(default)s)')
 
 args = parser.parse_args()
-
-# check arguments. did not use parser.error as error() has fancy colours
 print(args)
+
+# ------ check arguments. did not use parser.error as error() has fancy colours ------
+# below: we use custom script to check this (not fileDir function) for custom error messages.
+if os.path.isdir(args.output_dir):
+    output_dir = os.path.normpath(os.path.abspath(
+        os.path.expanduser(args.output_dir)))
+else:
+    error("Output directory not found.")
+
 if not args.sample_id_var:
     error('-s/--sample_id_var missing.',
           'Be sure to set the following: -s/--sample_id_var, -y/--label_var, -a/--annotation_vars')

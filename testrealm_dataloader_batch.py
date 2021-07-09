@@ -22,7 +22,7 @@ import sys
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from utils.other_utils import error, warn, flatten, addBoolArg, outputDir, csvPath, fileDir, colr
+from utils.other_utils import error, warn, flatten, addBoolArg, outputDir, fileDir, colr
 from utils.data_utils import adjmatAnnotLoader, labelMapping, labelOneHot, getSelectedDataset
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -82,25 +82,27 @@ add_g4_arg = arg_g4.add_argument  # others
 # g1: inpout and ouput
 add_g1_arg('path', nargs=1, type=fileDir,
            help='Directory contains all input files. (Default: %(default)s)')
-add_g1_arg('manual_labels', nargs=2, type=csvPath, default=None,
-           help='Optional one manual labels CSV file. (Default: %(default)s)')  # will have to work on this thing
-add_g1_arg('-e', '--target_file_ext', type=str, default=None,
+add_g1_arg('-il', '--manual_label_file', type=str,
+           help='Optional one manual labels CSV file. (Default: %(default)s)')
+add_g1_arg('-te', '--target_file_ext', type=str, default=None,
            help='str. When manual labels are provided and imported as a pandas dataframe, the label variable name for this pandas dataframe. (Default: %(default)s)')
-add_g1_arg('-b', '--pd_labels_var_name', type=str, default=None,
+add_g1_arg('-lv', '--pd_labels_var_name', type=str, default=None,
            help='str. When manual labels are provided and imported as a pandas dataframe, the label variable name for this pandas dataframe. (Default: %(default)s)')
-add_g1_arg('-c', '--label_string_sep', type=str, default=None,
+add_g1_arg('-ls', '--label_string_sep', type=str, default=None,
            help='str. Separator to separate label string, to create multilabel labels. (Default: %(default)s)')
 addBoolArg(parser=arg_g1, name='y_scale', input_type='flag', default=False,
            help='str. If to min-max scale label for regression study. (Default: %(default)s)')
-add_g1_arg('-o', '--output_dir', type=outputDir,
+add_g1_arg('-o', '--output_dir', type=fileDir,
            default='.',
            help='str. Output directory. NOTE: not an absolute path, only relative to working directory -w/--working_dir.')
 
 # g2: processing and resampling
-add_g2_arg('-s', '--new_shape', type=str, default=None,
+add_g2_arg('-ns', '--new_shape', type=str, default=None,
            help='str. Optional new shape tuple. (Default: %(default)s)')
 
 # g4: others
+add_g2_arg('-se', '--random_state', type=int,
+           default=1, help='int. Random state. (Default: %(default)s)')
 addBoolArg(parser=arg_g4, name='verbose', input_type='flag', default=False,
            help='Verbose or not. (Default: %(default)s)')
 
@@ -313,7 +315,25 @@ class BatchDataLoader(object):
         return train_set, test_set
 
 
-# below: ad-hoc testing
+# - load arguments -
+args = parser.parse_args()
+print(args)
+
+# - check arguments -
+# below: we use custom script to check this file (not csvPath function) for custom error messages.
+if args.manual_label_file is not None:
+    if os.path.isfile(args.manual_label_file):
+        # return full_path
+        _, file_ext = os.path.splitext(args.manual_label_file)
+        if file_ext != '.csv':
+            error('Manual label file needs to be .csv type.')
+        else:
+            manual_label_file = os.path.normpath(os.path.abspath(
+                os.path.expanduser(args.manual_label_file)))
+    else:
+        error('Invalid manual label file or file not found.')
+else:
+    manual_label_file = args.manual_label_file
 
 # ------ process/__main__ statement ------
 # if __name__ == '__main__':

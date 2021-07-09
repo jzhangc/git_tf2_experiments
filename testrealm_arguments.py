@@ -42,8 +42,6 @@ class AppArgParser(argparse.ArgumentParser):
 
 
 # ------ custom functions ------
-# below: a lambda funciton to flatten the nested list into a single list
-
 
 # ------ GLOBAL variables -------
 __version__ = '0.1.0'
@@ -81,10 +79,12 @@ add_g4_arg = arg_g4.add_argument  # others
 
 # - add arugments to the argument groups -
 # g1: inpout and ouput
-add_g1_arg('path', nargs=1, type=fileDir,
-           help='Directory contains all input files. (Default: %(default)s)')
-# add_g1_arg('manual_labels', nargs=2, type=csvPath, default=None,
-#            help='Optional one manual labels CSV file. (Default: %(default)s)')  # will have to work on this thing
 
 
+# - load arguments -
 args = parser.parse_args()
+print(args)
+
+# - check arguments -
+
+# ------ ad-hoc test ------

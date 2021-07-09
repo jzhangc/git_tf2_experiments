@@ -64,8 +64,13 @@ def addBoolArg(parser, name, help, input_type, default=False):
 
 
 def csvPath(string):
-    input_path = os.path.dirname(__file__)
-    full_path = os.path.normpath(os.path.join(input_path, string))
+    # # below: relative to the script dir
+    # script_path = os.path.dirname(__file__)
+    # full_path = os.path.normpath(os.path.join(script_path, string))
+
+    # below: relative to the working dir
+    # use os.path.expanduser to understand "~"
+    full_path = os.path.normpath(os.path.abspath(os.path.expanduser(string)))
 
     if os.path.isfile(full_path):
         # return full_path
@@ -79,8 +84,13 @@ def csvPath(string):
 
 
 def fileDir(string):
-    input_path = os.path.dirname(__file__)
-    full_path = os.path.normpath(os.path.join(input_path, string))
+    # # below: relative to the script dir
+    # script_path = os.path.dirname(__file__)
+    # full_path = os.path.normpath(os.path.join(script_path, string))
+
+    # below: relative to the working dir
+    # use os.path.expanduser to understand "~"
+    full_path = os.path.normpath(os.path.abspath(os.path.expanduser(string)))
 
     if os.path.isdir(full_path):
         return full_path
