@@ -131,11 +131,11 @@ class BatchDataLoader(object):
                  target_ext=None,
                  model_type='classification', multilabel=False,
                  x_scaling="none", x_min_max_range=(0, 1),
+                 cv_only=False,
                  resmaple_method="random",
                  batch_size=None,
                  training_percentage=0.8,
                  shuffle=True,
-                 cross_validation=False, k=10,
                  verbose=True, random_state=1):
         """
         # Arguments\n
@@ -166,8 +166,7 @@ class BatchDataLoader(object):
         self.train_percentage = training_percentage
         self.test_percentage = 1 - training_percentage
         self.shuffle = shuffle
-        self.cross_validation = cross_validation
-        self.cv_k = k
+        self.cv_only = cv_only
 
         # random state and other settings
         self.rand = random_state
@@ -293,15 +292,21 @@ class BatchDataLoader(object):
             (filepath_list, encoded_labels))
         self.n_total_sample = total_ds.cardinality().numpy()
 
-        # - resample data -
-        train_ds, self.train_n, test_ds, self.test_n = self._data_resample(
-            total_ds, self.n_total_sample)
+        # - resample data and output-
+        if self.cv_only:
+            train_ds, self.train_n, test_ds, self.test_n = self._data_resample(
+                total_ds, self.n_total_sample)
+            train_set = train_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
+                                     num_parallel_calls=tf.data.AUTOTUNE)
+            test_set = test_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
+                                   num_parallel_calls=tf.data.AUTOTUNE)
+        else:
+            train_set = total_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
+                                     num_parallel_calls=tf.data.AUTOTUNE)
+            self.train_n = self.n_total_sample
+            test_set = None
+            self.test_n = None
 
-        # - load data -
-        train_set = train_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
-                                 num_parallel_calls=tf.data.AUTOTUNE)
-        test_set = test_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
-                               num_parallel_calls=tf.data.AUTOTUNE)
         return train_set, test_set
 
 
