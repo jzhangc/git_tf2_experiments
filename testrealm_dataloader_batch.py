@@ -22,7 +22,7 @@ import sys
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from utils.other_utils import error, warn, flatten, addBoolArg, outputDir, fileDir, colr
+from utils.other_utils import error, warn, flatten, addBoolArg, fileDir, colr
 from utils.data_utils import adjmatAnnotLoader, labelMapping, labelOneHot, getSelectedDataset
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
