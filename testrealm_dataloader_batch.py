@@ -90,8 +90,6 @@ add_g1_arg('-lv', '--pd_labels_var_name', type=str, default=None,
            help='str. When manual labels are provided and imported as a pandas dataframe, the label variable name for this pandas dataframe. (Default: %(default)s)')
 add_g1_arg('-ls', '--label_string_sep', type=str, default=None,
            help='str. Separator to separate label string, to create multilabel labels. (Default: %(default)s)')
-addBoolArg(parser=arg_g1, name='y_scale', input_type='flag', default=False,
-           help='str. If to min-max scale label for regression study. (Default: %(default)s)')
 add_g1_arg('-o', '--output_dir', type=fileDir,
            default='.',
            help='str. Output directory. NOTE: not an absolute path, only relative to working directory -w/--working_dir.')
@@ -99,9 +97,19 @@ add_g1_arg('-o', '--output_dir', type=fileDir,
 # g2: processing and resampling
 add_g2_arg('-ns', '--new_shape', type=str, default=None,
            help='str. Optional new shape tuple. (Default: %(default)s)')
+add_g2_arg('-mt', '--model_type', type=str, default='classification',
+           choices=['classification', 'regression'],
+           help='Model (label) type. (Default: %(default)s)')
+addBoolArg(parser=arg_g2, name='multilabel_classification', input_type='flag', default=False,
+           help='If the classifiation is a "multilabel" type. Only effective when model_type=\'classification\'. (Default: %(default)s)')
+add_g2_arg('-xs', '--x_scaling', type=str, choices=['none', 'max', 'minmax'], default='minmax',
+           help='If and how to scale x values. (Default: %(default)s)')
+add_g2_arg('-xr', '--x_min_max_range', type=float,
+           nargs='+', default=[0.0, 1.0], help='Only effective when x_scaling=\'minmax\', the range for the x min max scaling. (Default: %(default)s)')
+
 
 # g4: others
-add_g2_arg('-se', '--random_state', type=int,
+add_g4_arg('-se', '--random_state', type=int,
            default=1, help='int. Random state. (Default: %(default)s)')
 addBoolArg(parser=arg_g4, name='verbose', input_type='flag', default=False,
            help='Verbose or not. (Default: %(default)s)')
@@ -144,7 +152,7 @@ class BatchDataLoader(object):
         model_type: str. Model (label) type. Options are "classification" and "regression".\n
         multilabel_classification: bool. If the classifiation is a "multilabel" type. Only effective when model_type='classification'.\n
         x_scaling: str. If and how to scale x values. Options are "none", "max" and "minmax".\n
-        x_min_max_range: two num tuple. Only effective when x_scaling='minmax', the range for the x min max scaling.\n
+        x_min_max_range: two num list. Only effective when x_scaling='minmax', the range for the x min max scaling.\n
         resampole_method: str. Effective when cv_only is not True. Train/test split method. Options are "random" and "stratified".
         training_percentage: num. Training data set percentage.\n
         verbose: bool. verbose.\n 
@@ -159,6 +167,7 @@ class BatchDataLoader(object):
             In the case of multilabel modelling, the label string should be multiple labels separated by a separator string, which
             is set by the label_sep argument.\n
         - When multilabel, make sure to set up label_sep argument.\n
+        - For x_min_max_range, a two tuple is required. Order: min, max. \n
         - It is noted that for regression, multilabel modelling is automatically supported via multiple labels in the maual label data frame.
             Therefore, for regression, manual_labels argument cannot be None.\n
         - When resample_method='random', the loader randomly draws samples according to the split percentage from the full data.
@@ -171,19 +180,11 @@ class BatchDataLoader(object):
                  target_file_ext=None,
                  manual_labels=None, label_sep=None, pd_labels_var_name=None,
                  model_type='classification', multilabel_classification=False,
-                 x_scaling="none", x_min_max_range=(0, 1),
+                 x_scaling="none", x_min_max_range=[0, 1],
                  resmaple_method="random",
                  training_percentage=0.8,
                  verbose=True, random_state=1):
-        """
-        # Arguments\n
-            resample_method: str. options: "random", "stratified" and "balanced".
-            x_scaling: str. Options are "none", "max", or "minmax". Default is None (i.e. not scaling data).
-            x_min_max_range: two tuple. set when x_scaling="minmax", (min, max) range.
-
-        # Details\n
-            1. resample_method is automatically set to "random" when model_type='regression'.
-        """
+        """Initialization"""
         # model information
         self.model_type = model_type
         self.multilabel_class = multilabel_classification
