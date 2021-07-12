@@ -72,6 +72,8 @@ file_path = file_annot['path'].to_list()
 tst_dat = tf.data.Dataset.from_tensor_slices((file_path, encoded_labels))
 tst_data_size = tst_dat.cardinality().numpy()  # sample size: 250
 
+tst_dat.shuffle()
+
 
 for a, b in tst_dat.take(3):  # take 3 smaples
     fname = a.numpy().decode('utf-8')
