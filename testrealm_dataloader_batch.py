@@ -144,7 +144,7 @@ class BatchDataLoader(object):
         model_type: str. Model (label) type. Options are "classification" and "regression".\n
         multilabel_classification: bool. If the classifiation is a "multilabel" type. Only effective when model_type='classification'.\n
         x_scaling: str. If and how to scale x values. Options are "none", "max" and "minmax".\n
-        x_min_max_range. two num tuple. Only effective when x_scaling='minmax', the range for the x min max scaling.\n
+        x_min_max_range: two num tuple. Only effective when x_scaling='minmax', the range for the x min max scaling.\n
         resampole_method: str. Effective when cv_only is not True. Train/test split method. Options are "random" and "stratified".
         training_percentage: num. Training data set percentage.\n
         verbose: bool. verbose.\n 
