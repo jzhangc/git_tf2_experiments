@@ -147,20 +147,22 @@ class BatchDataLoader(object):
         x_min_max_range. two num tuple. Only effective when x_scaling='minmax', the range for the x min max scaling.\n
         resampole_method: str. Effective when cv_only is not True. Train/test split method. Options are "random" and "stratified".
         training_percentage: num. Training data set percentage.\n
+        verbose: bool. verbose.\n 
+        randome_state: int. randome state.\n
 
     # Details\n
         - This data loader is designed for matrices (similar to AxB resolution pictures).\n
         - It is possible to stack matrix with A,B,N, and use new_shape argument to reshape the data into A,B,N shape.\n
-        - For filepath, one can set up each subfolder as data labels. In such case, the _parse_file() method will automatically\n
+        - For filepath, one can set up each subfolder as data labels. In such case, the _parse_file() method will automatically
             parse the subfolder name as labales for the files inside.\n
-        - When using manual label data frame, make sure to only have one variable for labels, EVEN IF for multilabel modelling.\n
-            In the case of multilabel modelling, the label string should be multiple labels separated by a separator string, which\n
+        - When using manual label data frame, make sure to only have one variable for labels, EVEN IF for multilabel modelling.
+            In the case of multilabel modelling, the label string should be multiple labels separated by a separator string, which
             is set by the label_sep argument.\n
         - When multilabel, make sure to set up label_sep argument.\n
-        - It is noted that for regression, multilabel modelling is automatically supported via multiple labels in the maual label data frame.\n
+        - It is noted that for regression, multilabel modelling is automatically supported via multiple labels in the maual label data frame.
             Therefore, for regression, manual_labels argument cannot be None.\n
-        - When resample_method='random', the loader randomly draws samples according to the split percentage from the full data.\n
-            When resample_method='stratified', the loader randomly draws samples accoridng to the split percentage within each label.\n
+        - When resample_method='random', the loader randomly draws samples according to the split percentage from the full data.
+            When resample_method='stratified', the loader randomly draws samples accoridng to the split percentage within each label.
             Currently, the "balanced" method, i.e. drawing equal amount of samples from each label, has not been implemented.\n
     """
 
@@ -337,8 +339,8 @@ class BatchDataLoader(object):
             shuffle: bool. Effective when cv_only=True, if to shuffle the order of samples for the output data.\n
 
         # Details\n
-            - When cv_only=True, the loader returns only one tf.dataset object, without train/test split.\n
-                In such case, further cross validation resampling can be done using followup resampling functions.\n
+            - When cv_only=True, the loader returns only one tf.dataset object, without train/test split.
+                In such case, further cross validation resampling can be done using followup resampling functions.
                 However, it is not to say train/test split data cannot be applied with further CV operations.\n        
         """
         self.batch_size = batch_size
@@ -357,7 +359,7 @@ class BatchDataLoader(object):
                                      num_parallel_calls=tf.data.AUTOTUNE)
             self.train_n = self.n_total_sample
             if self.shuffle:  # check this
-                train_set = train_set.shuffle()
+                train_set = train_set.shuffle(seed=self.rand)
             test_set = None
             self.test_n = None
         else:
