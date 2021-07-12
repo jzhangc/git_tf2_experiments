@@ -254,9 +254,9 @@ class BatchDataLoader(object):
                 if self.label_sep is None:
                     raise ValueError(
                         'set label_sep for multilabel classification.')
-                else:
-                    labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
-                        labels=labels, sep=self.label_sep)
+
+                labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
+                    labels=labels, sep=self.label_sep)
             else:
                 labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
                     labels=labels, sep=None)
