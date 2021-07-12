@@ -16,21 +16,21 @@ def getSingleCsvDataset(csv_path, label_var, column_to_exclude=None,
                         batch_size=5, **kwargs):
     """
     # Purpose\n
-        Write in a single CSV file into a tf.dataset object
+        Write in a single CSV file into a tf.dataset object.\n
 
     # Argument\n
-        csv_path: str. File path. 
-        label_var: str. Variable name.
-        column_to_exclude: None, or list of str. A list of the variable names to exclude.
-        batch_size: int. Batch size.
+        csv_path: str. File path.\n 
+        label_var: str. Variable name.\n
+        column_to_exclude: None, or list of str. A list of the variable names to exclude.\n
+        batch_size: int. Batch size.\n
 
     # Return\n
-        Two items (in following order): tf.dataset, feature list.
+        Two items (in following order): tf.dataset, feature list.\n
 
     # Details\n
-        1. pd.read_csv is used to read in the header of the CSV file.
-        2. label_var only supports one label, i.e. only binary and multi-class are supported.
-        3. length of the output tf.dataset is number of batches, NOT samples.
+        - pd.read_csv is used to read in the header of the CSV file.\n
+        - label_var only supports one label, i.e. only binary and multi-class are supported.\n
+        - length of the output tf.dataset is number of batches, NOT samples.\n
     """
     # - write in only the header information -
     csv_header = pd.read_csv(csv_path, index_col=0,
@@ -62,25 +62,25 @@ def getSingleCsvDataset(csv_path, label_var, column_to_exclude=None,
 def scanFiles(basePath, validExts=None, contains=None):
     """
     # Purpose\n
-        Scan subdirs and extract file paths.
+        Scan subdirs and extract file paths.\n
 
     # Arguments\n
-        basePath: str. Directory path to scan.
-        validExts: str. (Optional) File extension to target.
-        contains: str. String included in the file name to scan. 
+        basePath: str. Directory path to scan.\n
+        validExts: str. (Optional) File extension to target.\n
+        contains: str. String included in the file name to scan.\n
 
     # Return\n
-        A multi-line string containing file paths
+        A multi-line string containing file paths.\n
 
     # Details\n
-        1. The function scans both root and sub directories.
+        - The function scans both root and sub directories.\n
 
-        2. This is a modified version of imutils.list_files,
+        - This is a modified version of imutils.list_files,
             in which the function no longer verifies if the
             file is a image. Instead, it optionally only grabs
-            files with the pre-set extension. 
+            files with the pre-set extension.\n 
 
-        3. When validExts=None, the funciton extracts all files.
+        - When validExts=None, the funciton extracts all files.\n
     """
     if not os.path.isdir(basePath):
         raise FileNotFoundError(f'Directory not found: {basePath}')
@@ -107,21 +107,21 @@ def scanFiles(basePath, validExts=None, contains=None):
 def adjmatAnnotLoader(dir, autoLabel=True, targetExt=None):
     """
     # Purpose\n
-        Scan and extract file paths (export as pandas data frame). 
+        Scan and extract file paths (export as pandas data frame).\n 
         Optionally, the function can also construct file labels using
-            folder names and exports as a numpy array. 
+            folder names and exports as a numpy array.\n 
 
     # Arguments\n
-        path: str. The root directory path to scan.
-        autoLabel: bool. If to automatically construct file labels using folder names.
+        path: str. The root directory path to scan.\n
+        autoLabel: bool. If to automatically construct file labels using folder names.\n
         targetExt: str. Optionally set target file extension to extract.
 
     # Return\n
         Pandas data frame containing all file paths. Optionially, a numpy array with all
-            file labels. Order: file_path, labels.
+            file labels. Order: file_path, labels.\n
 
     # Details\n
-        When targetExt=None, the function scans root and sub directories. 
+        When targetExt=None, the function scans root and sub directories.\n 
     """
     adjmat_paths = list(scanFiles(dir, validExts=targetExt))
     file_annot = pd.DataFrame()
@@ -144,22 +144,22 @@ def adjmatAnnotLoader(dir, autoLabel=True, targetExt=None):
 def labelMapping(labels, sep=None, pd_labels_var_name=None):
     """
     # Purpose\n
-        Extract elements from a string collection using a pre-set seperator as labels (multiclass/multilabel/binary).
+        Extract elements from a string collection using a pre-set seperator as labels (multiclass/multilabel/binary).\n
 
     # Arguments\n
-        labels: pandas DataFrame or numpy ndarray. Input label string collections
-        sep: str. Separator string. Default is ' '.
-        pd_labels_var_name: str. Set when labels is a pandas DataFrame, the variable/column name for label string collection.
+        labels: pandas DataFrame or numpy ndarray. Input label string collections.\n
+        sep: str. Separator string. Default is ' '.\n
+        pd_labels_var_name: str. Set when labels is a pandas DataFrame, the variable/column name for label string collection.\n
 
     # Return\n
-        One list and three dictionaries (in the following order): labels_list, labels_count, labels_map, labels_map_rev
-        labels_list: a list with separated labels
-        labels_map: key is labels, with int series as values
-        labels_map_rev: key is int series, with key as values
-        labels_count: key is labels, with counts as values
+        One list and three dictionaries (in the following order): labels_list, labels_count, labels_map, labels_map_rev\n
+        labels_list: a list with separated labels\n
+        labels_map: key is labels, with int series as values\n
+        labels_map_rev: key is int series, with key as values\n
+        labels_count: key is labels, with counts as values\n
 
     # Details\n
-        When sep=None, the function will no splice the label strings
+        When sep=None, the function will no splice the label strings\n
     """
 
     # - argument check -
@@ -209,20 +209,20 @@ def labelMapping(labels, sep=None, pd_labels_var_name=None):
 def labelOneHot(labels_list, labels_map):
     """
     # Purpose\n
-        One hot encode for labels (multiclass/multilabel/binary).
+        One hot encode for labels (multiclass/multilabel/binary).\n
 
     # Arguments\n
-        labels_list: list of strings. Input labels collection in the form of a list of strings.
-        labels_map: dict. A map of labels. 
+        labels_list: list of strings. Input labels collection in the form of a list of strings.\n
+        labels_map: dict. A map of labels.\n 
 
     # Return\n
-        A numpy array with one hot encoded mulitple labels, and can be used as the "y" input for tensorflow models.
+        A numpy array with one hot encoded mulitple labels, and can be used as the "y" input for tensorflow models.\n
 
     # Details\n
-        1. labels_list can be created by the function multilabel_mapping from utils.data_utils.
+        - labels_list can be created by the function multilabel_mapping from utils.data_utils.\n
 
-        2. Exmaple for labels_map (can be created by the function multilabel_mapping from utils.data_utils):
-            >>> labels_map
+        - Exmaple for labels_map (can be created by the function multilabel_mapping from utils.data_utils):
+            >>> labels_map\n
             {'all': 0,
             'alpha': 1,
             'beta': 2,
@@ -265,10 +265,10 @@ def labelOneHotRev(onehot_labels, labels_map_rev):
         labels_map_rev: dict. A dict of enumerated labels. 
 
     # Details\n
-        The labels_map_rev input can be obtained from labelMapping(). 
+        The labels_map_rev input can be obtained from labelMapping(). \n
 
             Example:
-            >>> labels_map_rev
+            >>> labels_map_rev\n
             {0: 'all_megs_pc',
             1: 'all_megs_pt',
             2: 'sc_fmri_alpha_beta_pc',
@@ -349,20 +349,20 @@ def trainingtestSpliterFinal(data, model_type='classification',
         Scalers for training and test data sets are also returned, if applicable.
         Order: training (np.array), test (np.array), training_standard_scaler_X, training_minmax_scaler_X, training_scaler_Y
     # Arguments\n
-        data: Pandas DataFrame. Input data.
-        model_type: string. Options are "classification" and "regression". 
-        man_split: boolean. If to manually split the data into training/test sets.
-        man_split_colname: string. Set only when man_split=True, the identity variable name for the column to use for manual splitting.
-        man_split_testset_value: list. Set only when man_split=True, the identity variable values for test set.
-        training_percent: float. percentage of the full data to be the training
-        random_state: int. seed for resampling RNG
-        x_standardization: boolean. if to center scale (z score standardization) the input X data
-        x_scale_column_to_exclude: list. the name of the columns
+        data: Pandas DataFrame. Input data.\n
+        model_type: string. Options are "classification" and "regression".\n
+        man_split: boolean. If to manually split the data into training/test sets.\n
+        man_split_colname: string. Set only when man_split=True, the identity variable name for the column to use for manual splitting.\n
+        man_split_testset_value: list. Set only when man_split=True, the identity variable values for test set.\n
+        training_percent: float. percentage of the full data to be the training.\n
+        random_state: int. seed for resampling RNG.\n
+        x_standardization: boolean. if to center scale (z score standardization) the input X data.\n
+        x_scale_column_to_exclude: list. the name of the columns.
                                 to remove from the X columns for scaling.
-                                makes sure to also inlcude the y column(s)
-        y_column: list. column(s) to use as outcome for scaling
-        y_min_max_scaling: boolean. For regression study, if to do a Min_Max scaling to outcome
-        y_scale_range: two-tuple. the Min_Max range.
+                                makes sure to also inlcude the y column(s.)\n
+        y_column: list. column(s) to use as outcome for scaling.\n
+        y_min_max_scaling: boolean. For regression study, if to do a Min_Max scaling to outcome.\n
+        y_scale_range: two-tuple. the Min_Max range.\n
     # Details\n
         The data normalization is applied AFTER the training/test splitting
         "Standardization" is z score standardization ("center and scale"): (x - mean(x))/SD
@@ -373,7 +373,7 @@ def trainingtestSpliterFinal(data, model_type='classification',
         For Y, only min-max normalization can be chosen. 
         The z score standardization is used for X standardization.
     # Examples\n
-        1. w normalization\n
+        - w normalization\n
             training, test, training_scaler_X, training_scaler_Y = training_test_spliter_final(
                 data=raw, random_state=1,
                 man_split=True, man_split_colname='subject', man_split_testset_value=selected_features[0],
@@ -382,7 +382,7 @@ def trainingtestSpliterFinal(data, model_type='classification',
                 y_min_max_scaling=True,
                 y_column=['PCL'], y_scale_range=(0, 1))
 
-        2. w/o noralization\n
+        - w/o noralization\n
             training, test, _, _ = training_test_spliter_final(
                 data=raw, random_state=1,
                 man_split=True, man_split_colname='subject', man_split_testset_value=selected_features[1],

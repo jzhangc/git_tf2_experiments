@@ -46,14 +46,14 @@ def warn(message, *lines):
 def addBoolArg(parser, name, help, input_type, default=False):
     """
     Purpose\n
-                    autmatically add a pair of mutually exclusive boolean arguments to the
-                    argparser
+        autmatically add a pair of mutually exclusive boolean arguments to the
+        argparser
     Arguments\n
-                    parser: a parser object
-                    name: str. the argument name
-                    help: str. the help message
-                    input_type: str. the value type for the argument
-                    default: the default value of the argument if not set
+        parser: a parser object.\n
+        name: str. the argument name.\n
+        help: str. the help message.\n
+        input_type: str. the value type for the argument\n
+        default: the default value of the argument if not set\n
     """
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument('--' + name, dest=name,

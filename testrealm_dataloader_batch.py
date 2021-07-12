@@ -132,41 +132,36 @@ class BatchDataLoader(object):
     """
     # Purpose\n
         Data loader for batch (out of memory) loading of matrices.
+
     # Initialization arguments\n
-        filepath: str. Input file root file path.
-        new_shape: tuple of int, or None. Optional new shape for the input data. When None, the first two dimensions are not changed.
-        target_file_ext: str or None. Optional extension of the files to scan. When None, the data loader scans all files.
+        filepath: str. Input file root file path.\n
+        new_shape: tuple of int, or None. Optional new shape for the input data. When None, the first two dimensions are not changed.\n
+        target_file_ext: str or None. Optional extension of the files to scan. When None, the data loader scans all files.\n
         manual_labels: pd.DataFrame or None. Optional file label data frame. When None, the loader's _parse_file() method automatically
-            parses subfolder's name as file labels. Cannot be None when model_type='regression'.
+            parses subfolder's name as file labels. Cannot be None when model_type='regression'.\n
         label_sep: str or None.  Optional str to separate label strings. When none, the loader uses the entire string as file labels.
-        pd_labelse_bar_name: list of str or None. Set when manual_labels is not None, variable name for file labels.
-        model_type: str. Model (label) type. Options are "classification" and "regression".
-        multilabel_classification: bool. If the classifiation is a "multilabel" type. Only effective when model_type='classification'.
-        x_scaling: str. If and how to scale x values. Options are "none", "max" and "minmax".
-        x_min_max_range. two num tuple. Only effective when x_scaling='minmax', the range for the x min max scaling.
-        cv_only: bool. When True, there is no train/test split.
-        shuffle: bool. Effective when cv_only=True, if to shuffle the order of samples for the output data.
+        pd_labelse_bar_name: list of str or None. Set when manual_labels is not None, variable name for file labels.\n
+        model_type: str. Model (label) type. Options are "classification" and "regression".\n
+        multilabel_classification: bool. If the classifiation is a "multilabel" type. Only effective when model_type='classification'.\n
+        x_scaling: str. If and how to scale x values. Options are "none", "max" and "minmax".\n
+        x_min_max_range. two num tuple. Only effective when x_scaling='minmax', the range for the x min max scaling.\n
         resampole_method: str. Effective when cv_only is not True. Train/test split method. Options are "random" and "stratified".
-        training_percentage: num. Training data set percentage.
-        batch_size: int. Batch size for the tf.dataset batches.
+        training_percentage: num. Training data set percentage.\n
 
     # Details\n
-        1. This data loader is designed for matrices (similar to _, _ resolution pictures).
-        2. It is possible to stack matrix with _,_,_N, and use new_shape argument to reshape the data into _,_,N shape.
-        3. For filepath, one can set up each subfolder as data labels. In such case, the _parse_file() method will automatically
-            parse the subfolder name as labales for the files inside.
-        4. When using manual label data frame, make sure to only have one variable for labels, EVEN IF for multilabel modelling.
-            In the case of multilabel modelling, the label string should be multiple labels separated by a separator string, which
-            is set by the label_sep argument.
-        5. When multilabel, make sure to set up label_sep argument.
-        6. It is noted that for regression, multilabel modelling is automatically supported via multiple labels in the maual label data frame.
-            Therefore, for regression, manual_labels argument cannot be None.
-        7. When cv_only=True, the loader returns only one tf.dataset object, without train/test split.
-            In such case, further cross validation resampling can be done using followup resampling functions.
-            However, it is not to say train/test split data cannot be applied with further CV operations.
-        8. When resample_method='random', the loader randomly draws samples according to the split percentage from the full data.
-            When resample_method='stratified', the loader randomly draws samples accoridng to the split percentage within each label.
-            Currently, the "balanced" method, i.e. drawing equal amount of samples from each label, has not been implemented.
+        - This data loader is designed for matrices (similar to AxB resolution pictures).\n
+        - It is possible to stack matrix with A,B,N, and use new_shape argument to reshape the data into A,B,N shape.\n
+        - For filepath, one can set up each subfolder as data labels. In such case, the _parse_file() method will automatically\n
+            parse the subfolder name as labales for the files inside.\n
+        - When using manual label data frame, make sure to only have one variable for labels, EVEN IF for multilabel modelling.\n
+            In the case of multilabel modelling, the label string should be multiple labels separated by a separator string, which\n
+            is set by the label_sep argument.\n
+        - When multilabel, make sure to set up label_sep argument.\n
+        - It is noted that for regression, multilabel modelling is automatically supported via multiple labels in the maual label data frame.\n
+            Therefore, for regression, manual_labels argument cannot be None.\n
+        - When resample_method='random', the loader randomly draws samples according to the split percentage from the full data.\n
+            When resample_method='stratified', the loader randomly draws samples accoridng to the split percentage within each label.\n
+            Currently, the "balanced" method, i.e. drawing equal amount of samples from each label, has not been implemented.\n
     """
 
     def __init__(self, filepath,
@@ -175,10 +170,8 @@ class BatchDataLoader(object):
                  manual_labels=None, label_sep=None, pd_labels_var_name=None,
                  model_type='classification', multilabel_classification=False,
                  x_scaling="none", x_min_max_range=(0, 1),
-                 cv_only=False, shuffle=True,
                  resmaple_method="random",
                  training_percentage=0.8,
-                 batch_size=None,
                  verbose=True, random_state=1):
         """
         # Arguments\n
@@ -202,14 +195,11 @@ class BatchDataLoader(object):
         # processing
         self.x_scaling = x_scaling
         self.x_min_max_range = x_min_max_range
-        self.batch_size = batch_size
 
         # resampling
         self.resample_method = resmaple_method
         self.train_percentage = training_percentage
         self.test_percentage = 1 - training_percentage
-        self.cv_only = cv_only
-        self.shuffle = shuffle
 
         # random state and other settings
         self.rand = random_state
@@ -217,8 +207,8 @@ class BatchDataLoader(object):
 
     def _parse_file(self):
         """
-        1. parse file path to get file path annotatin and, optionally, label information
-        2. set up manual label information
+        - parse file path to get file path annotatin and, optionally, label information\n
+        - set up manual label information\n
         """
 
         if self.model_type == 'classification':
@@ -314,10 +304,10 @@ class BatchDataLoader(object):
 
     def _data_resample(self, total_data, n_total_sample):
         """
-        NOTE: regression cannot use stratified splitting
-        NOTE: "stratified" (keep class ratios) is NOT the same as "balanced" (make class ratio=1)
-        NOTE: "balanced" mode will be implemented at a later time
-        NOTE: depending on how "balanced" is implemented, the if/else block could be implified
+        NOTE: regression cannot use stratified splitting\n
+        NOTE: "stratified" (keep class ratios) is NOT the same as "balanced" (make class ratio=1)\n
+        NOTE: "balanced" mode will be implemented at a later time\n
+        NOTE: depending on how "balanced" is implemented, the if/else block could be implified\n
         """
         _, encoded_labels, _, _ = self._get_file_annot()
         X_indices = np.arange(n_total_sample)
@@ -336,23 +326,40 @@ class BatchDataLoader(object):
 
         return train_ds, train_n, test_ds, test_n
 
-    def load_data(self, batch_size, shuffle=False):
+    def generate_data(self, batch_size=4, cv_only=False, shuffle=True):
+        """
+        # Purpose\n
+            To generate working data.\n
+
+        # Arguments\n
+            batch_size: int. Batch size for the tf.dataset batches.\n
+            cv_only: bool. When True, there is no train/test split.\n
+            shuffle: bool. Effective when cv_only=True, if to shuffle the order of samples for the output data.\n
+
+        # Details\n
+            - When cv_only=True, the loader returns only one tf.dataset object, without train/test split.\n
+                In such case, further cross validation resampling can be done using followup resampling functions.\n
+                However, it is not to say train/test split data cannot be applied with further CV operations.\n        
+        """
+        self.batch_size = batch_size
+        self.cv_only = cv_only
+        self.shuffle = shuffle
+
         # - load paths -
         filepath_list, encoded_labels, self.lables_count, self.labels_map_rev = self._get_file_annot()
         total_ds = tf.data.Dataset.from_tensor_slices(
             (filepath_list, encoded_labels))
         self.n_total_sample = total_ds.cardinality().numpy()
 
-        # - resample data and output-
+        # - resample data -
         if self.cv_only:
             train_set = total_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
                                      num_parallel_calls=tf.data.AUTOTUNE)
             self.train_n = self.n_total_sample
-            test_set = None
-            self.test_n = None
-
             if self.shuffle:  # check this
                 train_set = train_set.shuffle()
+            test_set = None
+            self.test_n = None
         else:
             train_ds, self.train_n, test_ds, self.test_n = self._data_resample(
                 total_ds, self.n_total_sample)
@@ -360,6 +367,12 @@ class BatchDataLoader(object):
                                      num_parallel_calls=tf.data.AUTOTUNE)
             test_set = test_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
                                    num_parallel_calls=tf.data.AUTOTUNE)
+
+        # - set up batch and prefeching -
+        train_set = train_set.batch(
+            self.batch_size).cache().prefetch(tf.data.AUTOTUNE)
+        test_set = train_set.batch(
+            self.batch_size).cache().prefetch(tf.data.AUTOTUNE) if test_set is not None else None
 
         return train_set, test_set
 
