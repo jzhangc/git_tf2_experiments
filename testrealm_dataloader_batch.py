@@ -379,6 +379,8 @@ class BatchDataLoader(object):
         return train_set, test_set
 
 
+# ------ ad-hoc test ------
+
 # ------ process/__main__ statement ------
 # if __name__ == '__main__':
 #     mydata = DataLoader(file=args.file[0],
