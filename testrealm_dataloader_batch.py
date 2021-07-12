@@ -131,12 +131,30 @@ else:
 class BatchDataLoader(object):
     """
     # Purpose\n
-        Data loading class.
-    # Methods\n
-        __init__: load data and other information from argparser, as well as class label encoding for classification study
+        Data loader for batch (out of memory) loading of matrices. 
+    # Initialization arguments\n
+        filepath: str. Input file root file path.
+        new_shape: tuple of int, or None. Optional new shape for the input data. When None, the first two dimensions are not changed. 
+        target_file_ext: str or None. Optional extension of the files to scan. When None, the data loader scans all files.
+        manual_labels: pd.DataFrame or None. Optional file label data frame. When None, the loader's _parse_file() method automatically
+            parses subfolder's name as file labels. Cannot be None when model_type='regression'.
+        label_sep: str or None.  Optional str to separate label strings. When none, the loader uses the entire string as file labels. 
+        pd_labelse_bar_name: list of str or None. Set when manual_labels is not None, variable name for file labels. 
+        model_type: str. Model (label) type. Options are "classification" and "regression".
+        multilabel_classification: bool. Only effective when model_type='classification'. If the classifiation is a "multilabel" type. 
+
     # Details\n
-        This class is designed to load the data and set up data for training LSTM models.
-        This class uses the custom error() function. So be sure to load it.
+        1. This data loader is designed for matrices (similar to _, _ resolution pictures).
+        2. It is possible to stack matrix with _,_,_N, and use new_shape argument to reshape the data into _,_,N shape. 
+        3. For filepath, one can set up each subfolder as data labels. In such case, the _parse_file() method will automatically
+            parse the subfolder name as labales for the files inside.
+        4. When using manual label data frame, make sure to only have one variable for labels, EVEN IF for multilabel modelling. 
+            In the case of multilabel modelling, the label string should be multiple labels separated by a separator string, which 
+            is set by the label_sep argument.
+        5. When multilabel, make sure to set up label_sep argument. 
+        6. It is noted that for regression, multilabel modelling is automatically supported via multiple labels in the maual label data frame.
+            Therefore, for regression, manual_labels argument cannot be None. 
+
     # Class property\n
         modelling_data: dict. data for model training. data is split if necessary.
             No data splitting for the "CV only" mode.
@@ -147,7 +165,7 @@ class BatchDataLoader(object):
                  new_shape=None,
                  target_file_ext=None,
                  manual_labels=None, label_sep=None, pd_labels_var_name=None,
-                 model_type='classification', multilabel=False,
+                 model_type='classification', multilabel_classification=False,
                  x_scaling="none", x_min_max_range=(0, 1),
                  cv_only=False,
                  resmaple_method="random",
@@ -166,7 +184,7 @@ class BatchDataLoader(object):
         """
         # model information
         self.model_type = model_type
-        self.multilabel = multilabel
+        self.multilabel_class = multilabel_classification
         self.filepath = filepath
         self.target_ext = target_file_ext
         self.manual_labels = manual_labels
@@ -200,11 +218,11 @@ class BatchDataLoader(object):
             file_annot, labels = adjmatAnnotLoader(
                 self.filepath, targetExt=self.target_ext)
         else:  # regeression
+            if self.manual_labels is None:
+                raise ValueError(
+                    'Set manual_labels when model_type=\"regression\".')
             file_annot, _ = adjmatAnnotLoader(
                 self.filepath, targetExt=self.target_ext, autoLabel=False)
-            if self.manual_labels is None:
-                raise TypeError(
-                    'Set manual_labels when model_type=\"regression\".')
 
         if self.manual_labels is not None:  # update labels to the manually set array
             if isinstance(self.manual_labels, pd.DataFrame):
@@ -212,8 +230,12 @@ class BatchDataLoader(object):
                     raise TypeError(
                         'Set pd_labels_var_name when manual_labels is a pd.Dataframe.')
                 else:
-                    labels = self.manual_labels[self.pd_labels_var_name].to_numpy(
-                    )
+                    try:
+                        labels = self.manual_labels[self.pd_labels_var_name].to_numpy(
+                        )
+                    except Exception as e:
+                        error('Manual label parsing failed.',
+                              'check if pd_labels_var_name is present in the maual label data frame.')
             elif isinstance(self.manual_labels, np.ndarray):
                 labels = self.manual_labels
             else:
@@ -228,9 +250,13 @@ class BatchDataLoader(object):
         file_annot, labels = self._parse_file()
 
         if self.model_type == 'classification':
-            if self.multilabel:
-                labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
-                    labels=labels, sep=self.label_sep)
+            if self.multilabel_class:
+                if self.label_sep is None:
+                    raise ValueError(
+                        'set label_sep for multilabel classification.')
+                else:
+                    labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
+                        labels=labels, sep=self.label_sep)
             else:
                 labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
                     labels=labels, sep=None)

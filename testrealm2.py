@@ -42,6 +42,9 @@ def map_func(filepath: tf.Tensor, label: tf.Tensor, processing=False):
 # ------ test realm ------
 main_dir = os.path.abspath('./')
 file_path = os.path.join(main_dir, 'data/test_dat.csv')
+tst = pd.read_csv(file_path)
+
+tst[['subject', 'PCL']].to_numpy().shape
 
 # - test: load using the tf.data.Dataset API -
 tst_dat, feature_list = getSingleCsvDataset(
