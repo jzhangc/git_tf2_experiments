@@ -343,7 +343,7 @@ class BatchDataLoader(object):
 
         return train_ds, train_n, test_ds, test_n
 
-    def generate_data(self, batch_size=4, cv_only=False, shuffle=True):
+    def generate_data_batch(self, batch_size=4, cv_only=False, shuffle=True):
         """
         # Purpose\n
             To generate working data.\n
@@ -416,11 +416,9 @@ tst_dat = BatchDataLoader(filepath='./data/tf_data', target_file_ext='txt',
                           multilabel_classification=False, x_scaling='none', x_min_max_range=[0, 1], resmaple_method='stratified',
                           training_percentage=0.8, verbose=False, random_state=1)
 
-tst_train, tst_test = tst_dat.generate_data(
+tst_train, tst_test = tst_dat.generate_data_batch(
     batch_size=4, cv_only=True, shuffle=True)
 
-tst_dat.train_set_batch_n
-tst_dat.train_n
 
 # ------ process/__main__ statement ------
 # if __name__ == '__main__':
