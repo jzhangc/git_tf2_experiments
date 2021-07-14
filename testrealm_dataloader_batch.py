@@ -97,16 +97,23 @@ add_g1_arg('-o', '--output_dir', type=fileDir,
 # g2: processing and resampling
 add_g2_arg('-ns', '--new_shape', type=str, default=None,
            help='str. Optional new shape tuple. (Default: %(default)s)')
-add_g2_arg('-mt', '--model_type', type=str, default='classification',
-           choices=['classification', 'regression'],
-           help='Model (label) type. (Default: %(default)s)')
 addBoolArg(parser=arg_g2, name='multilabel_classification', input_type='flag', default=False,
            help='If the classifiation is a "multilabel" type. Only effective when model_type=\'classification\'. (Default: %(default)s)')
 add_g2_arg('-xs', '--x_scaling', type=str, choices=['none', 'max', 'minmax'], default='minmax',
            help='If and how to scale x values. (Default: %(default)s)')
 add_g2_arg('-xr', '--x_min_max_range', type=float,
            nargs='+', default=[0.0, 1.0], help='Only effective when x_scaling=\'minmax\', the range for the x min max scaling. (Default: %(default)s)')
+add_g2_arg('-cv', '--cv_type', type=str,
+           choices=['kfold', 'LOO', 'monte'], default='kfold',
+           help='str. Cross validation type. Default is \'kfold\'')
+addBoolArg(parser=arg_g2, name='cv_only', input_type='flag',
+           help='If to do cv_only mode for training, i.e. no holdout test split. (Default: %(default)s)',
+           default=False)
 
+# g3: modelling
+add_g3_arg('-mt', '--model_type', type=str, default='classification',
+           choices=['classification', 'regression'],
+           help='Model (label) type. (Default: %(default)s)')
 
 # g4: others
 add_g4_arg('-se', '--random_state', type=int,

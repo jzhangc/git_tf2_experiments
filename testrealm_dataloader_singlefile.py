@@ -120,8 +120,6 @@ add_g2_arg('-tp', '--training_percentage', type=float, default=0.8,
 add_g2_arg('-gm', '--resample_method', type=str,
            choices=['random', 'stratified', 'balanced'], default='random',
            help='str. training-test split method. (Default: %(default)s)')
-add_g2_arg('-se', '--random_state', type=int,
-           default=1, help='int. Random state. (Default: %(default)s)')
 addBoolArg(parser=arg_g2, name='x_standardize', input_type='flag',
            default='False',
            help='If to apply z-score stardardization for x. (Default: %(default)s)')
@@ -135,6 +133,8 @@ add_g3_arg('-mt', '--model_type', type=str, choices=['regression', 'classificati
            help='str. Model type. Options: \'regression\' and \'classification\'. (Default: %(default)s)')
 
 # g4: others
+add_g4_arg('-se', '--random_state', type=int,
+           default=1, help='int. Random state. (Default: %(default)s)')
 addBoolArg(parser=arg_g4, name='verbose', input_type='flag', default=False,
            help='Verbose or not. (Default: %(default)s)')
 
