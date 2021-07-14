@@ -121,7 +121,8 @@ def adjmatAnnotLoader(dir, autoLabel=True, targetExt=None):
             file labels. Order: file_path, labels.\n
 
     # Details\n
-        When targetExt=None, the function scans root and sub directories.\n 
+        - When targetExt=None, the function scans root and sub directories.\n 
+        - The targetExt string should exclude the "." symbol, e.g. 'txt' instead of '.txt'.\n
     """
     adjmat_paths = list(scanFiles(dir, validExts=targetExt))
     file_annot = pd.DataFrame()

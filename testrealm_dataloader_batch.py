@@ -19,6 +19,7 @@ the application.
 import argparse
 import os
 import sys
+import random
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -84,7 +85,7 @@ add_g1_arg('path', nargs=1, type=fileDir,
 add_g1_arg('-il', '--manual_label_file', type=str,
            help='Optional one manual labels CSV file. (Default: %(default)s)')
 add_g1_arg('-te', '--target_file_ext', type=str, default=None,
-           help='str. When manual labels are provided and imported as a pandas dataframe, the label variable name for this pandas dataframe. (Default: %(default)s)')
+           help='str. When manual labels are provided and imported as a pandas dataframe, the label variable name for this pandas dataframe, e.g. \'txt\'. (Default: %(default)s)')
 add_g1_arg('-lv', '--pd_labels_var_name', type=str, default=None,
            help='str. When manual labels are provided and imported as a pandas dataframe, the label variable name for this pandas dataframe. (Default: %(default)s)')
 add_g1_arg('-ls', '--label_string_sep', type=str, default=None,
@@ -255,8 +256,8 @@ class BatchDataLoader(object):
 
         return file_annot, labels
 
-    def _get_file_annot(self):
-        file_annot, labels = self._parse_file()
+    def _get_file_annot(self, **kwargs):
+        file_annot, labels = self._parse_file(**kwargs)
 
         if self.model_type == 'classification':
             if self.multilabel_class:
@@ -274,7 +275,11 @@ class BatchDataLoader(object):
             encoded_labels = labels
             lables_count, labels_map_rev = None, None
 
-        filepath_list = file_annot['path'].to_list()
+        try:
+            filepath_list = file_annot['path'].to_list()
+        except KeyError as e:
+            error('Failed to load files.',
+                  'Hint: check target extension or directory.')
 
         return filepath_list, encoded_labels, lables_count, labels_map_rev
 
@@ -314,14 +319,14 @@ class BatchDataLoader(object):
         f = tf.convert_to_tensor(f, dtype=tf.float32)
         return f, lb
 
-    def _data_resample(self, total_data, n_total_sample):
+    def _data_resample(self, total_data, n_total_sample, encoded_labels):
         """
         NOTE: regression cannot use stratified splitting\n
         NOTE: "stratified" (keep class ratios) is NOT the same as "balanced" (make class ratio=1)\n
         NOTE: "balanced" mode will be implemented at a later time\n
         NOTE: depending on how "balanced" is implemented, the if/else block could be implified\n
         """
-        _, encoded_labels, _, _ = self._get_file_annot()
+        # _, encoded_labels, _, _ = self._get_file_annot()
         X_indices = np.arange(n_total_sample)
         if self.resample_method == 'random':
             X_train_indices, X_test_indices, _, _ = train_test_split(
@@ -363,18 +368,21 @@ class BatchDataLoader(object):
             (filepath_list, encoded_labels))
         self.n_total_sample = total_ds.cardinality().numpy()
 
+        # return total_ds, self.n_total_sample  # test point
+
         # - resample data -
         if self.cv_only:
             train_set = total_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
                                      num_parallel_calls=tf.data.AUTOTUNE)
             self.train_n = self.n_total_sample
             if self.shuffle:  # check this
-                train_set = train_set.shuffle(seed=self.rand)
+                train_set = train_set.shuffle(
+                    random.randint(2, self.n_total_sample), seed=self.rand)
             test_set = None
             self.test_n = None
         else:
             train_ds, self.train_n, test_ds, self.test_n = self._data_resample(
-                total_ds, self.n_total_sample)
+                total_ds, self.n_total_sample, encoded_labels)
             train_set = train_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
                                      num_parallel_calls=tf.data.AUTOTUNE)
             test_set = test_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
@@ -386,11 +394,29 @@ class BatchDataLoader(object):
         test_set = train_set.batch(
             self.batch_size).cache().prefetch(tf.data.AUTOTUNE) if test_set is not None else None
 
+        self.train_set_batch_n = 0
+        for i in train_set:
+            self.train_set_batch_n += 1
+
+        if test_set is not None:
+            self.teset_set_batch_n = 0
+            for i in test_set:
+                self.test_set_batch_n += 1
+
         return train_set, test_set
 
 
 # ------ ad-hoc test ------
+tst_dat = BatchDataLoader(filepath='./data/tf_data', target_file_ext='txt',
+                          manual_labels=None, label_sep=None, pd_labels_var_name=None, model_type='classification',
+                          multilabel_classification=False, x_scaling='none', x_min_max_range=[0, 1], resmaple_method='stratified',
+                          training_percentage=0.8, verbose=False, random_state=1)
 
+tst_train, tst_test = tst_dat.generate_data(
+    batch_size=4, cv_only=True, shuffle=True)
+
+tst_dat.train_set_batch_n
+tst_dat.train_n
 
 # ------ process/__main__ statement ------
 # if __name__ == '__main__':
