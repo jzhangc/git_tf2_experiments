@@ -366,6 +366,9 @@ class BatchDataLoader(object):
         filepath_list, encoded_labels, self.lables_count, self.labels_map_rev = self._get_file_annot()
         total_ds = tf.data.Dataset.from_tensor_slices(
             (filepath_list, encoded_labels))
+        # below: tf.dataset.cardinality().numpy() always displays the number of batches.
+        # the reason this can be used for total sample size is because
+        # tf.data.Dataset.from_tensor_slices() reads the file list as one file per batch
         self.n_total_sample = total_ds.cardinality().numpy()
 
         # return total_ds, self.n_total_sample  # test point
@@ -389,6 +392,7 @@ class BatchDataLoader(object):
                                    num_parallel_calls=tf.data.AUTOTUNE)
 
         # - set up batch and prefeching -
+        # NOTE: the train_set and test_set are tensorflow.python.data.ops.dataset_ops.PrefetchDataset type
         train_set = train_set.batch(
             self.batch_size).cache().prefetch(tf.data.AUTOTUNE)
         test_set = train_set.batch(
