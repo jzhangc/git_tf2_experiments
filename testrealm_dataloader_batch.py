@@ -346,7 +346,8 @@ class BatchDataLoader(object):
     def generate_batched_data(self, batch_size=4, cv_only=False, shuffle=True):
         """
         # Purpose\n
-            To generate working data.\n
+            To generate working data in batches. The method also creates a series of attributes that store 
+                information like batch size, number of batches etc (see details)\n
 
         # Arguments\n
             batch_size: int. Batch size for the tf.dataset batches.\n
