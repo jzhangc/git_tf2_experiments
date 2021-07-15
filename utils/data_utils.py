@@ -1,4 +1,4 @@
-"""data utilities"""
+"""utilities for data input and processing"""
 
 # ------ modules ------
 import os
