@@ -12,7 +12,7 @@ from sklearn.utils import shuffle
 
 
 # ------ classes -------
-class BatchDataLoader(object):
+class BatchMatrixLoader(object):
     """
     # Purpose\n
         Data loader for batch (out of memory) loading of matrices.

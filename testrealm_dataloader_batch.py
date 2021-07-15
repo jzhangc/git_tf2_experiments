@@ -22,7 +22,7 @@ import sys
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from utils.dl_utils import BatchDataLoader
+from utils.dl_utils import BatchMatrixLoader
 from utils.other_utils import error, warn, addBoolArg, fileDir, colr
 
 
@@ -147,10 +147,10 @@ else:
 
 
 # ------ ad-hoc test ------
-tst_dat = BatchDataLoader(filepath='./data/tf_data', target_file_ext='txt',
-                          manual_labels=None, label_sep=None, pd_labels_var_name=None, model_type='classification',
-                          multilabel_classification=False, x_scaling='none', x_min_max_range=[0, 1], resmaple_method='stratified',
-                          training_percentage=0.8, verbose=False, random_state=1)
+tst_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
+                            manual_labels=None, label_sep=None, pd_labels_var_name=None, model_type='classification',
+                            multilabel_classification=False, x_scaling='none', x_min_max_range=[0, 1], resmaple_method='stratified',
+                            training_percentage=0.8, verbose=False, random_state=1)
 
 tst_train, tst_test = tst_dat.generate_batched_data(
     batch_size=10, cv_only=False, shuffle_for_cv_only=False)
