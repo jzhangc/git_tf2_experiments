@@ -1,6 +1,6 @@
 # Tensorflow 2.5 with Apple-Metal gpu acceleration
 
-experimental codes for Tensorflow 2.5 with Apple-Metal GPU acceleration for Mac (both Intel and Apple chips)
+Experimental codes for Tensorflow 2.5 with Apple-Metal GPU acceleration for Mac (both Intel and Apple chips)
 
 ## UPDATE (June.2021)
 
