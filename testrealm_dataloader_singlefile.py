@@ -25,6 +25,7 @@ import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 
+from utils.dl_utils import SingleCsvMemLoader
 from utils.data_utils import labelMapping, labelOneHot
 from utils.other_utils import addBoolArg, colr, csvPath, error, warn
 
@@ -165,214 +166,15 @@ if args.cv_type == 'monte':
         error('-mt/--monte_test_rate should be between 0.0 and 1.0.')
 
 
-# ------ loacl classes ------
-class singleCsvMemLoader(object):
-    """
-    # Purpose\n
-        In memory data loader for single file CSV.\n
-    # Arguments\n
-        file: str. complete input file path. "args.file[0]" from argparser].n
-        label_var: str. variable nanme for label. Only one is accepted for this version. "args.label_var" from argparser.\n
-        annotation_vars: list of strings. Column names for the annotation variables in the input dataframe, EXCLUDING label variable.
-            "args.annotation_vars" from argparser.\n
-        sample_id_var: str. variable used to identify samples. "args.sample_id_var" from argparser.\n
-        model_type: str. model type, classification or regression.\n
-        n_classes: int. number of classes when model_type='classification'.\n
-        cv_only: bool. If to split data into training and holdout test sets. "args.cv_only" from argparser.\n
-        training_percentage: float, betwen 0 and 1. percentage for training data. "args.training_percentage" from argparser.\n
-        random_state: int. random state.\n
-        verbose: bool. verbose. "args.verbose" from argparser.\n
-    # Methods\n
-        __init__: initalization.\n
-        _label_onehot_encode
-        _x_minmax        
-    # Public class attributes\n
-        Below are attributes read from arguments
-            self.model_type
-            self.n_classes
-            self.file
-            self.label_var
-            self.annotation_vars
-            self.cv_only
-            self.holdout_samples
-            self.training_percentage
-            self.rand: int. random state
-        self.y_var: single str list. variable nanme for label
-        self.filename: str. input file name without extension
-        self.raw: pandas dataframe. input data
-        self.raw_working: pands dataframe. working input data
-        self.complete_annot_vars: list of strings. column names for the annotation variables in the input dataframe, INDCLUDING label varaible
-        self.n_features: int. number of features
-        self.le: sklearn LabelEncoder for classification study
-        self.label_mapping: dict. Class label mapping codes, when model_type='classification'
-    # Class property\n
-        modelling_data: dict. data for model training. data is split if necessary.
-            No data splitting for the "CV only" mode.
-            returns a dict object with 'training' and 'test' items
-    # Details\n
-
-    """
-
-    def __init__(self, file,
-                 label_var, annotation_vars, sample_id_var,
-                 model_type,
-                 minmax,
-                 x_standardize,
-                 holdout_samples=None,
-                 training_percentage=0.8,
-                 cv_only=False, shuffle_for_cv_only=True,
-                 resample_method='random',
-                 label_string_sep=None, random_state=1, verbose=True):
-        """initialization"""
-        # - random state and other settings -
-        self.rand = random_state
-        self.verbose = verbose
-
-        # - model and data info -
-        self.model_type = model_type
-        # convert to a list for trainingtestSpliterFinal() to use
-        self.label_var = label_var
-        self.label_sep = label_string_sep
-        self.annotation_vars = annotation_vars
-        self.y_var = [self.label_var]  # might not need this anymore
-        self.complete_annot_vars = self.annotation_vars + self.y_var
-        self._n_annot_col = len(self.complete_annot_vars)
-
-        # - args.file is a list. so use [0] to grab the string -
-        self.file = file
-        self._basename, self._file_ext = os.path.splitext(file)
-
-        # - resampling settings -
-        self.cv_only = cv_only
-        self.shuffle_for_cv_only = shuffle_for_cv_only
-        self.resample_method = resample_method
-        self.sample_id_var = sample_id_var
-        self.holdout_samples = holdout_samples
-        self.training_percentage = training_percentage
-        self.test_percentage = 1 - training_percentage
-        self.x_standardize = x_standardize
-        self.minmax = minmax
-
-        # - parse file -
-        self.raw = pd.read_csv(self.file, engine='python')
-        if self.cv_only and self.shuffle_for_cv_only:
-            self.raw_working = shuffle(self.raw.copy(), random_state=self.rand)
-        else:
-            self.raw_working = self.raw.copy()  # value might be changed
-
-        self.n_features = int(
-            (self.raw_working.shape[1] - self._n_annot_col))  # pd.shape[1]: ncol
-        self.total_n = self.raw_working.shape[0]
-        if model_type == 'classification':
-            self.n_class = self.raw[label_var].nunique()
-        else:
-            self.n_class = None
-        self.x = self.raw_working[self.raw_working.columns[
-            ~self.raw_working.columns.isin(self.complete_annot_vars)]].to_numpy()
-        self.labels = self.raw_working[self.label_var].to_numpy()
-
-        # call setter here
-        if verbose:
-            print('Setting up modelling data...', end=' ')
-        self.modelling_data()
-        if verbose:
-            print('done!')
-
-    def _label_onehot_encode(self, labels):
-        """one hot encoding for labels. labels: shoud be a np.ndarray"""
-        labels_list, labels_count, labels_map, labels_map_rev = labelMapping(
-            labels, sep=self.label_sep)
-
-        onehot_encoded = labelOneHot(labels_list, labels_map)
-
-        return onehot_encoded, labels_count, labels_map_rev
-
-    def _x_minmax(self, x_array):
-        """NOTE: reshaping to (_, _, 1) is mandatory"""
-        # - variables -
-        if isinstance(x_array, np.ndarray):  # this check can be done outside of the classs
-            X = x_array
-        else:
-            raise TypeError('data processing function should be a np.ndarray.')
-
-        # - minmax -
-        Min = 0
-        Max = 1
-        X_std = (X - X.min(axis=0)) / (X.max(axis=0) - X.min(axis=0))
-        X = X_std * (Max - Min) + Min
-
-        return X
-
-    def generate_batched_data(self, batch_size=4):
-        """generate batched tf.dataset"""
-        # print("called setter") # for debugging
-        if self.model_type == 'classification':  # one hot encoding
-            self.labels_working, self.labels_count, self.labels_rev = self._label_onehot_encode(
-                self.labels)
-        else:
-            self.labels_working, self.labels_count, self.labels_rev = self.labels, None, None
-
-        if self.minmax:
-            self.x_working = self._x_minmax(self.x)
-
-        # - data resampling -
-        self.train_set_batch_n = 0
-        if self.cv_only:  # only training is stored
-            # training set prep
-            self._training_x = shuffle(self.x_working, random_state=self.rand)
-            self._training_y = self.labels_working
-
-            # test set prep
-            self._test_x, self._test_y = None, None
-            self.training_y_scaler = None
-            self.test_n = None
-            self.test_set_batch_n = None
-        else:  # training and holdout test data split
-            X_indices = np.arange(self.total_n)
-            if self.resample_method == 'random':
-                X_train_indices, X_test_indices, self._training_y, self._test_y = train_test_split(
-                    X_indices, self.labels_working, test_size=self.test_percentage, stratify=None, random_state=self.rand)
-            elif self.resample_method == 'stratified':
-                X_train_indices, X_test_indices, self._training_y, self._test_y = train_test_split(
-                    X_indices, self.labels_working, test_size=self.test_percentage, stratify=self.labels_working, random_state=self.rand)
-            else:
-                raise NotImplementedError(
-                    '\"balanced\" resmapling method has not been implemented.')
-            self._training_x, self._test_x = self.x_working[
-                X_train_indices], self.x_working[X_test_indices]
-            self.test_set_batch_n = 0
-
-        # - set up final training and test set -
-        self.train_ds = tf.data.Dataset.from_tensor_slices(
-            (self._training_x, self._training_y))
-        self.train_n = self.train_ds.cardinality().numpy()
-
-        self.test_ds = tf.data.Dataset.from_tensor_slices(
-            (self._test_x, self._test_y)) if (self._test_x is not None) and (self._test_y is not None) else None
-        self.test_n = self.test_ds.cardinality().numpy() if self.test_ds is not None else None
-
-        # - set up -
-        train_batched = self.train_ds.batch(
-            batch_size).cache().prefetch(tf.data.AUTOTUNE)
-        for _ in train_batched:
-            self.train_set_batch_n += 1
-
-        if self.test_ds is not None:
-            test_batched = self.test_ds.batch(batch_size).cache().prefetch(
-                tf.data.AUTOTUNE)
-            for _ in test_batched:
-                self.test_set_batch_n += 1
-
-        return train_batched, test_batched
-
-
 # below: ad-hoc testing
-mydata = singleCsvMemLoader(file='./data/test_dat.csv', label_var='group', annotation_vars=['subject', 'PCL'], sample_id_var='subject',
+mydata = SingleCsvMemLoader(file='./data/test_dat.csv', label_var='group', annotation_vars=['subject', 'PCL'], sample_id_var='subject',
                             holdout_samples=None, minmax=True, x_standardize=True,
                             model_type='classification', training_percentage=0.8,
-                            cv_only=True, shuffle_for_cv_only=False,
+                            cv_only=False, shuffle_for_cv_only=False,
                             random_state=1, verbose=True)
 
+tst_train, tst_test = mydata.generate_batched_data(
+    batch_size=4, cv_only=True, shuffle_for_cv_only=True)
 
 # ------ process/__main__ statement ------
 # if __name__ == '__main__':
