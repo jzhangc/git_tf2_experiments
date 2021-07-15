@@ -114,13 +114,8 @@ addBoolArg(parser=arg_g2, name='shuffle_for_cv_only', input_type='flag',
 add_g2_arg('-cv', '--cv_type', type=str,
            choices=['kfold', 'LOO', 'monte'], default='kfold',
            help='str. Cross validation type. Default is \'kfold\'')
-addBoolArg(parser=arg_g2, name='man_split', input_type='flag',
-           help='Manually split data into training and test sets. When set, the split is on -s/--sample_id_var. (Default: %(default)s)',
-           default=False)
-add_g2_arg('-hs', '--holdout_samples', nargs='+', type=str, default=[],
-           help='str. Sample IDs selected as holdout test group when --man_split was set. (Default: %(default)s)')
 add_g2_arg('-tp', '--training_percentage', type=float, default=0.8,
-           help='num, range: 0~1. Split percentage for training set when --no-man_split is set. (Default: %(default)s)')
+           help='num, range: 0~1. Split percentage for training set. (Default: %(default)s)')
 add_g2_arg('-gm', '--resample_method', type=str,
            choices=['random', 'stratified', 'balanced'], default='random',
            help='str. training-test split method. (Default: %(default)s)')
@@ -165,9 +160,6 @@ if len(args.annotation_vars) < 1:
     error('-a/--annotation_vars missing.',
           'Be sure to set the following: -s/--sample_id_var, -y/--label_var, -a/--annotation_vars')
 
-if args.man_split and len(args.holdout_samples) < 1:
-    error('Set -t/--holdout_samples when --man_split was set.')
-
 if args.cv_type == 'monte':
     if args.monte_test_rate < 0.0 or args.monte_test_rate > 1.0:
         error('-mt/--monte_test_rate should be between 0.0 and 1.0.')
@@ -177,16 +169,48 @@ if args.cv_type == 'monte':
 class singleCsvMemLoader(object):
     """
     # Purpose\n
-        In memory data loader for single file CSV.
+        In memory data loader for single file CSV.\n
+    # Arguments\n
+        file: str. complete input file path. "args.file[0]" from argparser].n
+        label_var: str. variable nanme for label. Only one is accepted for this version. "args.label_var" from argparser.\n
+        annotation_vars: list of strings. Column names for the annotation variables in the input dataframe, EXCLUDING label variable.
+            "args.annotation_vars" from argparser.\n
+        sample_id_var: str. variable used to identify samples. "args.sample_id_var" from argparser.\n
+        model_type: str. model type, classification or regression.\n
+        n_classes: int. number of classes when model_type='classification'.\n
+        cv_only: bool. If to split data into training and holdout test sets. "args.cv_only" from argparser.\n
+        training_percentage: float, betwen 0 and 1. percentage for training data. "args.training_percentage" from argparser.\n
+        random_state: int. random state.\n
+        verbose: bool. verbose. "args.verbose" from argparser.\n
     # Methods\n
-        __init__: load data and other information from argparser, as well as class label encoding for classification study
-    # Details\n
-        This class is designed to load the data and set up data for training LSTM models.
-        This class uses the custom error() function. So be sure to load it.
+        __init__: initalization.\n
+        _label_onehot_encode
+        _x_minmax        
+    # Public class attributes\n
+        Below are attributes read from arguments
+            self.model_type
+            self.n_classes
+            self.file
+            self.label_var
+            self.annotation_vars
+            self.cv_only
+            self.holdout_samples
+            self.training_percentage
+            self.rand: int. random state
+        self.y_var: single str list. variable nanme for label
+        self.filename: str. input file name without extension
+        self.raw: pandas dataframe. input data
+        self.raw_working: pands dataframe. working input data
+        self.complete_annot_vars: list of strings. column names for the annotation variables in the input dataframe, INDCLUDING label varaible
+        self.n_features: int. number of features
+        self.le: sklearn LabelEncoder for classification study
+        self.label_mapping: dict. Class label mapping codes, when model_type='classification'
     # Class property\n
         modelling_data: dict. data for model training. data is split if necessary.
             No data splitting for the "CV only" mode.
             returns a dict object with 'training' and 'test' items
+    # Details\n
+
     """
 
     def __init__(self, file,
@@ -194,45 +218,12 @@ class singleCsvMemLoader(object):
                  model_type,
                  minmax,
                  x_standardize,
-                 man_split, holdout_samples, training_percentage,
+                 holdout_samples=None,
+                 training_percentage=0.8,
                  cv_only=False, shuffle_for_cv_only=True,
                  resample_method='random',
                  label_string_sep=None, random_state=1, verbose=True):
-        """
-        # Arguments\n
-            file: str. complete input file path. "args.file[0]" from argparser]
-            label_var: str. variable nanme for label. Only one is accepted for this version. "args.label_var" from argparser
-            annotation_vars: list of strings. Column names for the annotation variables in the input dataframe, EXCLUDING label variable.
-                "args.annotation_vars" from argparser
-            sample_id_var: str. variable used to identify samples. "args.sample_id_var" from argparser
-            model_type: str. model type, classification or regression
-            n_classes: int. number of classes when model_type='classification'
-            cv_only: bool. If to split data into training and holdout test sets. "args.cv_only" from argparser
-            man_split: bool. If to use manual split or not. "args.man_split" from argparser
-            holdout_samples: list of strings. sample IDs for holdout sample, when man_split=True. "args.holdout_samples" from argparser
-            training_percentage: float, betwen 0 and 1. percentage for training data, when man_split=False. "args.training_percentage" from argparser
-            random_state: int. random state
-            verbose: bool. verbose. "args.verbose" from argparser
-        # Public class attributes\n
-            Below are attributes read from arguments
-                self.model_type
-                self.n_classes
-                self.file
-                self.label_var
-                self.annotation_vars
-                self.cv_only
-                self.holdout_samples
-                self.training_percentage
-                self.rand: int. random state
-            self.y_var: single str list. variable nanme for label
-            self.filename: str. input file name without extension
-            self.raw: pandas dataframe. input data
-            self.raw_working: pands dataframe. working input data
-            self.complete_annot_vars: list of strings. column names for the annotation variables in the input dataframe, INDCLUDING label varaible
-            self.n_features: int. number of features
-            self.le: sklearn LabelEncoder for classification study
-            self.label_mapping: dict. Class label mapping codes, when model_type='classification'
-        """
+        """initialization"""
         # - random state and other settings -
         self.rand = random_state
         self.verbose = verbose
@@ -283,7 +274,7 @@ class singleCsvMemLoader(object):
         # call setter here
         if verbose:
             print('Setting up modelling data...', end=' ')
-        self.modelling_data = man_split
+        self.modelling_data()
         if verbose:
             print('done!')
 
@@ -318,7 +309,7 @@ class singleCsvMemLoader(object):
         return self.train_ds, self.test_ds, self.train_n, self.test_n
 
     @modelling_data.setter
-    def modelling_data(self, man_split):
+    def modelling_data(self):
         """
         Private attributes for the property\n
             _m_data: dict. output dictionary
@@ -349,19 +340,6 @@ class singleCsvMemLoader(object):
             self.training_y_scaler = None
             self.test_n = None
         else:  # training and holdout test data split
-            # self._training, self._test, _, _, self.training_y_scaler = trainingtestSpliterFinal(data=self.raw_working, random_state=self.rand,
-            #                                                                                     model_type=self.model_type,
-            #                                                                                     man_split=man_split, man_split_colname=self.sample_id_var,
-            #                                                                                     man_split_testset_value=self.holdout_samples,
-            #                                                                                     x_standardization=self.x_standardize,
-            #                                                                                     x_min_max_scaling=self.minmax,
-            #                                                                                     x_scale_column_to_exclude=self.complete_annot_vars,
-            #                                                                                     y_min_max_scaling=self.minmax, y_column=self.y_var)
-            # self._training_x, self._test_x = self._training[self._training.columns[
-            #     ~self._training.columns.isin(self.complete_annot_vars)]], self._test[self._test.columns[~self._test.columns.isin(self.complete_annot_vars)]]
-            # self._training_y, self._test_y = self._training[
-            #     self.label_var], self._test[self.label_var]
-
             X_indices = np.arange(self.total_n)
             if self.resample_method == 'random':
                 X_train_indices, X_test_indices, self._training_y, self._test_y = train_test_split(
@@ -387,7 +365,7 @@ class singleCsvMemLoader(object):
 # below: ad-hoc testing
 mydata = singleCsvMemLoader(file='./data/test_dat.csv', label_var='group', annotation_vars=['subject', 'PCL'], sample_id_var='subject',
                             holdout_samples=None, minmax=True, x_standardize=True,
-                            model_type='classification', man_split=False, training_percentage=0.8,
+                            model_type='classification', training_percentage=0.8,
                             cv_only=True, shuffle_for_cv_only=False,
                             random_state=1, verbose=True)
 
@@ -397,5 +375,5 @@ mydata = singleCsvMemLoader(file='./data/test_dat.csv', label_var='group', annot
 #     mydata = DataLoader(file=args.file[0],
 #                         label_var=args.label_var, annotation_vars=args.annotation_vars, sample_id_var=args.sample_id_var,
 #                         holdout_samples=args.holdout_samples,
-#                         model_type=args.model_type, cv_only=args.cv_only, man_split=args.man_split, training_percentage=args.training_percentage,
+#                         model_type=args.model_type, cv_only=args.cv_only, training_percentage=args.training_percentage,
 #                         random_state=args.random_state, verbose=args.verbose)
