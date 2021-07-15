@@ -22,11 +22,7 @@ import sys
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from sklearn.model_selection import train_test_split
-from sklearn.utils import shuffle
-
 from utils.dl_utils import SingleCsvMemLoader
-from utils.data_utils import labelMapping, labelOneHot
 from utils.other_utils import addBoolArg, colr, csvPath, error, warn
 
 

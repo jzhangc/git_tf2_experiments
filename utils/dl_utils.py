@@ -1,12 +1,14 @@
 """utilities for deep learning (excluding models)"""
 
 # ------ modules ------
+import os
 import random
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from utils.data_utils import adjmatAnnotLoader, labelMapping, labelOneHot, getSelectedDataset
 from sklearn.model_selection import train_test_split
+from sklearn.utils import shuffle
 
 
 # ------ classes -------

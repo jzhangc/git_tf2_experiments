@@ -19,14 +19,11 @@ the application.
 import argparse
 import os
 import sys
-import random
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from utils.dl_utils import BatchDataLoader
 from utils.other_utils import error, warn, addBoolArg, fileDir, colr
-from utils.data_utils import adjmatAnnotLoader, labelMapping, labelOneHot, getSelectedDataset
-from sklearn.model_selection import train_test_split
 
 
 # ------ system classes ------
