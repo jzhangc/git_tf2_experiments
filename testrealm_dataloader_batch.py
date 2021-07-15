@@ -345,7 +345,7 @@ class BatchDataLoader(object):
 
         return train_ds, train_n, test_ds, test_n
 
-    def generate_batched_data(self, batch_size=4, cv_only=False, shuffle=True):
+    def generate_batched_data(self, batch_size=4, cv_only=False, shuffle_for_cv_only=True):
         """
         # Purpose\n
             To generate working data in batches. The method also creates a series of attributes that store 
@@ -354,7 +354,7 @@ class BatchDataLoader(object):
         # Arguments\n
             batch_size: int. Batch size for the tf.dataset batches.\n
             cv_only: bool. When True, there is no train/test split.\n
-            shuffle: bool. Effective when cv_only=True, if to shuffle the order of samples for the output data.\n
+            shuffle_for_cv_only: bool. Effective when cv_only=True, if to shuffle the order of samples for the output data.\n
 
         # Details\n
             - When cv_only=True, the loader returns only one tf.dataset object, without train/test split.
@@ -366,7 +366,7 @@ class BatchDataLoader(object):
         """
         self.batch_size = batch_size
         self.cv_only = cv_only
-        self.shuffle = shuffle
+        self.shuffle_for_cv_only = shuffle_for_cv_only
 
         # - load paths -
         filepath_list, encoded_labels, self.lables_count, self.labels_map_rev = self._get_file_annot()
@@ -385,7 +385,7 @@ class BatchDataLoader(object):
             self.train_set_map = total_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
                                               num_parallel_calls=tf.data.AUTOTUNE)
             self.train_n = self.n_total_sample
-            if self.shuffle:  # check this
+            if self.shuffle_for_cv_only:  # check this
                 self.train_set_map = self.train_set_map.shuffle(
                     random.randint(2, self.n_total_sample), seed=self.rand)
             self.test_set_map, self.test_n, self.test_set_batch_n = None, None, None
