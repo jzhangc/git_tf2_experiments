@@ -145,7 +145,6 @@ if args.cv_type == 'monte':
 mydata = SingleCsvMemLoader(file='./data/test_dat.csv', label_var='group', annotation_vars=['subject', 'PCL'], sample_id_var='subject',
                             holdout_samples=None, minmax=True, x_standardize=True,
                             model_type='classification', training_percentage=0.8,
-                            cv_only=False, shuffle_for_cv_only=False,
                             random_state=1, verbose=True)
 
 tst_train, tst_test = mydata.generate_batched_data(

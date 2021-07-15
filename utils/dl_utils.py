@@ -283,7 +283,7 @@ class SingleCsvMemLoader(object):
         In memory data loader for single file CSV.\n
     # Arguments\n
         file: str. complete input file path.\n
-        label_var: str. variable nanme for label. Only one is accepted for this version.\n
+        label_var: list of string. Variable name(s) for label(s). Multilabels are supported.\n
         annotation_vars: list of strings. Column names for the annotation variables in the input dataframe, EXCLUDING label variable.
         sample_id_var: str. variable used to identify samples.\n
         model_type: str. model type, classification or regression.\n
@@ -327,6 +327,7 @@ class SingleCsvMemLoader(object):
                  model_type,
                  minmax,
                  x_standardize,
+                 cv_only=False, shuffle_for_cv_only=True,
                  holdout_samples=None,
                  training_percentage=0.8,
                  resample_method='random',
@@ -351,6 +352,8 @@ class SingleCsvMemLoader(object):
         self._basename, self._file_ext = os.path.splitext(file)
 
         # - resampling settings -
+        self.cv_only = cv_only
+        self.shuffle_for_cv_only = shuffle_for_cv_only
         self.resample_method = resample_method
         self.sample_id_var = sample_id_var
         self.holdout_samples = holdout_samples
@@ -402,8 +405,7 @@ class SingleCsvMemLoader(object):
 
         return X
 
-    def generate_batched_data(self, batch_size=4,
-                              cv_only=False, shuffle_for_cv_only=True):
+    def generate_batched_data(self, batch_size=4):
         """
         # Purpose\n
             Generate batched data\n
@@ -412,9 +414,6 @@ class SingleCsvMemLoader(object):
             cv_only: bool. If to split data into training and holdout test sets.\n
             shuffle_for_cv_only: bool. Effective when cv_only=True, if to shuffle the order of samples for the output data.\n
         """
-        self.cv_only = cv_only
-        self.shuffle_for_cv_only = shuffle_for_cv_only
-
         # print("called setter") # for debugging
         if self.model_type == 'classification':  # one hot encoding
             self.labels_working, self.labels_count, self.labels_rev = self._label_onehot_encode(
