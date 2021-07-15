@@ -266,7 +266,7 @@ class BatchDataLoader(object):
         for _ in train_set_batched:
             self.train_set_batch_n += 1
 
-        if self.test_set is not None:
+        if self.test_set_map is not None:
             test_set_batched = self.test_set_map.batch(
                 self.batch_size).cache().prefetch(tf.data.AUTOTUNE)
             for _ in test_set_batched:
