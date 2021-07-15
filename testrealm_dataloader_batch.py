@@ -397,7 +397,7 @@ class BatchDataLoader(object):
         train_set = train_set.batch(
             self.batch_size).cache().prefetch(tf.data.AUTOTUNE)
         self.train_set_batch_n = 0
-        for i in train_set:
+        for _ in train_set:
             self.train_set_batch_n += 1
 
         if test_set is not None:
@@ -420,6 +420,7 @@ tst_dat = BatchDataLoader(filepath='./data/tf_data', target_file_ext='txt',
 tst_train, tst_test = tst_dat.generate_batched_data(
     batch_size=4, cv_only=False, shuffle=False)
 
+tst_dat.train_set_batch_n
 
 # ------ process/__main__ statement ------
 # if __name__ == '__main__':
