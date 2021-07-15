@@ -395,14 +395,14 @@ class BatchDataLoader(object):
         # NOTE: the train_set and test_set are tensorflow.python.data.ops.dataset_ops.PrefetchDataset type
         train_set = train_set.batch(
             self.batch_size).cache().prefetch(tf.data.AUTOTUNE)
-        test_set = train_set.batch(
-            self.batch_size).cache().prefetch(tf.data.AUTOTUNE) if test_set is not None else None
-
         self.train_set_batch_n = 0
         for i in train_set:
             self.train_set_batch_n += 1
 
         if test_set is not None:
+            test_set = train_set.batch(
+                self.batch_size).cache().prefetch(tf.data.AUTOTUNE)
+
             self.teset_set_batch_n = 0
             for i in test_set:
                 self.test_set_batch_n += 1
