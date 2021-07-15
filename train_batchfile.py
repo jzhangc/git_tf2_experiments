@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Current objectives:
-[ ] Test argparse
-    [ ] Add groupped arguments
+[x] Test argparse
+    [x] Add groupped arguments
 [ ] Test output directory creation
 [x] Test file reading
 [x] Test file processing
