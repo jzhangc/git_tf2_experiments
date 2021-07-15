@@ -23,6 +23,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
+from sklearn.utils import shuffle
 
 from utils.data_utils import labelMapping, labelOneHot
 from utils.other_utils import addBoolArg, colr, csvPath, error, warn
@@ -107,6 +108,9 @@ add_g1_arg('-o', '--output_dir', type=str,
 addBoolArg(parser=arg_g2, name='cv_only', input_type='flag',
            help='If to do cv_only mode for training, i.e. no holdout test split. (Default: %(default)s)',
            default=False)
+addBoolArg(parser=arg_g2, name='shuffle_for_cv_only', input_type='flag',
+           help='Only effective when -cv_only is active, whether to randomly shuffle before proceeding. (Default: %(default)s)',
+           default=True)
 add_g2_arg('-cv', '--cv_type', type=str,
            choices=['kfold', 'LOO', 'monte'], default='kfold',
            help='str. Cross validation type. Default is \'kfold\'')
@@ -188,10 +192,10 @@ class singleCsvMemLoader(object):
     def __init__(self, file,
                  label_var, annotation_vars, sample_id_var,
                  model_type,
-                 cv_only,
                  minmax,
                  x_standardize,
                  man_split, holdout_samples, training_percentage,
+                 cv_only=False, shuffle_for_cv_only=True,
                  resample_method='random',
                  label_string_sep=None, random_state=1, verbose=True):
         """
@@ -228,9 +232,6 @@ class singleCsvMemLoader(object):
             self.n_features: int. number of features
             self.le: sklearn LabelEncoder for classification study
             self.label_mapping: dict. Class label mapping codes, when model_type='classification'
-        # Private class attributes (excluding class properties)\n
-            self._basename: str. complete file name (with extension), no path
-            self._n_annot_col: int. number of annotation columns
         """
         # - random state and other settings -
         self.rand = random_state
@@ -250,23 +251,9 @@ class singleCsvMemLoader(object):
         self.file = file
         self._basename, self._file_ext = os.path.splitext(file)
 
-        # - parse file -
-        self.raw = pd.read_csv(self.file, engine='python')
-        self.raw_working = self.raw.copy()  # value might be changed
-        self.n_features = int(
-            (self.raw_working.shape[1] - self._n_annot_col))  # pd.shape[1]: ncol
-        self.total_n = self.raw_working.shape[0]
-        if model_type == 'classification':
-            self.n_class = self.raw[label_var].nunique()
-        else:
-            self.n_class = None
-
-        self.x = self.raw_working[self.raw_working.columns[
-            ~self.raw_working.columns.isin(self.complete_annot_vars)]].to_numpy()
-        self.labels = self.raw_working[self.label_var].to_numpy()
-
         # - resampling settings -
         self.cv_only = cv_only
+        self.shuffle_for_cv_only = shuffle_for_cv_only
         self.resample_method = resample_method
         self.sample_id_var = sample_id_var
         self.holdout_samples = holdout_samples
@@ -274,6 +261,24 @@ class singleCsvMemLoader(object):
         self.test_percentage = 1 - training_percentage
         self.x_standardize = x_standardize
         self.minmax = minmax
+
+        # - parse file -
+        self.raw = pd.read_csv(self.file, engine='python')
+        if self.cv_only and self.shuffle_for_cv_only:
+            self.raw_working = shuffle(self.raw.copy(), random_state=self.rand)
+        else:
+            self.raw_working = self.raw.copy()  # value might be changed
+
+        self.n_features = int(
+            (self.raw_working.shape[1] - self._n_annot_col))  # pd.shape[1]: ncol
+        self.total_n = self.raw_working.shape[0]
+        if model_type == 'classification':
+            self.n_class = self.raw[label_var].nunique()
+        else:
+            self.n_class = None
+        self.x = self.raw_working[self.raw_working.columns[
+            ~self.raw_working.columns.isin(self.complete_annot_vars)]].to_numpy()
+        self.labels = self.raw_working[self.label_var].to_numpy()
 
         # call setter here
         if verbose:
@@ -336,7 +341,7 @@ class singleCsvMemLoader(object):
         # - data resampling -
         if self.cv_only:  # only training is stored
             # training set prep
-            self._training_x = self.x_working
+            self._training_x = shuffle(self.x_working, random_state=self.rand)
             self._training_y = self.labels_working
 
             # test set prep
@@ -382,7 +387,9 @@ class singleCsvMemLoader(object):
 # below: ad-hoc testing
 mydata = singleCsvMemLoader(file='./data/test_dat.csv', label_var='group', annotation_vars=['subject', 'PCL'], sample_id_var='subject',
                             holdout_samples=None, minmax=True, x_standardize=True,
-                            model_type='classification', cv_only=False, man_split=False, training_percentage=0.8, random_state=1, verbose=True)
+                            model_type='classification', man_split=False, training_percentage=0.8,
+                            cv_only=True, shuffle_for_cv_only=False,
+                            random_state=1, verbose=True)
 
 
 # ------ process/__main__ statement ------

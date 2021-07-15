@@ -110,6 +110,9 @@ add_g2_arg('-tp', '--training_percentage', type=float, default=0.8,
 addBoolArg(parser=arg_g2, name='cv_only', input_type='flag',
            help='If to do cv_only mode for training, i.e. no holdout test split. (Default: %(default)s)',
            default=False)
+addBoolArg(parser=arg_g2, name='shuffle_for_cv_only', input_type='flag',
+           help='Only effective when -cv_only is active, whether to randomly shuffle before proceeding. (Default: %(default)s)',
+           default=True)
 
 # g3: modelling
 add_g3_arg('-mt', '--model_type', type=str, default='classification',
