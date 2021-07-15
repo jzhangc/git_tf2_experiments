@@ -44,7 +44,7 @@ parser = AppArgParser(description=DESCRIPITON,
                       epilog='Written by: {}. Current version: {}\n\r'.format(
                           AUTHOR, __version__),
                       formatter_class=argparse.RawTextHelpFormatter)
-parser._optionals.title = "{}Help options{}".format(colr.CYAN_B, colr.ENDC)
+parser._optionals.title = '{}Help options{}'.format(colr.CYAN_B, colr.ENDC)
 
 arg_g1 = parser.add_argument_group(
     '{}Input and output{}'.format(colr.CYAN_B, colr.ENDC))
@@ -100,7 +100,7 @@ add_g3_arg('-mt', '--model_type', type=str, default='classification',
            choices=['classification', 'regression'],
            help='Model (label) type. (Default: %(default)s)')
 addBoolArg(parser=arg_g3, name='multilabel_classification', input_type='flag', default=False,
-           help='If the classifiation is a "multilabel" type. Only effective when model_type=\'classification\'. (Default: %(default)s)')
+           help='If the classifiation is a \"multilabel\" type. Only effective when model_type=\'classification\'. (Default: %(default)s)')
 
 # g4: others
 add_g4_arg('-se', '--random_state', type=int,

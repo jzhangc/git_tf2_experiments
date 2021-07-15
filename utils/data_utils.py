@@ -50,7 +50,7 @@ def getSingleCsvDataset(csv_path, label_var, column_to_exclude=None,
         csv_path,
         batch_size=batch_size,
         label_name=label_var,
-        na_value="?",
+        na_value='?',
         num_epochs=1,
         ignore_errors=True,
         select_columns=column_to_include,
@@ -95,7 +95,7 @@ def scanFiles(basePath, validExts=None, contains=None):
                 continue
 
             # determine the file extension of the current file
-            ext = filename[filename.rfind("."):].lower()
+            ext = filename[filename.rfind('.'):].lower()
 
             # check to see if the file is an image and should be processed
             if validExts is None or ext.endswith(validExts):
@@ -392,7 +392,7 @@ def trainingtestSpliterFinal(data, model_type='classification',
     """
     # argument check
     if not isinstance(data, pd.DataFrame):
-        raise TypeError("Input needs to be a pandas DataFrame.")
+        raise TypeError('Input needs to be a pandas DataFrame.')
 
     if x_standardization:
         if not isinstance(x_scale_column_to_exclude, list):
@@ -465,7 +465,7 @@ def trainingtestSpliterFinal(data, model_type='classification',
             print(
                 'Not all columns are found in the input X. Proceed without X standardization. \n')
 
-    if model_type == "regression":
+    if model_type == 'regression':
         if y_min_max_scaling:
             if all(selected_col in data.columns for selected_col in y_column):
                 training_scaler_Y = MinMaxScaler(

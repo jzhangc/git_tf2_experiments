@@ -53,8 +53,8 @@ add_g3_arg = arg_g3.add_argument  # modelling
 add_g4_arg = arg_g4.add_argument  # others
 
 # - add arugments to the argument groups -
-add_g2_arg('-xr', '--x_min_max_range', type=float,
-           nargs='+', default=[0.0, 1.0])
+add_g1_arg('-y', '--label_var', type=str, nargs='+', default=[],
+           help='str. Vairable name for label. NOTE: only needed with single file processing. (Default: %(default)s)')
 
 
 # - load arguments -

@@ -69,8 +69,8 @@ add_g1_arg('-av', '--annotation_vars', type=str, nargs="+", default=[],
            help='list of str. names of the annotation columns in the input data, excluding the label variable. (Default: %(default)s)')
 # add_g1_arg('-cl', '--n_classes', type=int, default=None,
 #            help='int. Number of class for classification models. (Default: %(default)s)')
-add_g1_arg('-y', '--label_var', type=str, default=None,
-           help='str. Vairable name for label. NOTE: only needed with single file processing. (Default: %(default)s)')
+add_g1_arg('-y', '--label_var', type=str, default=[], nargs='+',
+           help='str. Vairable name(s) for label. Multiple labels are allowed: -y a b c. (Default: %(default)s)')
 add_g1_arg('-ls', '--label_string_sep', type=str, default=None,
            help='str. Separator to separate label string, to create multilabel labels. (Default: %(default)s)')
 addBoolArg(parser=arg_g1, name='y_scale', input_type='flag', default=False,
@@ -121,7 +121,7 @@ if os.path.isdir(args.output_dir):
     output_dir = os.path.normpath(os.path.abspath(
         os.path.expanduser(args.output_dir)))
 else:
-    error("Output directory not found.")
+    error('Output directory not found.')
 
 if not args.sample_id_var:
     error('-s/--sample_id_var missing.',

@@ -71,7 +71,7 @@ def warn(message, *lines):
     """
     stole from: https://github.com/alexjc/neural-enhance
     """
-    string = "\n{}WARNING: " + message + "{}\n" + "\n".join(lines) + "{}\n"
+    string = '\n{}WARNING: ' + message + '{}\n' + '\n'.join(lines) + '{}\n'
     print(string.format(colr.YELLOW_B, colr.YELLOW, colr.ENDC))
 
 
