@@ -21,7 +21,6 @@ class colr:
     ENDC = '\033[0m'  # end colour
 
 
-# ------ functions -------
 class AppArgParser(argparse.ArgumentParser):
     """
     This is a sub class to argparse.ArgumentParser.
@@ -37,6 +36,7 @@ class AppArgParser(argparse.ArgumentParser):
         sys.exit(2)
 
 
+# ------ functions -------
 def addBoolArg(parser, name, help, input_type, default=False):
     """
     Purpose\n
