@@ -9,7 +9,7 @@ Current objectives:
     [x] normalization and scalling
     [x] converting to numpy arrays
 [x] use convert to tf.dataset
-[ ] implement multilabel compatibility
+[x] implement multilabel compatibility
 
 NOTE
 All the argparser inputs are loaded from method arguments, making the class more portable, i.e. not tied to
@@ -140,16 +140,19 @@ if args.cv_type == 'monte':
     if args.monte_test_rate < 0.0 or args.monte_test_rate > 1.0:
         error('-mt/--monte_test_rate should be between 0.0 and 1.0.')
 
+if args.model_type == 'classification' and len(args.label_var) > 1:
+    error('-y/--label_var can only be length of one when -mt/--model_type=\'classification\'.')
+
 
 # below: ad-hoc testing
-mydata = SingleCsvMemLoader(file='./data/test_dat.csv', label_var='group', annotation_vars=['subject', 'PCL'], sample_id_var='subject',
-                            holdout_samples=None, minmax=True, x_standardize=True,
-                            model_type='classification', training_percentage=0.8,
+mydata = SingleCsvMemLoader(file='./data/test_dat.csv', label_var=['group'], annotation_vars=['subject', 'PCL'],
+                            sample_id_var='subject',
+                            holdout_samples=None, minmax=True,
+                            model_type='regression', training_percentage=0.8,
                             cv_only=False, shuffle_for_cv_only=False,
                             random_state=1, verbose=True)
 
 tst_train, tst_test = mydata.generate_batched_data(batch_size=4)
-
 
 # ------ process/__main__ statement ------
 # if __name__ == '__main__':

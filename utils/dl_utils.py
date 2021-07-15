@@ -43,6 +43,7 @@ class BatchMatrixLoader(object):
             In the case of multilabel modelling, the label string should be multiple labels separated by a separator string, which
             is set by the label_sep argument.\n
         - When multilabel, make sure to set up label_sep argument.\n
+        - For multilabels, a mixture of continuous and discrete labels are not supported.\n
         - For x_min_max_range, a two tuple is required. Order: min, max. \n
         - It is noted that for regression, multilabel modelling is automatically supported via multiple labels in the maual label data frame.
             Therefore, for regression, manual_labels argument cannot be None.\n
@@ -283,7 +284,7 @@ class SingleCsvMemLoader(object):
         In memory data loader for single file CSV.\n
     # Arguments\n
         file: str. complete input file path.\n
-        label_var: list of string. Variable name(s) for label(s). Multilabels are supported.\n
+        label_var: list of strings. Variable name for label(s). 
         annotation_vars: list of strings. Column names for the annotation variables in the input dataframe, EXCLUDING label variable.
         sample_id_var: str. variable used to identify samples.\n
         model_type: str. model type, classification or regression.\n
@@ -306,7 +307,7 @@ class SingleCsvMemLoader(object):
             self.holdout_samples
             self.training_percentage
             self.rand: int. random state
-        self.y_var: single str list. variable nanme for label
+        self.labels_working: np.ndarray. Working labels. For classification, working labels are one hot encoded.
         self.filename: str. input file name without extension
         self.raw: pandas dataframe. input data
         self.raw_working: pands dataframe. working input data
@@ -319,19 +320,23 @@ class SingleCsvMemLoader(object):
             No data splitting for the "CV only" mode.
             returns a dict object with 'training' and 'test' items.\n
     # Details\n
-
+        - label_var: Multilabels are supported.
+            For classification, multilabels are supported via separater strings. Example: a_b_c = a, b, c.
+            For regression, multiple variable names are accepted as multilabels. 
+            The loader has sanity checks for this, i.e. classification type can only have one variable name in the list. \n
+        - For multilabels, a mixture of continuous and discrete labels are not supported.\n
     """
 
     def __init__(self, file,
                  label_var, annotation_vars, sample_id_var,
-                 model_type,
-                 minmax,
-                 x_standardize,
+                 minmax=True,
+                 model_type='classification',
+                 label_string_sep=None,
                  cv_only=False, shuffle_for_cv_only=True,
                  holdout_samples=None,
                  training_percentage=0.8,
                  resample_method='random',
-                 label_string_sep=None, random_state=1, verbose=True):
+                 random_state=1, verbose=True):
         """initialization"""
         # - random state and other settings -
         self.rand = random_state
@@ -340,11 +345,21 @@ class SingleCsvMemLoader(object):
         # - model and data info -
         self.model_type = model_type
         # convert to a list for trainingtestSpliterFinal() to use
-        self.label_var = label_var
+
+        if model_type == 'classification':
+            if len(label_var) > 1:
+                raise ValueError(
+                    'label_var can only be len of 1 when model_type=\'classification\'')
+            else:
+                self.label_var = label_var[0]  # "delist"
+                # self.y_var = [self.label_var]  # might not need this anymore
+                self.complete_annot_vars = annotation_vars + [self.label_var]
+        else:
+            self.label_var = label_var
+            self.complete_annot_vars = annotation_vars + label_var
+
         self.label_sep = label_string_sep
         self.annotation_vars = annotation_vars
-        self.y_var = [self.label_var]  # might not need this anymore
-        self.complete_annot_vars = self.annotation_vars + self.y_var
         self._n_annot_col = len(self.complete_annot_vars)
 
         # - args.file is a list. so use [0] to grab the string -
@@ -359,7 +374,6 @@ class SingleCsvMemLoader(object):
         self.holdout_samples = holdout_samples
         self.training_percentage = training_percentage
         self.test_percentage = 1 - training_percentage
-        self.x_standardize = x_standardize
         self.minmax = minmax
 
         # - parse file -
