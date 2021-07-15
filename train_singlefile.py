@@ -9,6 +9,7 @@ Current objectives:
     [x] normalization and scalling
     [x] converting to numpy arrays
 [x] use convert to tf.dataset
+[ ] implement multilabel compatibility
 
 NOTE
 All the argparser inputs are loaded from method arguments, making the class more portable, i.e. not tied to
