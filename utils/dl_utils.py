@@ -282,20 +282,19 @@ class SingleCsvMemLoader(object):
     # Purpose\n
         In memory data loader for single file CSV.\n
     # Arguments\n
-        file: str. complete input file path. "args.file[0]" from argparser].n
-        label_var: str. variable nanme for label. Only one is accepted for this version. "args.label_var" from argparser.\n
+        file: str. complete input file path.\n
+        label_var: str. variable nanme for label. Only one is accepted for this version.\n
         annotation_vars: list of strings. Column names for the annotation variables in the input dataframe, EXCLUDING label variable.
-            "args.annotation_vars" from argparser.\n
-        sample_id_var: str. variable used to identify samples. "args.sample_id_var" from argparser.\n
+        sample_id_var: str. variable used to identify samples.\n
         model_type: str. model type, classification or regression.\n
         n_classes: int. number of classes when model_type='classification'.\n
-        training_percentage: float, betwen 0 and 1. percentage for training data. "args.training_percentage" from argparser.\n
+        training_percentage: float, betwen 0 and 1. percentage for training data.\n
         random_state: int. random state.\n
-        verbose: bool. verbose. "args.verbose" from argparser.\n
+        verbose: bool. verbose.\n
     # Methods\n
         __init__: initalization.\n
-        _label_onehot_encode
-        _x_minmax        
+        _label_onehot_encode: one hot encoding for labels.\n
+        _x_minmax: min-max normalization for x data.\n        
     # Public class attributes\n
         Below are attributes read from arguments
             self.model_type
@@ -314,11 +313,11 @@ class SingleCsvMemLoader(object):
         self.complete_annot_vars: list of strings. column names for the annotation variables in the input dataframe, INDCLUDING label varaible
         self.n_features: int. number of features
         self.le: sklearn LabelEncoder for classification study
-        self.label_mapping: dict. Class label mapping codes, when model_type='classification'
+        self.label_mapping: dict. Class label mapping codes, when model_type='classification'.\n
     # Class property\n
         modelling_data: dict. data for model training. data is split if necessary.
             No data splitting for the "CV only" mode.
-            returns a dict object with 'training' and 'test' items
+            returns a dict object with 'training' and 'test' items.\n
     # Details\n
 
     """
