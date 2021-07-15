@@ -107,7 +107,7 @@ def fileDir(string):
     if os.path.isdir(full_path):
         return full_path
     else:
-        error("Directory not found.")
+        error('Directory not found.')
 
 
 def flatten(x): return [item for sublist in x for item in sublist]
