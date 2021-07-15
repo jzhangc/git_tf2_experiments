@@ -17,33 +17,11 @@ the application.
 # ------ import modules ------
 import argparse
 import os
-import sys
-
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from utils.dl_utils import SingleCsvMemLoader
-from utils.other_utils import addBoolArg, colr, csvPath, error, warn
-
-
-# ------ system classes ------
-class AppArgParser(argparse.ArgumentParser):
-    """
-    This is a sub class to argparse.ArgumentParser.
-    Purpose
-        The help page will display when (1) no argumment was provided, or (2) there is an error
-    """
-
-    def error(self, message, *lines):
-        string = "\n{}ERROR: " + message + "{}\n" + \
-            "\n".join(lines) + ("{}\n" if lines else "{}")
-        print(string.format(colr.RED_B, colr.RED, colr.ENDC))
-        self.print_help()
-        sys.exit(2)
-
-
-# ------ custom functions ------
-# below: a lambda funciton to flatten the nested list into a single list
+from utils.other_utils import AppArgParser, addBoolArg, colr, csvPath, error, warn
 
 
 # ------ GLOBAL variables -------

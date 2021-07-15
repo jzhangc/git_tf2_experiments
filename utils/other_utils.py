@@ -3,6 +3,7 @@
 # ------ modules ------
 import os
 import sys
+import argparse
 
 
 # ------ classes -------
@@ -21,26 +22,19 @@ class colr:
 
 
 # ------ functions -------
-# below: a lambda funciton to flatten the nested list into a single list
-def flatten(x): return [item for sublist in x for item in sublist]
-
-
-def error(message, *lines):
+class AppArgParser(argparse.ArgumentParser):
     """
-    stole from: https://github.com/alexjc/neural-enhance
+    This is a sub class to argparse.ArgumentParser.
+    Purpose
+        The help page will display when (1) no argumment was provided, or (2) there is an error
     """
-    string = "\n{}ERROR: " + message + "{}\n" + \
-        "\n".join(lines) + ("{}\n" if lines else "{}")
-    print(string.format(colr.RED_B, colr.RED, colr.ENDC))
-    sys.exit(2)
 
-
-def warn(message, *lines):
-    """
-    stole from: https://github.com/alexjc/neural-enhance
-    """
-    string = "\n{}WARNING: " + message + "{}\n" + "\n".join(lines) + "{}\n"
-    print(string.format(colr.YELLOW_B, colr.YELLOW, colr.ENDC))
+    def error(self, message, *lines):
+        string = "\n{}ERROR: " + message + "{}\n" + \
+            "\n".join(lines) + ("{}\n" if lines else "{}")
+        print(string.format(colr.RED_B, colr.RED, colr.ENDC))
+        self.print_help()
+        sys.exit(2)
 
 
 def addBoolArg(parser, name, help, input_type, default=False):
@@ -61,6 +55,24 @@ def addBoolArg(parser, name, help, input_type, default=False):
     group.add_argument('--no-' + name, dest=name,
                        action='store_false', help=input_type + '. ''(Not to) ' + help)
     parser.set_defaults(**{name: default})
+
+
+def error(message, *lines):
+    """
+    stole from: https://github.com/alexjc/neural-enhance
+    """
+    string = "\n{}ERROR: " + message + "{}\n" + \
+        "\n".join(lines) + ("{}\n" if lines else "{}")
+    print(string.format(colr.RED_B, colr.RED, colr.ENDC))
+    sys.exit(2)
+
+
+def warn(message, *lines):
+    """
+    stole from: https://github.com/alexjc/neural-enhance
+    """
+    string = "\n{}WARNING: " + message + "{}\n" + "\n".join(lines) + "{}\n"
+    print(string.format(colr.YELLOW_B, colr.YELLOW, colr.ENDC))
 
 
 def csvPath(string):
@@ -96,3 +108,6 @@ def fileDir(string):
         return full_path
     else:
         error("Directory not found.")
+
+
+def flatten(x): return [item for sublist in x for item in sublist]
