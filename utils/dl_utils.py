@@ -238,37 +238,35 @@ class BatchDataLoader(object):
         # return total_ds, self.n_total_sample  # test point
 
         # - resample data -
+        self.train_set_batch_n = 0
         if self.cv_only:
-            train_set = total_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
-                                     num_parallel_calls=tf.data.AUTOTUNE)
+            self.train_set_map = total_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
+                                              num_parallel_calls=tf.data.AUTOTUNE)
             self.train_n = self.n_total_sample
             if self.shuffle:  # check this
-                train_set = train_set.shuffle(
+                self.train_set_map = self.train_set_map.shuffle(
                     random.randint(2, self.n_total_sample), seed=self.rand)
-            test_set = None
-            self.test_n = None
+            self.test_set_map, self.test_n, self.test_set_batch_n = None, None, None
         else:
             train_ds, self.train_n, test_ds, self.test_n = self._data_resample(
                 total_ds, self.n_total_sample, encoded_labels)
-            train_set = train_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
-                                     num_parallel_calls=tf.data.AUTOTUNE)
-            test_set = test_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
-                                   num_parallel_calls=tf.data.AUTOTUNE)
+            self.train_set_map = train_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
+                                              num_parallel_calls=tf.data.AUTOTUNE)
+            self.test_set_map = test_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
+                                            num_parallel_calls=tf.data.AUTOTUNE)
+            self.test_set_batch_n = 0
 
         # - set up batch and prefeching -
         # NOTE: the train_set and test_set are tensorflow.python.data.ops.dataset_ops.PrefetchDataset type
-        train_set = train_set.batch(
+        train_set_batched = self.train_set_map.batch(
             self.batch_size).cache().prefetch(tf.data.AUTOTUNE)
-        self.train_set_batch_n = 0
-        for _ in train_set:
+        for _ in train_set_batched:
             self.train_set_batch_n += 1
 
-        if test_set is not None:
-            test_set = train_set.batch(
+        if self.test_set is not None:
+            test_set_batched = self.test_set_map.batch(
                 self.batch_size).cache().prefetch(tf.data.AUTOTUNE)
-
-            self.test_set_batch_n = 0
-            for _ in test_set:
+            for _ in test_set_batched:
                 self.test_set_batch_n += 1
 
-        return train_set, test_set
+        return train_set_batched, test_set_batched

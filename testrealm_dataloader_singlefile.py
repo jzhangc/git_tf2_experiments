@@ -303,22 +303,8 @@ class singleCsvMemLoader(object):
 
         return X
 
-    @property
-    def modelling_data(self):
-        # print("called getter") # for debugging
-        return self.train_ds, self.test_ds, self.train_n, self.test_n
-
-    @modelling_data.setter
-    def modelling_data(self):
-        """
-        Private attributes for the property\n
-            _m_data: dict. output dictionary
-            _training: pandas dataframe. data for model training.
-            _test: pandas dataframe. holdout test data. Only available without the "--cv_only" flag
-        Return\n
-            1. self.training_y_scaler
-            2. tf.datasets for training and (if applicable) test sets
-        """
+    def generate_batched_data(self, batch_size=4):
+        """generate batched tf.dataset"""
         # print("called setter") # for debugging
         if self.model_type == 'classification':  # one hot encoding
             self.labels_working, self.labels_count, self.labels_rev = self._label_onehot_encode(
@@ -330,6 +316,7 @@ class singleCsvMemLoader(object):
             self.x_working = self._x_minmax(self.x)
 
         # - data resampling -
+        self.train_set_batch_n = 0
         if self.cv_only:  # only training is stored
             # training set prep
             self._training_x = shuffle(self.x_working, random_state=self.rand)
@@ -339,6 +326,7 @@ class singleCsvMemLoader(object):
             self._test_x, self._test_y = None, None
             self.training_y_scaler = None
             self.test_n = None
+            self.test_set_batch_n = None
         else:  # training and holdout test data split
             X_indices = np.arange(self.total_n)
             if self.resample_method == 'random':
@@ -352,14 +340,30 @@ class singleCsvMemLoader(object):
                     '\"balanced\" resmapling method has not been implemented.')
             self._training_x, self._test_x = self.x_working[
                 X_train_indices], self.x_working[X_test_indices]
+            self.test_set_batch_n = 0
 
-        # - output -
+        # - set up final training and test set -
         self.train_ds = tf.data.Dataset.from_tensor_slices(
             (self._training_x, self._training_y))
         self.train_n = self.train_ds.cardinality().numpy()
+
         self.test_ds = tf.data.Dataset.from_tensor_slices(
             (self._test_x, self._test_y)) if (self._test_x is not None) and (self._test_y is not None) else None
         self.test_n = self.test_ds.cardinality().numpy() if self.test_ds is not None else None
+
+        # - set up -
+        train_batched = self.train_ds.batch(
+            batch_size).cache().prefetch(tf.data.AUTOTUNE)
+        for _ in train_batched:
+            self.train_set_batch_n += 1
+
+        if self.test_ds is not None:
+            test_batched = self.test_ds.batch(batch_size).cache().prefetch(
+                tf.data.AUTOTUNE)
+            for _ in test_batched:
+                self.test_set_batch_n += 1
+
+        return train_batched, test_batched
 
 
 # below: ad-hoc testing
