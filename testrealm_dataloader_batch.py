@@ -343,7 +343,7 @@ class BatchDataLoader(object):
 
         return train_ds, train_n, test_ds, test_n
 
-    def generate_data_batch(self, batch_size=4, cv_only=False, shuffle=True):
+    def generate_batched_data(self, batch_size=4, cv_only=False, shuffle=True):
         """
         # Purpose\n
             To generate working data.\n
