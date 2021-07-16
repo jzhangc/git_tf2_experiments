@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
 Current objectives:
-[x] Test argparse
+[x] test argparse
     [x] Add groupped arguments
-[ ] Test output directory creation
-[x] Test file reading
-[x] Test file processing
+[ ] test output directory creation
+[x] test file reading
+[x] test file processing
     [x] normalization and scalling
     [x] converting to numpy arrays
 [x] use convert to tf.dataset
 [x] implement multilabel compatibility
+[ ] finalize the argument check section
 [ ] implement cross validation
 
 NOTE
