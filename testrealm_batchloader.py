@@ -1,298 +1,217 @@
 """
-Current objectives:
-small things for data loaders
+this is test realm for CNN+autoencoder
+
+things to fiddle:
+[x] 1. CNN autoencoder_decoder with CNN
+[ ] 2. CNN hyperparameter tuning
+
+overall notes:
+1. how to calcualte output shape for the CNN layers, using input (28, 28, 1) as an example
+a. padding='same': when padding is set to 'same', the output shape is the as as the input shape.
+    '0's are padded to fill the shrinkage created by convolution
+# filter number is the output channel (third dim) number
+b. Conv2D(filters=16, kernel=(3, 3), padding='same', ...)
+    output: 28, 28, 16
+c. MaxPooling2D((2, 2))  # 28/2. no change to the number of channels
+    output: 14, 14, 16
+d. Conv2D(filters=8, kernel=(3, 3), padding='same', ...)
+    output: 14, 14, 8
+e. UpSampling2D((2, 2))  # 14*2. no change to the number of channels
+    output: 28, 28, 8
 """
 
-# ------ modules ------
+
+# ------ load modules ------
 import os
-import pandas as pd
+
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import tensorflow as tf
-from utils.data_utils import adjmatAnnotLoader, labelMapping, labelOneHot, getSelectedDataset
-from utils.other_utils import error
-from sklearn.model_selection import StratifiedShuffleSplit
-from sklearn.preprocessing import MinMaxScaler, StandardScaler, LabelBinarizer
-from sklearn.model_selection import train_test_split, StratifiedKFold, KFold
-# from skmultilearn.model_selection import iterative_train_test_split
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.datasets import mnist
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Layer, Flatten, Dense, Reshape, Input, BatchNormalization, LeakyReLU
+from tensorflow.keras.models import Model
+from tensorflow.keras.optimizers import Adam
+from utils.dl_utils import BatchMatrixLoader
 
-
-# ------ check device ------
+# ------ TF device check ------
 tf.config.list_physical_devices()
 
 
-# ------ function -------
-def map_func(filepath: tf.Tensor, label: tf.Tensor, processing=False):
-    # - read file and assign label -
-    fname = filepath.numpy().decode('utf-8')
-    f = np.loadtxt(fname).astype('float32')
-    lb = label
+# ------ model ------
+class CNN2d_encoder(Layer):
+    def __init__(self, initial_shape, bottleneck_dim):
+        super(CNN2d_encoder, self).__init__()
+        self.bottleneck_dim = bottleneck_dim
+        # CNN encoding sub layers
+        self.conv2d_1 = Conv2D(16, (3, 3), activation='relu',
+                               padding='same', input_shape=initial_shape)  # output: 28, 28, 16
+        self.bn1 = BatchNormalization()
+        self.leakyr1 = LeakyReLU()
+        self.maxpooling_1 = MaxPooling2D((2, 2))  # output: 14, 14, 16
+        self.conv2d_2 = Conv2D(8, (3, 3), activation='relu',
+                               padding='same')  # output: 14, 14, 8
+        self.bn2 = BatchNormalization()
+        self.leakyr2 = LeakyReLU()
+        self.maxpooling_2 = MaxPooling2D((2, 2))  # output: 7, 7, 8
+        self.fl = Flatten()  # 7*7*8=392
+        self.dense1 = Dense(bottleneck_dim, activation='relu')
+        self.encoded = LeakyReLU()
 
-    # - processing if needed -
-    if processing:
-        f = f/f.max()
-        # f_std = (f - f.min(axis=0)) / (f.max(axis=0) - f.min(axis=0))
-        # f = f_std * (1 - 0) + 0
-        # print(f.shape[:])
-        f = np.reshape(f, (f.shape[0], f.shape[1], 1))
-    f = tf.convert_to_tensor(f, dtype=tf.float32)
-
-    return f, lb
-
-
-def tst_parse_file(filepath, target_ext=None, model_type='classification', manual_labels=None,
-                   pd_labels_var_name=None):
-    """
-    - parse file path to get file path annotatin and, optionally, label information\n
-    - set up manual label information\n
-    """
-
-    if model_type == 'classification':
-        file_annot, labels = adjmatAnnotLoader(
-            filepath, targetExt=target_ext)
-    else:  # regeression
-        if manual_labels is None:
-            raise ValueError(
-                'Set manual_labels when model_type=\"regression\".')
-        file_annot, _ = adjmatAnnotLoader(
-            filepath, targetExt=target_ext, autoLabel=False)
-
-    if manual_labels is not None:  # update labels to the manually set array
-        if isinstance(manual_labels, pd.DataFrame):
-            if pd_labels_var_name is None:
-                raise TypeError(
-                    'Set pd_labels_var_name when manual_labels is a pd.Dataframe.')
-            else:
-                try:
-                    labels = manual_labels[pd_labels_var_name].to_numpy(
-                    )
-                except Exception as e:
-                    error('Manual label parsing failed.',
-                          'check if pd_labels_var_name is present in the maual label data frame.')
-        elif isinstance(manual_labels, np.ndarray):
-            labels = manual_labels
-        else:
-            raise TypeError(
-                'When not None, manual_labels needs to be pd.Dataframe or np.ndarray.')
-
-        labels = manual_labels
-
-    return file_annot, labels
+    def call(self, input):
+        x = self.conv2d_1(input)
+        x = self.bn1(x)
+        x = self.leakyr1(x)
+        x = self.maxpooling_1(x)
+        x = self.conv2d_2(x)
+        x = self.bn2(x)
+        x = self.leakyr2(x)
+        x = self.maxpooling_2(x)
+        x = self.fl(x)
+        x = self.dense1(x)
+        x = self.encoded(x)
+        return x
 
 
-def tst_get_file_annot(filepath, model_type='classification', multilabel_class=False, label_sep=None, **kwargs):
-    file_annot, labels = tst_parse_file(
-        filepath=filepath, model_type=model_type, **kwargs)
+class CNN2d_decoder(Layer):
+    def __init__(self, encoded_dim):
+        """
+        UpSampling2D layer: a reverse of pooling2d layer
+        """
+        super(CNN2d_decoder, self).__init__()
+        # CNN decoding sub layers
+        self.encoded_input = Dense(encoded_dim, activation='relu')
+        self.dense1 = Dense(7*7*8, activation='relu')  # output: 392
+        self.reshape1 = Reshape(target_shape=(7, 7, 8))  # output: 7, 7, 8
+        self.conv2d_1 = Conv2D(8, (3, 3), activation='relu',
+                               padding='same')  # output: 7, 7, 8
+        self.bn1 = BatchNormalization()
+        self.leakyr1 = LeakyReLU()
+        self.upsampling_1 = UpSampling2D(size=(2, 2))  # output: 14, 14, 28
+        self.conv2d_2 = Conv2D(16, (3, 3), activation='relu',
+                               padding='same')  # output: 14, 14, 16
+        self.bn2 = BatchNormalization()
+        self.leakyr2 = LeakyReLU()
+        self.upsampling_2 = UpSampling2D((2, 2))  # output: 28, 28, 16
+        self.decoded = Conv2D(1, (3, 3), activation='sigmoid',
+                              padding='same')  # output: 28, 28, 1
 
-    if model_type == 'classification':
-        if multilabel_class:
-            if label_sep is None:
-                raise ValueError(
-                    'set label_sep for multilabel classification.')
-
-            labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
-                labels=labels, sep=label_sep)
-        else:
-            labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
-                labels=labels, sep=None)
-        encoded_labels = labelOneHot(labels_list, labels_map)
-    else:
-        encoded_labels = labels
-        lables_count, labels_map_rev = None, None
-
-    filepath_list = file_annot['path'].to_list()
-    return filepath_list, encoded_labels, lables_count, labels_map_rev
-
-
-def tst_map_func(filepath: tf.Tensor, label: tf.Tensor, processing=False):
-    # - read file and assign label -
-    fname = filepath.numpy().decode('utf-8')
-    f = np.loadtxt(fname).astype('float32')
-    lb = label
-
-    # # - processing if needed -
-    # if processing:
-    #     f = _x_data_process(f)
-
-    f = tf.convert_to_tensor(f, dtype=tf.float32)
-    return f, lb
-
-
-def tst_data_resample(total_data, n_total_sample, encoded_labels, resample_method='random'):
-    """
-    NOTE: regression cannot use stratified splitting\n
-    NOTE: "stratified" (keep class ratios) is NOT the same as "balanced" (make class ratio=1)\n
-    NOTE: "balanced" mode will be implemented at a later time\n
-    NOTE: depending on how "balanced" is implemented, the if/else block could be implified\n
-    """
-    X_indices = np.arange(n_total_sample)
-    if resample_method == 'random':
-        X_train_indices, X_test_indices, _, _ = train_test_split(
-            X_indices, encoded_labels, test_size=0.8, stratify=None, random_state=1)
-    elif resample_method == 'stratified':
-        X_train_indices, X_test_indices, _, _ = train_test_split(
-            X_indices, encoded_labels, test_size=0.8, stratify=encoded_labels, random_state=1)
-    else:
-        raise NotImplementedError(
-            '\"balanced\" resmapling method has not been implemented.')
-
-    train_ds, train_n = getSelectedDataset(total_data, X_train_indices)
-    test_ds, test_n = getSelectedDataset(total_data, X_test_indices)
-
-    return train_ds, train_n, test_ds, test_n
+    def call(self, input):
+        x = self.encoded_input(input)
+        x = self.dense1(x)
+        x = self.reshape1(x)
+        x = self.conv2d_1(x)
+        x = self.bn1(x)
+        x = self.leakyr1(x)
+        x = self.upsampling_1(x)
+        x = self.conv2d_2(x)
+        x = self.bn2(x)
+        x = self.leakyr2(x)
+        x = self.upsampling_2(x)
+        x = self.decoded(x)
+        return x
 
 
-def tst_generate_data(batch_size=4, cv_only=False, shuffle=True, **kwargs):
-    """
-    # Purpose\n
-        To generate working data.\n
+class autoencoder_decoder(Model):
+    def __init__(self, initial_shape, bottleneck_dim):
+        super(autoencoder_decoder, self).__init__()
+        self.initial_shape = initial_shape
+        self.bottleneck_dim = bottleneck_dim
+        self.encoder = CNN2d_encoder(
+            initial_shape=self.initial_shape, bottleneck_dim=bottleneck_dim)
+        self.decoder = CNN2d_decoder(encoded_dim=bottleneck_dim)
 
-    # Arguments\n
-        batch_size: int. Batch size for the tf.dataset batches.\n
-        cv_only: bool. When True, there is no train/test split.\n
-        shuffle: bool. Effective when cv_only=True, if to shuffle the order of samples for the output data.\n
+    def call(self, input):  # putting two models togeter
+        x = self.encoder(input)
+        z = self.decoder(x)
+        return z
 
-    # Details\n
-        - When cv_only=True, the loader returns only one tf.dataset object, without train/test split.
-            In such case, further cross validation resampling can be done using followup resampling functions.
-            However, it is not to say train/test split data cannot be applied with further CV operations.\n        
-    """
-    batch_size = batch_size
-    cv_only = cv_only
-    shuffle = shuffle
+    def encode(self, x):
+        """
+        This method is used to encode data using the trained encoder
+        """
+        x = self.encoder(x)
+        return x
 
-    # - load paths -
-    filepath_list, encoded_labels, _, _ = tst_get_file_annot(**kwargs)
-    total_ds = tf.data.Dataset.from_tensor_slices(
-        (filepath_list, encoded_labels))
-    n_total_sample = total_ds.cardinality().numpy()
+    def decode(self, z):
+        z = self.decoder(z)
+        return z
 
-    # return total_ds, n_total_sample
-
-    # - resample data -
-    if cv_only:
-        train_set = total_ds.map(lambda x, y: tf.py_function(tst_map_func, [x, y, True], [tf.float32, tf.uint8]),
-                                 num_parallel_calls=tf.data.AUTOTUNE)
-        train_n = n_total_sample
-        if shuffle:  # check this
-            train_set = train_set.shuffle(seed=1)
-        test_set = None
-        test_n = None
-    else:
-        train_ds, train_n, test_ds, test_n = tst_data_resample(
-            total_data=total_ds, n_total_sample=n_total_sample, encoded_labels=encoded_labels)
-        train_set = train_ds.map(lambda x, y: tf.py_function(tst_map_func, [x, y, True], [tf.float32, tf.uint8]),
-                                 num_parallel_calls=tf.data.AUTOTUNE)
-        test_set = test_ds.map(lambda x, y: tf.py_function(tst_map_func, [x, y, True], [tf.float32, tf.uint8]),
-                               num_parallel_calls=tf.data.AUTOTUNE)
-
-    # - set up batch and prefeching -
-    train_set = train_set.batch(
-        batch_size).cache().prefetch(tf.data.AUTOTUNE)
-    test_set = train_set.batch(
-        batch_size).cache().prefetch(tf.data.AUTOTUNE) if test_set is not None else None
-
-    return train_set, test_set
+    def model(self):
+        """
+        This method enables correct model.summary() results:
+        model.model().summary()
+        """
+        x = Input(self.initial_shape)
+        return Model(inputs=[x], outputs=self.call(x))
 
 
-# ------ test realm ------
-main_dir = os.path.abspath('./')
-dat_dir = os.path.join(main_dir, 'data/tf_data')
+# ------ data ------
+# -- MNIST data --
+# x_train: 60000, 28, 28. no need to have y
+(x_train, _), (x_test, _) = mnist.load_data()
 
-file_annot, labels = adjmatAnnotLoader(dat_dir, targetExt='txt')
-file_annot['path'][0]
-
-file_annot['path'].to_list()
-file_annot.loc[0:1]
-
-
-file_annot, labels = tst_parse_file(
-    filepath=dat_dir, model_type='classification', target_ext='csv')
-
-filepath_list, encoded_labels, lables_count, labels_map_rev = tst_get_file_annot(
-    filepath=dat_dir, target_ext='txt')
-
-tst_ds, tst_n = tst_generate_data(
-    filepath=dat_dir, target_ext='txt', cv_only=False, shuffle=False)
-
-# - below: create one hot encoding for multiclass labels -
-# lb_binarizer = LabelBinarizer()
-# labels_binary = lb_binarizer.fit_transform(labels)
-labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
-    labels=labels, sep=None)  # use None to not slice strings
-
-encoded_labels = labelOneHot(
-    labels_list=labels_list, labels_map=labels_map)
-
-# # - below: create one hot encoding for multilabel labels -
-# labels_list, lables_count, labels_map, labels_map_rev = multilabelMapping(
-#     labels=labels, sep='_')
-# # one hot encoding
-# encoded_labels = multilabelOneHot(
-#     labels_list=labels_list, labels_map=labels_map)
+# -- data transformation and normalization --
+x_train, x_test = x_train.astype('float32') / 255, x_test.astype(
+    'float32') / 255  # transform from int to float and min(0.0)-max(255.0) normalization into 0-1 (sigmoid)
 
 
-# - below: batch load data using tf.data.Dataset API -
-# expand file_annot with one hot encoded labels
-file_annot[list(labels_map.keys())] = encoded_labels
-file_path = file_annot['path'].to_list()
-
-# test: load using the tf.data.Dataset API
-tst_dat = tf.data.Dataset.from_tensor_slices((file_path, encoded_labels))
-tst_data_size = tst_dat.cardinality().numpy()  # sample size: 250
-
-tst_dat.shuffle()
+x_train.shape
+# -- data vectorization: 28*28 = 784 --
+x_train = np.reshape(x_train, (len(x_train), 28, 28, 1))
+x_test = np.reshape(x_test, (len(x_test), 28, 28, 1))
 
 
-for a, b in tst_dat.take(3):  # take 3 smaples
-    fname = a.numpy().decode('utf-8')
-
-    # f = np.loadtxt(fname).astype('float32')
-    # f = tf.convert_to_tensor(f, dtype=tf.float32)
-    f, lb = map_func(a, b, processing=True)
-
-    print(type(a))
-    print(fname)
-    print(f'label: {lb}')
-    print(f)
-    break
-
-tst_dat_working = tst_dat.map(lambda x, y: tf.py_function(map_func, [x, y, True], [tf.float32, tf.uint8]),
-                              num_parallel_calls=tf.data.AUTOTUNE)
-
-for a, b in tst_dat_working:  # take 3 smaples
-    print(type(a))
-    print(a.shape)
-    print(f'label: {b}')
-    print(f)
-    break
+# -- batch loader data --
 
 
-# - resampling -
-X_indices = np.arange(tst_data_size)
+# ------ training ------
+# -- early stop and optimizer --
+earlystop = EarlyStopping(monitor='val_loss', patience=5)
+# earlystop = EarlyStopping(monitor='loss', patience=5)
+callbacks = [earlystop]
+optm = Adam(learning_rate=0.001)
 
-# multiclass
-X_train_indices, X_val_indices, y_train_targets, y_val_targets = train_test_split(
-    X_indices, encoded_labels, test_size=0.1, stratify=encoded_labels, random_state=53)
+# -- model --
+m = autoencoder_decoder(initial_shape=x_train.shape[1:], bottleneck_dim=64)
+# the output is sigmoid, therefore binary_crossentropy
+m.compile(optimizer=optm, loss="binary_crossentropy")
 
-tst_test, test_n = getSelectedDataset(tst_dat, X_val_indices)
+m.model().summary()
 
-t = (0, 1)
-t2 = t[:]+(2)
-# # multilabel
-# X_indices_reshap = X_indices.reshape((len(X_indices), 1))
-# X_train_indices, y_train_targets, X_val_indices, y_val_targets = iterative_train_test_split(
-#     X_indices_reshap, encoded_labels, test_size=0.1)
+# -- training --
+m_history = m.fit(x=x_train, y=x_train, batch_size=256, epochs=80, callbacks=callbacks,
+                  shuffle=True, validation_data=(x_test, x_test))
+
+# -- inspection --
+reconstruction_test = m.predict(x_test)
+
+m.encode(x_test).shape
+m.encode(x_test)[0]  # use the trained encoder to encode the input data
+
+# - visulization -
+n = 10  # how many digits we will display
+plt.figure(figsize=(20, 4))
+for i in range(n):
+    # display original
+    ax = plt.subplot(2, n, i + 1)
+    plt.imshow(x_test[i].reshape(28, 28))
+    plt.gray()
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+
+    # display reconstruction
+    ax = plt.subplot(2, n, i + 1 + n)
+    plt.imshow(reconstruction_test[i].reshape(28, 28))
+    plt.gray()
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+plt.show()
 
 
-# multilabel classificatin cannot be used for stratified split
-stk = StratifiedKFold(n_splits=10, shuffle=True, random_state=12)
+# ------ save model ------
+m.save('./results/subclass_autoencoder', save_format='tf')
 
-kf = KFold(n_splits=10, shuffle=True, random_state=12)
-for train_idx, test_idx in kf.split(X_indices, encoded_labels):
-    print(train_idx)
-    print(test_idx)
 
-# ------ ref ------
-# - tf.dataset reference: https://cs230.stanford.edu/blog/datapipeline/ -
-# - real TF2 data loader example: https://github.com/HasnainRaz/SemSegPipeline/blob/master/dataloader.py -
-# - tf.data.Dataset API example: https://medium.com/deep-learning-with-keras/tf-data-build-efficient-tensorflow-input-pipelines-for-image-datasets-47010d2e4330 -
+# ------ testing ------

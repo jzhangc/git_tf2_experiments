@@ -1,6 +1,4 @@
 """
-this is test realm for CNN+autoencoder
-
 things to fiddle:
 [x] 1. CNN autoencoder_decoder with CNN
 [ ] 2. CNN hyperparameter tuning
