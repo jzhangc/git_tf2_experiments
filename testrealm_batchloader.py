@@ -1,8 +1,8 @@
 """
-this is test realm for DL model training with BatchMatrixLoade
+this is test realm for DL models with BatchMatrixLoader
 
-things to test with BatchMatrixLoader:
-[ ] 1. CNN autoencoder_decoder with conv CNN
+things to fiddle:
+[ ] 1. CNN autoencoder_decoder BatchMatrixLoader
 """
 
 
