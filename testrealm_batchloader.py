@@ -1,23 +1,8 @@
 """
-this is test realm for CNN+autoencoder
+this is test realm for DL model training with BatchMatrixLoade
 
-things to fiddle:
-[x] 1. CNN autoencoder_decoder with CNN
-[ ] 2. CNN hyperparameter tuning
-
-overall notes:
-1. how to calcualte output shape for the CNN layers, using input (28, 28, 1) as an example
-a. padding='same': when padding is set to 'same', the output shape is the as as the input shape.
-    '0's are padded to fill the shrinkage created by convolution
-# filter number is the output channel (third dim) number
-b. Conv2D(filters=16, kernel=(3, 3), padding='same', ...)
-    output: 28, 28, 16
-c. MaxPooling2D((2, 2))  # 28/2. no change to the number of channels
-    output: 14, 14, 16
-d. Conv2D(filters=8, kernel=(3, 3), padding='same', ...)
-    output: 14, 14, 8
-e. UpSampling2D((2, 2))  # 14*2. no change to the number of channels
-    output: 28, 28, 8
+things to test with BatchMatrixLoader:
+[ ] 1. CNN autoencoder_decoder with conv CNN
 """
 
 
