@@ -80,7 +80,7 @@ def csvPath(string):
     # script_path = os.path.dirname(__file__)
     # full_path = os.path.normpath(os.path.join(script_path, string))
 
-    # below: relative to the working dir
+    # below: relative to working dir
     # use os.path.expanduser to understand "~"
     full_path = os.path.normpath(os.path.abspath(os.path.expanduser(string)))
 
@@ -100,7 +100,7 @@ def fileDir(string):
     # script_path = os.path.dirname(__file__)
     # full_path = os.path.normpath(os.path.join(script_path, string))
 
-    # below: relative to the working dir
+    # below: relative to working dir
     # use os.path.expanduser to understand "~"
     full_path = os.path.normpath(os.path.abspath(os.path.expanduser(string)))
 

@@ -16,6 +16,7 @@ the application.
 """
 # ------ import modules ------
 import argparse
+import os
 from utils.other_utils import AppArgParser, addBoolArg, colr, csvPath, fileDir, error, warn
 
 # ------ GLOBAL variables -------
@@ -53,13 +54,21 @@ add_g3_arg = arg_g3.add_argument  # modelling
 add_g4_arg = arg_g4.add_argument  # others
 
 # - add arugments to the argument groups -
-add_g1_arg('-y', '--label_var', type=str, default=[], nargs='+',
-           help='str. Vairable name(s) for label. Multiple labels are allowed: -y a b c. (Default: %(default)s)')
-
+add_g1_arg('path', nargs=1, type=fileDir,
+           help='Directory contains all input files. (Default: %(default)s)')
+add_g1_arg('-o', '--output_dir', type=str,
+           default='.',
+           help='str. Output directory. NOTE: relative to working directory.')
 # - load arguments -
 args = parser.parse_args()
 print(args)
 
 # - check arguments -
+if os.path.isdir(args.output_dir):
+    output_dir = os.path.normpath(os.path.abspath(
+        os.path.expanduser(args.output_dir)))
+else:
+    error('Output directory not found.')
 
 # ------ ad-hoc test ------
+print(output_dir)

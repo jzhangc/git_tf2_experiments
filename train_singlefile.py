@@ -10,6 +10,7 @@ Current objectives:
     [x] converting to numpy arrays
 [x] use convert to tf.dataset
 [x] implement multilabel compatibility
+[ ] implement cross validation
 
 NOTE
 All the argparser inputs are loaded from method arguments, making the class more portable, i.e. not tied to
@@ -78,7 +79,7 @@ addBoolArg(parser=arg_g1, name='y_scale', input_type='flag', default=False,
            help='str. If to min-max scale label for regression study. (Default: %(default)s)')
 add_g1_arg('-o', '--output_dir', type=str,
            default='.',
-           help='str. Output directory. NOTE: not an absolute path, only relative to working directory -w/--working_dir.')
+           help='str. Output directory. NOTE: relative to working directory.')
 
 # g2: resampling and normalization
 addBoolArg(parser=arg_g2, name='cv_only', input_type='flag',
@@ -119,10 +120,15 @@ print(args)
 # ------ check arguments. did not use parser.error as error() has fancy colours ------
 # below: we use custom script to check this (not fileDir function) for custom error messages.
 if os.path.isdir(args.output_dir):
+    # below: the output directory information is stored in output_dir
+    # instead of args.output_dir, which only has the input string.
     output_dir = os.path.normpath(os.path.abspath(
         os.path.expanduser(args.output_dir)))
 else:
     error('Output directory not found.')
+
+if args.model_type == 'classification' and len(args.label_var) > 1:
+    error('-y/--label_var can only be length of one when -mt/--model_type=\'classification\'.')
 
 if not args.sample_id_var:
     error('-s/--sample_id_var missing.',
@@ -136,12 +142,10 @@ if len(args.annotation_vars) < 1:
     error('-a/--annotation_vars missing.',
           'Be sure to set the following: -s/--sample_id_var, -y/--label_var, -a/--annotation_vars')
 
-if args.cv_type == 'monte':
-    if args.monte_test_rate < 0.0 or args.monte_test_rate > 1.0:
-        error('-mt/--monte_test_rate should be between 0.0 and 1.0.')
-
-if args.model_type == 'classification' and len(args.label_var) > 1:
-    error('-y/--label_var can only be length of one when -mt/--model_type=\'classification\'.')
+# # below: we will add this later
+# if args.cv_type == 'monte':
+#     if args.monte_test_rate < 0.0 or args.monte_test_rate > 1.0:
+#         error('-mt/--monte_test_rate should be between 0.0 and 1.0.')
 
 
 # below: ad-hoc testing

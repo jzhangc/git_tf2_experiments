@@ -10,6 +10,7 @@ Current objectives:
     [x] converting to numpy arrays
 [ ] Implement "balanced" data resampling
 [x] Implement data resampling for cross-validation (maybe move this out of the dataloader)
+[ ] implement cross validation
 
 NOTE
 All the argparser inputs are loaded from method arguments, making the class more portable, i.e. not tied to
@@ -71,9 +72,9 @@ add_g1_arg('-lv', '--pd_labels_var_name', type=str, default=None,
            help='str. When manual labels are provided and imported as a pandas dataframe, the label variable name for this pandas dataframe. (Default: %(default)s)')
 add_g1_arg('-ls', '--label_string_sep', type=str, default=None,
            help='str. Separator to separate label string, to create multilabel labels. (Default: %(default)s)')
-add_g1_arg('-o', '--output_dir', type=fileDir,
+add_g1_arg('-o', '--output_dir', type=str,
            default='.',
-           help='str. Output directory. NOTE: not an absolute path, only relative to working directory -w/--working_dir.')
+           help='str. Output directory. NOTE: relative to working directory.')
 
 # g2: processing and resampling
 add_g2_arg('-ns', '--new_shape', type=str, default=None,
@@ -112,8 +113,9 @@ addBoolArg(parser=arg_g4, name='verbose', input_type='flag', default=False,
 args = parser.parse_args()
 print(args)
 
+
 # ------- check arguments -------
-# below: we use custom script to check this file (not csvPath function) for custom error messages.
+# - below: we use custom script to check files and folders (not csvPath or fileDir functions) for custom error messages. -
 if args.manual_label_file is not None:
     if os.path.isfile(args.manual_label_file):
         # return full_path
@@ -127,6 +129,14 @@ if args.manual_label_file is not None:
         error('Invalid manual label file or file not found.')
 else:
     manual_label_file = args.manual_label_file
+
+if os.path.isdir(args.output_dir):
+    # below: the output directory information is stored in output_dir
+    # instead of args.output_dir, which only has the input string.
+    output_dir = os.path.normpath(os.path.abspath(
+        os.path.expanduser(args.output_dir)))
+else:
+    error('Output directory not found.')
 
 
 # ------ ad-hoc test ------
