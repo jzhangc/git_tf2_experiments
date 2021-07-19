@@ -39,7 +39,8 @@ class CNN2d_encoder(Layer):
                                padding='same')  # output: 14, 14, 8
         self.bn2 = BatchNormalization()
         self.leakyr2 = LeakyReLU()
-        self.maxpooling_2 = MaxPooling2D((2, 2))  # output: 7, 7, 8
+        # self.maxpooling_2 = MaxPooling2D((2, 2))  # output: 7, 7, 8
+        self.maxpooling_2 = MaxPooling2D((5, 5))  # output: 9, 9, 8
         self.fl = Flatten()  # 7*7*8=392
         self.dense1 = Dense(bottleneck_dim, activation='relu')
         self.encoded = LeakyReLU()
@@ -67,13 +68,17 @@ class CNN2d_decoder(Layer):
         super(CNN2d_decoder, self).__init__()
         # CNN decoding sub layers
         self.encoded_input = Dense(encoded_dim, activation='relu')
-        self.dense1 = Dense(7*7*8, activation='relu')  # output: 392
-        self.reshape1 = Reshape(target_shape=(7, 7, 8))  # output: 7, 7, 8
+        # self.dense1 = Dense(7*7*8, activation='relu')  # output: 392
+        self.dense1 = Dense(9*9*8, activation='relu')  # output: 648
+        # self.reshape1 = Reshape(target_shape=(7, 7, 8))  # output: 7, 7, 8
+        self.reshape1 = Reshape(target_shape=(9, 9, 8))  # output: 9, 9, 8
+
         self.conv2d_1 = Conv2D(8, (3, 3), activation='relu',
                                padding='same')  # output: 7, 7, 8
         self.bn1 = BatchNormalization()
         self.leakyr1 = LeakyReLU()
-        self.upsampling_1 = UpSampling2D(size=(2, 2))  # output: 14, 14, 28
+        # self.upsampling_1 = UpSampling2D(size=(2, 2))  # output: 14, 14, 28
+        self.upsampling_1 = UpSampling2D(size=(5, 5))  # output: 14, 14, 28
         self.conv2d_2 = Conv2D(16, (3, 3), activation='relu',
                                padding='same')  # output: 14, 14, 16
         self.bn2 = BatchNormalization()
@@ -133,23 +138,17 @@ class autoencoder_decoder(Model):
 
 
 # ------ data ------
-# -- MNIST data --
-# x_train: 60000, 28, 28. no need to have y
-(x_train, _), (x_test, _) = mnist.load_data()
-
-# -- data transformation and normalization --
-x_train, x_test = x_train.astype('float32') / 255, x_test.astype(
-    'float32') / 255  # transform from int to float and min(0.0)-max(255.0) normalization into 0-1 (sigmoid)
-
-
-x_train.shape
-# -- data vectorization: 28*28 = 784 --
-x_train = np.reshape(x_train, (len(x_train), 28, 28, 1))
-x_test = np.reshape(x_test, (len(x_test), 28, 28, 1))
-
-
 # -- batch loader data --
+tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
+                               manual_labels=None, label_sep=None, pd_labels_var_name=None, model_type='classification',
+                               multilabel_classification=False, x_scaling='none', x_min_max_range=[0, 1], resmaple_method='stratified',
+                               training_percentage=0.8, verbose=False, random_state=1)
+tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data()
 
+
+for a in tst_tf_test:
+    print(a[1])
+    # break
 
 # ------ training ------
 # -- early stop and optimizer --
@@ -159,44 +158,49 @@ callbacks = [earlystop]
 optm = Adam(learning_rate=0.001)
 
 # -- model --
-m = autoencoder_decoder(initial_shape=x_train.shape[1:], bottleneck_dim=64)
-# the output is sigmoid, therefore binary_crossentropy
-m.compile(optimizer=optm, loss="binary_crossentropy")
+# -batch loader data -
+m = autoencoder_decoder(initial_shape=(90, 90, 1), bottleneck_dim=64)
 
 m.model().summary()
 
+# the output is sigmoid, therefore binary_crossentropy
+m.compile(optimizer=optm, loss="binary_crossentropy")
+
+
 # -- training --
-m_history = m.fit(x=x_train, y=x_train, batch_size=256, epochs=80, callbacks=callbacks,
-                  shuffle=True, validation_data=(x_test, x_test))
+# - batch loader data -
+m_history = m.fit(tst_tf_train, epochs=80, callbacks=callbacks,
+                  shuffle=True, validation_data=tst_tf_test)
 
-# -- inspection --
-reconstruction_test = m.predict(x_test)
 
-m.encode(x_test).shape
-m.encode(x_test)[0]  # use the trained encoder to encode the input data
+# # -- inspection --
+# reconstruction_test = m.predict(x_test)
 
-# - visulization -
-n = 10  # how many digits we will display
-plt.figure(figsize=(20, 4))
-for i in range(n):
-    # display original
-    ax = plt.subplot(2, n, i + 1)
-    plt.imshow(x_test[i].reshape(28, 28))
-    plt.gray()
-    ax.get_xaxis().set_visible(False)
-    ax.get_yaxis().set_visible(False)
+# m.encode(x_test).shape
+# m.encode(x_test)[0]  # use the trained encoder to encode the input data
 
-    # display reconstruction
-    ax = plt.subplot(2, n, i + 1 + n)
-    plt.imshow(reconstruction_test[i].reshape(28, 28))
-    plt.gray()
-    ax.get_xaxis().set_visible(False)
-    ax.get_yaxis().set_visible(False)
-plt.show()
+# # - visulization -
+# n = 10  # how many digits we will display
+# plt.figure(figsize=(20, 4))
+# for i in range(n):
+#     # display original
+#     ax = plt.subplot(2, n, i + 1)
+#     plt.imshow(x_test[i].reshape(28, 28))
+#     plt.gray()
+#     ax.get_xaxis().set_visible(False)
+#     ax.get_yaxis().set_visible(False)
+
+#     # display reconstruction
+#     ax = plt.subplot(2, n, i + 1 + n)
+#     plt.imshow(reconstruction_test[i].reshape(28, 28))
+#     plt.gray()
+#     ax.get_xaxis().set_visible(False)
+#     ax.get_yaxis().set_visible(False)
+# plt.show()
 
 
 # ------ save model ------
-m.save('./results/subclass_autoencoder', save_format='tf')
+m.save('./results/subclass_autoencoder_batch', save_format='tf')
 
 
 # ------ testing ------

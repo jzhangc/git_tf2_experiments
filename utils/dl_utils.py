@@ -25,7 +25,7 @@ class BatchMatrixLoader(object):
             parses subfolder's name as file labels. Cannot be None when model_type='regression'.\n
         label_sep: str or None.  Optional str to separate label strings. When none, the loader uses the entire string as file labels.
         pd_labelse_bar_name: list of str or None. Set when manual_labels is not None, variable name for file labels.\n
-        model_type: str. Model (label) type. Options are "classification" and "regression".\n
+        model_type: str. Model (label) type. Options are "classification", "regression" and "semisupervised".\n
         multilabel_classification: bool. If the classifiation is a "multilabel" type. Only effective when model_type='classification'.\n
         x_scaling: str. If and how to scale x values. Options are "none", "max" and "minmax".\n
         x_min_max_range: two num list. Only effective when x_scaling='minmax', the range for the x min max scaling.\n
@@ -36,6 +36,7 @@ class BatchMatrixLoader(object):
 
     # Details\n
         - This data loader is designed for matrices (similar to AxB resolution pictures).\n
+        - For semisupervised model, the "label" would be the input data itself. This is typically used for autoencoder-decoder.\n      
         - It is possible to stack matrix with A,B,N, and use new_shape argument to reshape the data into A,B,N shape.\n
         - For filepath, one can set up each subfolder as data labels. In such case, the _parse_file() method will automatically
             parse the subfolder name as labales for the files inside.\n
@@ -72,6 +73,11 @@ class BatchMatrixLoader(object):
         self.label_sep = label_sep
         self.new_shape = new_shape
 
+        if model_type == 'semisupervised':
+            self.semi_supervised = True
+        else:
+            self.semi_supervised = False
+
         # processing
         self.x_scaling = x_scaling
         self.x_min_max_range = x_min_max_range
@@ -94,32 +100,38 @@ class BatchMatrixLoader(object):
         if self.model_type == 'classification':
             file_annot, labels = adjmatAnnotLoader(
                 self.filepath, targetExt=self.target_ext)
-        else:  # regeression
+        elif self.model_type == 'regression':
             if self.manual_labels is None:
                 raise ValueError(
                     'Set manual_labels when model_type=\"regression\".')
             file_annot, _ = adjmatAnnotLoader(
                 self.filepath, targetExt=self.target_ext, autoLabel=False)
+        else:  # semisupervised
+            file_annot, _ = adjmatAnnotLoader(
+                self.filepath, targetExt=self.target_ext)
 
-        if self.manual_labels is not None:  # update labels to the manually set array
-            if isinstance(self.manual_labels, pd.DataFrame):
-                if self.pd_labels_var_name is None:
-                    raise TypeError(
-                        'Set pd_labels_var_name when manual_labels is a pd.Dataframe.')
+        if self.semi_supervised:
+            labels = None
+        else:
+            if self.manual_labels is not None:  # update labels to the manually set array
+                if isinstance(self.manual_labels, pd.DataFrame):
+                    if self.pd_labels_var_name is None:
+                        raise TypeError(
+                            'Set pd_labels_var_name when manual_labels is a pd.Dataframe.')
+                    else:
+                        try:
+                            labels = self.manual_labels[self.pd_labels_var_name].to_numpy(
+                            )
+                        except Exception as e:
+                            print(
+                                'Manual label parsing failed. Hint: check if pd_labels_var_name is present in the maual label data frame.')
+                elif isinstance(self.manual_labels, np.ndarray):
+                    labels = self.manual_labels
                 else:
-                    try:
-                        labels = self.manual_labels[self.pd_labels_var_name].to_numpy(
-                        )
-                    except Exception as e:
-                        print(
-                            'Manual label parsing failed. Hint: check if pd_labels_var_name is present in the maual label data frame.')
-            elif isinstance(self.manual_labels, np.ndarray):
-                labels = self.manual_labels
-            else:
-                raise TypeError(
-                    'When not None, manual_labels needs to be pd.Dataframe or np.ndarray.')
+                    raise TypeError(
+                        'When not None, manual_labels needs to be pd.Dataframe or np.ndarray.')
 
-            labels = self.manual_labels
+                labels = self.manual_labels
 
         return file_annot, labels
 
@@ -185,6 +197,19 @@ class BatchMatrixLoader(object):
         f = tf.convert_to_tensor(f, dtype=tf.float32)
         return f, lb
 
+    def _map_func_semisupervised(self, filepath: tf.Tensor, processing=False):
+        # - read file and assign label -
+        fname = filepath.numpy().decode('utf-8')
+        f = np.loadtxt(fname).astype('float32')
+
+        # - processing if needed -
+        if processing:
+            f = self._x_data_process(f)
+
+        f = tf.convert_to_tensor(f, dtype=tf.float32)
+        lb = f
+        return f, lb
+
     def _data_resample(self, total_data, n_total_sample, encoded_labels):
         """
         NOTE: regression cannot use stratified splitting\n
@@ -194,15 +219,24 @@ class BatchMatrixLoader(object):
         """
         # _, encoded_labels, _, _ = self._get_file_annot()
         X_indices = np.arange(n_total_sample)
-        if self.resample_method == 'random':
-            X_train_indices, X_test_indices, _, _ = train_test_split(
-                X_indices, encoded_labels, test_size=self.test_percentage, stratify=None, random_state=self.rand)
-        elif self.resample_method == 'stratified':
-            X_train_indices, X_test_indices, _, _ = train_test_split(
-                X_indices, encoded_labels, test_size=self.test_percentage, stratify=encoded_labels, random_state=self.rand)
+
+        if self.model_type != 'classification' and self.resample_method == 'stratified':
+            raise ValueError(
+                'resample_method=\'stratified\' can only be set when model_type=\'classification\'.')
+
+        if self.semi_supervised:  # only random is supported
+            X_train_indices, X_test_indices = train_test_split(
+                X_indices, test_size=self.test_percentage, stratify=None, random_state=self.rand)
         else:
-            raise NotImplementedError(
-                '\"balanced\" resmapling method has not been implemented.')
+            if self.resample_method == 'random':
+                X_train_indices, X_test_indices, _, _ = train_test_split(
+                    X_indices, encoded_labels, test_size=self.test_percentage, stratify=None, random_state=self.rand)
+            elif self.resample_method == 'stratified':
+                X_train_indices, X_test_indices, _, _ = train_test_split(
+                    X_indices, encoded_labels, test_size=self.test_percentage, stratify=encoded_labels, random_state=self.rand)
+            else:
+                raise NotImplementedError(
+                    '\"balanced\" resmapling method has not been implemented.')
 
         train_ds, train_n = getSelectedDataset(total_data, X_train_indices)
         test_ds, test_n = getSelectedDataset(total_data, X_test_indices)
@@ -226,7 +260,7 @@ class BatchMatrixLoader(object):
                 However, it is not to say train/test split data cannot be applied with further CV operations.\n
             - As per tf.dataset behaviour, self.train_set_map and self.test_set_map do not contain data content. 
                 Instead, these objects contain data map information, which can be used by tf.dataset.batch() tf.dataset.prefetch()
-                methods to load the acteual data content.\n      
+                methods to load the acteual data content.\n
         """
         self.batch_size = batch_size
         self.cv_only = cv_only
@@ -234,8 +268,13 @@ class BatchMatrixLoader(object):
 
         # - load paths -
         filepath_list, encoded_labels, self.lables_count, self.labels_map_rev = self._get_file_annot()
-        total_ds = tf.data.Dataset.from_tensor_slices(
-            (filepath_list, encoded_labels))
+
+        if self.semi_supervised:
+            total_ds = tf.data.Dataset.from_tensor_slices(filepath_list)
+        else:
+            total_ds = tf.data.Dataset.from_tensor_slices(
+                (filepath_list, encoded_labels))
+
         # below: tf.dataset.cardinality().numpy() always displays the number of batches.
         # the reason this can be used for total sample size is because
         # tf.data.Dataset.from_tensor_slices() reads the file list as one file per batch
@@ -246,9 +285,15 @@ class BatchMatrixLoader(object):
         # - resample data -
         self.train_batch_n = 0
         if self.cv_only:
-            self.train_set_map = total_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
-                                              num_parallel_calls=tf.data.AUTOTUNE)
             self.train_n = self.n_total_sample
+
+            if self.semi_supervised:
+                self.train_set_map = total_ds.map(lambda x: tf.py_function(self._map_func_semisupervised, [x, True], [tf.float32, tf.float32]),
+                                                  num_parallel_calls=tf.data.AUTOTUNE)
+            else:
+                self.train_set_map = total_ds.map(lambda x: tf.py_function(self._map_func, [x, True], [tf.float32, tf.uint8]),
+                                                  num_parallel_calls=tf.data.AUTOTUNE)
+
             if self.shuffle_for_cv_only:  # check this
                 self.train_set_map = self.train_set_map.shuffle(
                     random.randint(2, self.n_total_sample), seed=self.rand)
@@ -256,10 +301,18 @@ class BatchMatrixLoader(object):
         else:
             train_ds, self.train_n, test_ds, self.test_n = self._data_resample(
                 total_ds, self.n_total_sample, encoded_labels)
-            self.train_set_map = train_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
-                                              num_parallel_calls=tf.data.AUTOTUNE)
-            self.test_set_map = test_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
-                                            num_parallel_calls=tf.data.AUTOTUNE)
+
+            if self.semi_supervised:
+                self.train_set_map = train_ds.map(lambda x: tf.py_function(self._map_func_semisupervised, [x, True], [tf.float32, tf.float32]),
+                                                  num_parallel_calls=tf.data.AUTOTUNE)
+                self.test_set_map = test_ds.map(lambda x: tf.py_function(self._map_func_semisupervised, [x, True], [tf.float32, tf.float32]),
+                                                num_parallel_calls=tf.data.AUTOTUNE)
+            else:
+                self.train_set_map = train_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
+                                                  num_parallel_calls=tf.data.AUTOTUNE)
+                self.test_set_map = test_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
+                                                num_parallel_calls=tf.data.AUTOTUNE)
+
             self.test_batch_n = 0
 
         # - set up batch and prefeching -
@@ -274,6 +327,8 @@ class BatchMatrixLoader(object):
                 self.batch_size).cache().prefetch(tf.data.AUTOTUNE)
             for _ in test_batched:
                 self.test_batch_n += 1
+        else:
+            test_batched = None
 
         return train_batched, test_batched
 
