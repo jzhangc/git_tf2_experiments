@@ -210,6 +210,11 @@ class BatchMatrixLoader(object):
         lb = f
         return f, lb
 
+    # def _fixup_shape(x, labels):  # requires further testing
+    #     x.set_shape([None, None, None, 3])
+    #     labels.set_shape([None, 19]) # I have 19 classes
+    #     return x, labels
+
     def _data_resample(self, total_data, n_total_sample, encoded_labels):
         """
         NOTE: regression cannot use stratified splitting\n
