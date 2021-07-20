@@ -18,6 +18,7 @@ from tensorflow.keras.datasets import mnist
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Layer, Flatten, Dense, Reshape, Input, BatchNormalization, LeakyReLU
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
+from tensorflow.python.ops.gen_math_ops import xlogy
 from utils.dl_utils import BatchMatrixLoader
 
 # ------ TF device check ------
@@ -137,18 +138,66 @@ class autoencoder_decoder(Model):
         return Model(inputs=[x], outputs=self.call(x))
 
 
+class CnnClassifier(Model):
+    def __init__(self, initial_shape, bottleneck_dim, outpout_n):
+        super(CnnClassifier, self).__init__()
+        self.initial_shape = initial_shape
+        self.bottleneck_dim = bottleneck_dim
+        # CNN encoding sub layers
+        self.conv2d_1 = Conv2D(16, (3, 3), activation='relu',
+                               padding='same', input_shape=initial_shape)  # output: 28, 28, 16
+        self.bn1 = BatchNormalization()
+        self.leakyr1 = LeakyReLU()
+        self.maxpooling_1 = MaxPooling2D((2, 2))  # output: 14, 14, 16
+        self.conv2d_2 = Conv2D(8, (3, 3), activation='relu',
+                               padding='same')  # output: 14, 14, 8
+        self.bn2 = BatchNormalization()
+        self.leakyr2 = LeakyReLU()
+        # self.maxpooling_2 = MaxPooling2D((2, 2))  # output: 7, 7, 8
+        self.maxpooling_2 = MaxPooling2D((5, 5))  # output: 9, 9, 8
+        self.fl = Flatten()  # 7*7*8=392
+        self.dense1 = Dense(bottleneck_dim, activation='relu')
+        self.encoded = LeakyReLU()
+        self.dense2 = Dense(outpout_n, activation='softmax')
+
+    def call(self, input):
+        x = self.conv2d_1(input)
+        x = self.bn1(x)
+        x = self.leakyr1(x)
+        x = self.maxpooling_1(x)
+        x = self.conv2d_2(x)
+        x = self.bn2(x)
+        x = self.leakyr2(x)
+        x = self.maxpooling_2(x)
+        x = self.fl(x)
+        x = self.dense1(x)
+        x = self.encoded(x)
+        x = self.dense2(x)
+        return x
+
+    def model(self):
+        """
+        This method enables correct model.summary() results:
+        model.model().summary()
+        """
+        x = Input(self.initial_shape)
+        return Model(inputs=[x], outputs=self.call(x))
+
+
 # ------ data ------
 # -- batch loader data --
 tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
                                manual_labels=None, label_sep=None, pd_labels_var_name=None, model_type='classification',
-                               multilabel_classification=False, x_scaling='none', x_min_max_range=[0, 1], resmaple_method='stratified',
+                               multilabel_classification=False, x_scaling='minmax', x_min_max_range=[0, 1], resmaple_method='random',
                                training_percentage=0.8, verbose=False, random_state=1)
 tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data()
 
-
-for a in tst_tf_test:
-    print(a[1])
+for a in tst_tf_train:
+    print(a[1].shape)
     # break
+
+tst_tf_train.element_spec
+
 
 # ------ training ------
 # -- early stop and optimizer --
@@ -169,8 +218,8 @@ m.compile(optimizer=optm, loss="binary_crossentropy")
 
 # -- training --
 # - batch loader data -
-m_history = m.fit(tst_tf_train, epochs=80, callbacks=callbacks,
-                  shuffle=True, validation_data=tst_tf_test)
+m_history = m.fit(tst_tf_train, epochs=2, callbacks=callbacks,
+                  validation_data=tst_tf_test)
 
 
 # # -- inspection --
@@ -204,3 +253,14 @@ m.save('./results/subclass_autoencoder_batch', save_format='tf')
 
 
 # ------ testing ------
+earlystop = EarlyStopping(monitor='val_loss', patience=5)
+callbacks = [earlystop]
+optm = Adam(learning_rate=0.001)
+tst_m = CnnClassifier(initial_shape=(90, 90, 1),
+                      bottleneck_dim=64, outpout_n=10)
+tst_m.model().summary()
+
+
+tst_m.compile(optimizer=optm, loss="binary_crossentropy")
+tst_m_history = tst_m.fit(tst_tf_train, epochs=2, callbacks=callbacks,
+                          validation_data=tst_tf_test)

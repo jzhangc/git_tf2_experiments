@@ -184,7 +184,7 @@ class BatchMatrixLoader(object):
 
         return X
 
-    def _map_func(self, filepath: tf.Tensor, label: tf.Tensor, processing=False):
+    def _map_func(self, filepath: tf.Tensor, label: tf.Tensor, processing=True):
         # - read file and assign label -
         fname = filepath.numpy().decode('utf-8')
         f = np.loadtxt(fname).astype('float32')
@@ -197,7 +197,7 @@ class BatchMatrixLoader(object):
         f = tf.convert_to_tensor(f, dtype=tf.float32)
         return f, lb
 
-    def _map_func_semisupervised(self, filepath: tf.Tensor, processing=False):
+    def _map_func_semisupervised(self, filepath: tf.Tensor, processing=True):
         # - read file and assign label -
         fname = filepath.numpy().decode('utf-8')
         f = np.loadtxt(fname).astype('float32')
@@ -267,13 +267,13 @@ class BatchMatrixLoader(object):
         self.shuffle_for_cv_only = shuffle_for_cv_only
 
         # - load paths -
-        filepath_list, encoded_labels, self.lables_count, self.labels_map_rev = self._get_file_annot()
+        self.filepath_list, encoded_labels, self.lables_count, self.labels_map_rev = self._get_file_annot()
 
         if self.semi_supervised:
-            total_ds = tf.data.Dataset.from_tensor_slices(filepath_list)
+            total_ds = tf.data.Dataset.from_tensor_slices(self.filepath_list)
         else:
             total_ds = tf.data.Dataset.from_tensor_slices(
-                (filepath_list, encoded_labels))
+                (self.filepath_list, encoded_labels))
 
         # below: tf.dataset.cardinality().numpy() always displays the number of batches.
         # the reason this can be used for total sample size is because
