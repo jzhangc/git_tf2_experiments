@@ -26,6 +26,7 @@ def map_func(filepath: tf.Tensor, label: tf.Tensor, processing=False):
     fname = filepath.numpy().decode('utf-8')
     f = np.loadtxt(fname).astype('float32')
     lb = label
+    lb.set_shape(lb.shape)
 
     # - processing if needed -
     if processing:
@@ -35,6 +36,7 @@ def map_func(filepath: tf.Tensor, label: tf.Tensor, processing=False):
         # print(f.shape[:])
         f = np.reshape(f, (f.shape[0], f.shape[1], 1))
     f = tf.convert_to_tensor(f, dtype=tf.float32)
+    f.set_shape(f.shape)
 
     return f, lb
 
@@ -204,16 +206,6 @@ file_annot['path'][0]
 file_annot['path'].to_list()
 file_annot.loc[0:1]
 
-
-file_annot, labels = tst_parse_file(
-    filepath=dat_dir, model_type='classification', target_ext='csv')
-
-filepath_list, encoded_labels, lables_count, labels_map_rev = tst_get_file_annot(
-    filepath=dat_dir, target_ext='txt')
-
-tst_ds, tst_n = tst_generate_data(
-    filepath=dat_dir, target_ext='txt', cv_only=False, shuffle=False)
-
 # - below: create one hot encoding for multiclass labels -
 # lb_binarizer = LabelBinarizer()
 # labels_binary = lb_binarizer.fit_transform(labels)
@@ -240,9 +232,6 @@ file_path = file_annot['path'].to_list()
 tst_dat = tf.data.Dataset.from_tensor_slices((file_path, encoded_labels))
 tst_data_size = tst_dat.cardinality().numpy()  # sample size: 250
 
-tst_dat.shuffle()
-
-
 for a, b in tst_dat.take(3):  # take 3 smaples
     fname = a.numpy().decode('utf-8')
 
@@ -259,9 +248,11 @@ for a, b in tst_dat.take(3):  # take 3 smaples
 tst_dat_working = tst_dat.map(lambda x, y: tf.py_function(map_func, [x, y, True], [tf.float32, tf.uint8]),
                               num_parallel_calls=tf.data.AUTOTUNE)
 
+
 for a, b in tst_dat_working:  # take 3 smaples
     print(type(a))
     print(a.shape)
+    print(b.shape)
     print(f'label: {b}')
     print(f)
     break
@@ -296,3 +287,13 @@ for train_idx, test_idx in kf.split(X_indices, encoded_labels):
 # - tf.dataset reference: https://cs230.stanford.edu/blog/datapipeline/ -
 # - real TF2 data loader example: https://github.com/HasnainRaz/SemSegPipeline/blob/master/dataloader.py -
 # - tf.data.Dataset API example: https://medium.com/deep-learning-with-keras/tf-data-build-efficient-tensorflow-input-pipelines-for-image-datasets-47010d2e4330 -
+
+
+# file_annot, labels = tst_parse_file(
+#     filepath=dat_dir, model_type='classification', target_ext='csv')
+
+# filepath_list, encoded_labels, lables_count, labels_map_rev = tst_get_file_annot(
+#     filepath=dat_dir, target_ext='txt')
+
+# tst_ds, tst_n = tst_generate_data(
+#     filepath=dat_dir, target_ext='txt', cv_only=False, shuffle=False)

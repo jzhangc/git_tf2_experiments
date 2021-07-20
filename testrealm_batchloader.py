@@ -276,7 +276,7 @@ tst_m.model().summary()
 
 
 tst_m.compile(optimizer=optm, loss="categorical_crossentropy",
-              metrics=['mse', 'categorical_accuracy'])
+              metrics=['categorical_accuracy'])
 tst_m_history = tst_m.fit(tst_tf_train, epochs=80, callbacks=callbacks,
                           validation_data=tst_tf_test)
 
