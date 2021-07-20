@@ -253,6 +253,19 @@ m.save('./results/subclass_autoencoder_batch', save_format='tf')
 
 
 # ------ testing ------
+tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
+                               manual_labels=None, label_sep=None, pd_labels_var_name=None, model_type='classification',
+                               multilabel_classification=False, x_scaling='minmax', x_min_max_range=[0, 1], resmaple_method='random',
+                               training_percentage=0.8, verbose=False, random_state=1)
+tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data()
+
+for a in tst_tf_train:
+    print(a[1].shape)
+    # break
+
+tst_tf_train.element_spec
+
+
 earlystop = EarlyStopping(monitor='val_loss', patience=5)
 callbacks = [earlystop]
 optm = Adam(learning_rate=0.001)
@@ -262,5 +275,5 @@ tst_m.model().summary()
 
 
 tst_m.compile(optimizer=optm, loss="binary_crossentropy")
-tst_m_history = tst_m.fit(tst_tf_train, epochs=2, callbacks=callbacks,
+tst_m_history = tst_m.fit(tst_tf_train, batch_size=4, epochs=2, callbacks=callbacks,
                           validation_data=tst_tf_test)
