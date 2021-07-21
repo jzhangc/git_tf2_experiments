@@ -175,7 +175,7 @@ m.compile(optimizer=optm, loss="binary_crossentropy")
 m.model().summary()
 
 # -- training --
-m_history = m.fit(x=x_train, y=x_train, batch_size=256, epochs=2, callbacks=callbacks,
+m_history = m.fit(x=x_train, y=x_train, batch_size=256, epochs=10, callbacks=callbacks,
                   shuffle=True, validation_data=(x_test, x_test))
 
 # -- inspection --
