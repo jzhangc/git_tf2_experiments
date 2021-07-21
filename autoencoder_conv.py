@@ -43,7 +43,7 @@ class CNN2d_encoder(Layer):
         super(CNN2d_encoder, self).__init__()
         self.bottleneck_dim = bottleneck_dim
         # CNN encoding sub layers
-        self.conv2d_1 = Conv2D(16, (3, 3), activation='relu',
+        self.conv2d_1 = Conv2D(16, (3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2=0.01),
                                padding='same', input_shape=initial_shape)  # output: 28, 28, 16
         self.bn1 = BatchNormalization()
         self.leakyr1 = LeakyReLU()
@@ -87,7 +87,7 @@ class CNN2d_decoder(Layer):
         self.bn1 = BatchNormalization()
         self.leakyr1 = LeakyReLU()
         self.upsampling_1 = UpSampling2D(size=(2, 2))  # output: 14, 14, 28
-        self.conv2d_2 = Conv2D(16, (3, 3), activation='relu',
+        self.conv2d_2 = Conv2D(16, (3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2=0.01),
                                padding='same')  # output: 14, 14, 16
         self.bn2 = BatchNormalization()
         self.leakyr2 = LeakyReLU()
