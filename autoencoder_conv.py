@@ -43,7 +43,7 @@ class CNN2d_encoder(Layer):
         super(CNN2d_encoder, self).__init__()
         self.bottleneck_dim = bottleneck_dim
         # CNN encoding sub layers
-        self.conv2d_1 = Conv2D(16, (3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2=0.01),
+        self.conv2d_1 = Conv2D(16, (3, 3), activation='relu',
                                padding='same', input_shape=initial_shape)  # output: 28, 28, 16
         self.bn1 = BatchNormalization()
         self.leakyr1 = LeakyReLU()
@@ -87,7 +87,7 @@ class CNN2d_decoder(Layer):
         self.bn1 = BatchNormalization()
         self.leakyr1 = LeakyReLU()
         self.upsampling_1 = UpSampling2D(size=(2, 2))  # output: 14, 14, 28
-        self.conv2d_2 = Conv2D(16, (3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2=0.01),
+        self.conv2d_2 = Conv2D(16, (3, 3), activation='relu',
                                padding='same')  # output: 14, 14, 16
         self.bn2 = BatchNormalization()
         self.leakyr2 = LeakyReLU()
@@ -175,7 +175,7 @@ m.compile(optimizer=optm, loss="binary_crossentropy")
 m.model().summary()
 
 # -- training --
-m_history = m.fit(x=x_train, y=x_train, batch_size=256, epochs=80, callbacks=callbacks,
+m_history = m.fit(x=x_train, y=x_train, batch_size=256, epochs=2, callbacks=callbacks,
                   shuffle=True, validation_data=(x_test, x_test))
 
 # -- inspection --
