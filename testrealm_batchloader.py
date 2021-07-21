@@ -145,7 +145,7 @@ class CnnClassifier(Model):
         self.initial_shape = initial_shape
         self.bottleneck_dim = bottleneck_dim
         # CNN encoding sub layers
-        self.conv2d_1 = Conv2D(16, (3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2=0.1),
+        self.conv2d_1 = Conv2D(16, (3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2=0.01),
                                padding='same', input_shape=initial_shape)  # output: 28, 28, 16
         self.bn1 = BatchNormalization()
         self.leakyr1 = LeakyReLU()
