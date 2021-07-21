@@ -270,7 +270,7 @@ def epochs_plot(file, model_history,
         ax.plot(plot_x, plot_loss, linestyle='-', color='black')
         ax.plot(plot_x, plot_val_loss, linestyle='-', color='black')
         ax.set_facecolor('white')
-        ax.set_title(plot_title, color='black')
+        ax.set_title(plot_title_loss, color='black')
         ax.set_xlabel(xlabel, fontsize=10, color='black')
         ax.set_ylabel(ylabel, fontsize=10, color='black')
         ax.tick_params(labelsize=5, color='black', labelcolor='black')
