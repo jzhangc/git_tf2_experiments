@@ -330,7 +330,7 @@ plt.imshow(reconstruction_test[0])
 
 
 # - visulization -
-for a, _ in tst_tf_train:
+for a, _ in tst_tf_test:
     reconstruction = m.predict(a)
     # display decoded
     # plt.imshow(a[0])
