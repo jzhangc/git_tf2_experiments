@@ -158,7 +158,7 @@ class CnnClassifier(Model):
         self.maxpooling_2 = MaxPooling2D((5, 5))  # output: 9, 9, 8
         self.fl = Flatten()  # 7*7*8=392
         self.dense1 = Dense(bottleneck_dim, activation='relu',
-                            kernel_regularizer=tf.keras.regularizers.l2(l2=0.01))
+                            activity_regularizer=tf.keras.regularizers.l2(l2=0.01))
         self.encoded = LeakyReLU()
         self.dense2 = Dense(outpout_n, activation='softmax')
 
@@ -250,16 +250,16 @@ def epochs_plot(model_history,
     # -- plotting --
     if acc_plot:  # two plots
         fig, ax = plt.subplots(1, 2, figsize=(15, 5))
-        ax[0].plot(plot_x, plot_loss, linestyle='-', color='red')
-        ax[0].plot(plot_x, plot_val_loss, linestyle='-', color='blue')
+        ax[0].plot(plot_x, plot_loss, linestyle='-', color='blue')
+        ax[0].plot(plot_x, plot_val_loss, linestyle='-', color='red')
         ax[0].set_facecolor('white')
         ax[0].set_title(plot_title_loss, color='black')
         ax[0].set_xlabel(xlabel, fontsize=10, color='black')
         ax[0].set_ylabel(ylabel, fontsize=10, color='black')
         ax[0].tick_params(labelsize=5, color='black', labelcolor='black')
 
-        ax[1].plot(plot_x, plot_acc, linestyle='-', color='red')
-        ax[1].plot(plot_x, plot_val_acc, linestyle='-', color='blue')
+        ax[1].plot(plot_x, plot_acc, linestyle='-', color='blue')
+        ax[1].plot(plot_x, plot_val_acc, linestyle='-', color='red')
         ax[1].set_facecolor('white')
         ax[1].set_title(plot_title_acc, color='black')
         ax[1].set_xlabel(xlabel, fontsize=10, color='black')
@@ -267,8 +267,8 @@ def epochs_plot(model_history,
         ax[1].tick_params(labelsize=5, color='black', labelcolor='black')
     else:
         fig, ax = plt.subplots(figsize=figure_size)
-        ax.plot(plot_x, plot_loss, linestyle='-', color='red')
-        ax.plot(plot_x, plot_val_loss, linestyle='-', color='blue')
+        ax.plot(plot_x, plot_loss, linestyle='-', color='blue')
+        ax.plot(plot_x, plot_val_loss, linestyle='-', color='red')
         ax.set_facecolor('white')
         ax.set_title(plot_title_loss, color='black')
         ax.set_xlabel(xlabel, fontsize=10, color='black')
@@ -333,10 +333,10 @@ plt.imshow(reconstruction_test[0])
 for a, _ in tst_tf_test:
     reconstruction = m.predict(a)
     # display decoded
-    # plt.imshow(a[0])
+    plt.imshow(a[0])
     # plt.gray()
     # # display original
-    plt.imshow(reconstruction[0])
+    # plt.imshow(reconstruction[0])
     # plt.gray()
     break
 
