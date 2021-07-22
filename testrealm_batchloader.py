@@ -14,12 +14,10 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping
-from tensorflow.keras.datasets import mnist
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Layer, Flatten, Dense, Reshape, Input, BatchNormalization, LeakyReLU
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.python.keras.callbacks import History
-from tensorflow.python.ops.gen_math_ops import xlogy
 from utils.dl_utils import BatchMatrixLoader
 
 # ------ TF device check ------
@@ -311,7 +309,7 @@ m = autoencoder_decoder(initial_shape=(90, 90, 1), bottleneck_dim=64)
 m.model().summary()
 
 # the output is sigmoid, therefore binary_crossentropy
-m.compile(optimizer=optm, loss="binary_crossentropy")
+m.compile(optimizer=optm, loss="binary_crossentropy", metrics=['mse'])
 
 
 # -- training --
@@ -355,11 +353,11 @@ tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
                                manual_labels=None, label_sep=None, pd_labels_var_name=None, model_type='classification',
                                multilabel_classification=False, x_scaling='minmax', x_min_max_range=[0, 1], resmaple_method='random',
                                training_percentage=0.8, verbose=False, random_state=1)
-tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data()
+tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data(batch_size=32)
 
 for a in tst_tf_train:
-    print(a[1].shape)
-    # break
+    print(a)
+    break
 
 tst_tf_train.element_spec
 
@@ -371,10 +369,10 @@ tst_m = CnnClassifier(initial_shape=(90, 90, 1),
                       bottleneck_dim=64, outpout_n=10)
 tst_m.model().summary()
 
-
 tst_m.compile(optimizer=optm, loss="categorical_crossentropy",
               metrics=['categorical_accuracy'])
-tst_m_history = tst_m.fit(tst_tf_train, epochs=80, callbacks=callbacks,
+tst_m_history = tst_m.fit(tst_tf_train, epochs=80,
+                          callbacks=callbacks,
                           validation_data=tst_tf_test)
 
 tst_tf_dat.test_n
