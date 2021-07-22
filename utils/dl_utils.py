@@ -210,6 +210,18 @@ class BatchMatrixLoader(object):
         lb = f
         return f, lb
 
+    def _fixup_shape(self, f: tf.Tensor, lb: tf.Tensor):
+        """requires further testing, this is for classification"""
+        f.set_shape([None, None, f.shape[-1]])
+        lb.set_shape(lb.shape)  # number of class
+        return f, lb
+
+    def _fixup_shape_semisupervised(self, f: tf.Tensor, lb: tf.Tensor):
+        """requires further testing, only for semisupervised for testing"""
+        f.set_shape([None, None, f.shape[-1]])
+        lb.set_shape([None, None, lb.shape[-1]])
+        return f, lb
+
     def _data_resample(self, total_data, n_total_sample, encoded_labels):
         """
         NOTE: regression cannot use stratified splitting\n
@@ -290,9 +302,13 @@ class BatchMatrixLoader(object):
             if self.semi_supervised:
                 self.train_set_map = total_ds.map(lambda x: tf.py_function(self._map_func_semisupervised, [x, True], [tf.float32, tf.float32]),
                                                   num_parallel_calls=tf.data.AUTOTUNE)
+                self.train_set_map = self.train_set_map.map(
+                    self._fixup_shape_semisupervised, num_parallel_calls=tf.data.AUTOTUNE)
             else:
                 self.train_set_map = total_ds.map(lambda x: tf.py_function(self._map_func, [x, True], [tf.float32, tf.uint8]),
                                                   num_parallel_calls=tf.data.AUTOTUNE)
+                self.train_set_map = self.train_set_map.map(
+                    self._fixup_shape, num_parallel_calls=tf.data.AUTOTUNE)
 
             if self.shuffle_for_cv_only:  # check this
                 self.train_set_map = self.train_set_map.shuffle(
@@ -305,13 +321,23 @@ class BatchMatrixLoader(object):
             if self.semi_supervised:
                 self.train_set_map = train_ds.map(lambda x: tf.py_function(self._map_func_semisupervised, [x, True], [tf.float32, tf.float32]),
                                                   num_parallel_calls=tf.data.AUTOTUNE)
+                self.train_set_map = self.train_set_map.map(
+                    self._fixup_shape_semisupervised, num_parallel_calls=tf.data.AUTOTUNE)
+
                 self.test_set_map = test_ds.map(lambda x: tf.py_function(self._map_func_semisupervised, [x, True], [tf.float32, tf.float32]),
                                                 num_parallel_calls=tf.data.AUTOTUNE)
+                self.test_set_map = self.test_set_map.map(
+                    self._fixup_shape_semisupervised, num_parallel_calls=tf.data.AUTOTUNE)
             else:
                 self.train_set_map = train_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
                                                   num_parallel_calls=tf.data.AUTOTUNE)
+                self.train_set_map = self.train_set_map.map(
+                    self._fixup_shape, num_parallel_calls=tf.data.AUTOTUNE)
+
                 self.test_set_map = test_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
                                                 num_parallel_calls=tf.data.AUTOTUNE)
+                self.test_set_map = self.train_set_map.map(
+                    self._fixup_shape, num_parallel_calls=tf.data.AUTOTUNE)
 
             self.test_batch_n = 0
 

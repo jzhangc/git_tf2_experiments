@@ -245,16 +245,25 @@ for a, b in tst_dat.take(3):  # take 3 smaples
     print(f)
     break
 
+
+def tst_set_shape_foo(f: tf.Tensor, lb: tf.Tensor):
+    f.set_shape(f.shape)
+    lb.set_shape(lb.shape)
+    return f, lb
+
+
 tst_dat_working = tst_dat.map(lambda x, y: tf.py_function(map_func, [x, y, True], [tf.float32, tf.uint8]),
                               num_parallel_calls=tf.data.AUTOTUNE)
+tst_dat_working = tst_dat_working.map(tst_set_shape_foo)
 
 
 for a, b in tst_dat_working:  # take 3 smaples
     print(type(a))
     print(a.shape)
+    a.set_shape([None, None, a.shape[-1]])
+    print(a.shape)
     print(b.shape)
-    print(f'label: {b}')
-    print(f)
+    # print(f'label: {b}')
     break
 
 

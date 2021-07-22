@@ -42,7 +42,8 @@ class CNN2d_encoder(Layer):
         # self.maxpooling_2 = MaxPooling2D((2, 2))  # output: 7, 7, 8
         self.maxpooling_2 = MaxPooling2D((5, 5))  # output: 9, 9, 8
         self.fl = Flatten()  # 7*7*8=392
-        self.dense1 = Dense(bottleneck_dim, activation='relu')
+        self.dense1 = Dense(bottleneck_dim, activation='relu',
+                            kernel_regularizer=tf.keras.regularizers.l2(l2=0.01))
         self.encoded = LeakyReLU()
 
     def call(self, input):
@@ -69,7 +70,8 @@ class CNN2d_decoder(Layer):
         # CNN decoding sub layers
         self.encoded_input = Dense(encoded_dim, activation='relu')
         # self.dense1 = Dense(7*7*8, activation='relu')  # output: 392
-        self.dense1 = Dense(9*9*8, activation='relu')  # output: 648
+        self.dense1 = Dense(9*9*8, kernel_regularizer=tf.keras.regularizers.l2(l2=0.01),
+                            activation='relu')  # output: 648
         # self.reshape1 = Reshape(target_shape=(7, 7, 8))  # output: 7, 7, 8
         self.reshape1 = Reshape(target_shape=(9, 9, 8))  # output: 9, 9, 8
 
@@ -199,7 +201,7 @@ class CnnClassifier(Model):
 #     ax[1].legend()
 
 
-def epochs_plot(file, model_history,
+def epochs_plot(model_history,
                 loss_var='loss', val_loss_var='val_loss',
                 accuracy_var=None, val_accuracy_var=None,
                 plot_title_loss='Loss', plot_title_acc='Accuracy',
@@ -222,9 +224,9 @@ def epochs_plot(file, model_history,
         - The loss_var and accuracy_var are keys in the history.history object.\n
     """
     # -- argument check --
-    full_path = os.path.normpath(os.path.abspath(os.path.expanduser(file)))
-    if not os.path.isfile(full_path):
-        raise ValueError('Invalid input file or input file not found.')
+    # full_path = os.path.normpath(os.path.abspath(os.path.expanduser(file)))
+    # if not os.path.isfile(full_path):
+    #     raise ValueError('Invalid input file or input file not found.')
 
     if not isinstance(model_history, History):
         raise TypeError("model_history needs to be a keras History object.")
@@ -235,7 +237,7 @@ def epochs_plot(file, model_history,
         acc_plot = False
 
     # -- prepare data --
-    plot_loss = np.sqrt(np.array(model_history.history[loss_var]))  # RMSE
+    plot_loss = np.array(model_history.history[loss_var])  # RMSE
     plot_val_loss = np.array(model_history.history[val_loss_var])  # RMSE
     plot_x = np.arange(1, len(plot_loss) + 1)
 
@@ -248,16 +250,16 @@ def epochs_plot(file, model_history,
     # -- plotting --
     if acc_plot:  # two plots
         fig, ax = plt.subplots(1, 2, figsize=(15, 5))
-        ax[0].plot(plot_x, plot_loss, linestyle='-', color='black')
-        ax[0].plot(plot_x, plot_val_loss, linestyle='-', color='black')
+        ax[0].plot(plot_x, plot_loss, linestyle='-', color='red')
+        ax[0].plot(plot_x, plot_val_loss, linestyle='-', color='blue')
         ax[0].set_facecolor('white')
         ax[0].set_title(plot_title_loss, color='black')
         ax[0].set_xlabel(xlabel, fontsize=10, color='black')
         ax[0].set_ylabel(ylabel, fontsize=10, color='black')
         ax[0].tick_params(labelsize=5, color='black', labelcolor='black')
 
-        ax[1].plot(plot_x, plot_acc, linestyle='-', color='black')
-        ax[1].plot(plot_x, plot_val_acc, linestyle='-', color='black')
+        ax[1].plot(plot_x, plot_acc, linestyle='-', color='red')
+        ax[1].plot(plot_x, plot_val_acc, linestyle='-', color='blue')
         ax[1].set_facecolor('white')
         ax[1].set_title(plot_title_acc, color='black')
         ax[1].set_xlabel(xlabel, fontsize=10, color='black')
@@ -265,8 +267,8 @@ def epochs_plot(file, model_history,
         ax[1].tick_params(labelsize=5, color='black', labelcolor='black')
     else:
         fig, ax = plt.subplots(figsize=figure_size)
-        ax.plot(plot_x, plot_loss, linestyle='-', color='black')
-        ax.plot(plot_x, plot_val_loss, linestyle='-', color='black')
+        ax.plot(plot_x, plot_loss, linestyle='-', color='red')
+        ax.plot(plot_x, plot_val_loss, linestyle='-', color='blue')
         ax.set_facecolor('white')
         ax.set_title(plot_title_loss, color='black')
         ax.set_xlabel(xlabel, fontsize=10, color='black')
@@ -309,39 +311,34 @@ m = autoencoder_decoder(initial_shape=(90, 90, 1), bottleneck_dim=64)
 m.model().summary()
 
 # the output is sigmoid, therefore binary_crossentropy
-m.compile(optimizer=optm, loss="binary_crossentropy", metrics=['mse'])
+m.compile(optimizer=optm, loss="binary_crossentropy")
 
 
 # -- training --
 # - batch loader data -
-m_history = m.fit(tst_tf_train, epochs=2, callbacks=callbacks,
+m_history = m.fit(tst_tf_train, epochs=80, callbacks=callbacks,
                   validation_data=tst_tf_test)
 
+epochs_plot(model_history=m_history)
 
-# # -- inspection --
-# reconstruction_test = m.predict(x_test)
+# -- inspection --
+reconstruction_test = m.predict(tst_tf_test)
 
-# m.encode(x_test).shape
-# m.encode(x_test)[0]  # use the trained encoder to encode the input data
+reconstruction_test.shape
 
-# # - visulization -
-# n = 10  # how many digits we will display
-# plt.figure(figsize=(20, 4))
-# for i in range(n):
-#     # display original
-#     ax = plt.subplot(2, n, i + 1)
-#     plt.imshow(x_test[i].reshape(28, 28))
-#     plt.gray()
-#     ax.get_xaxis().set_visible(False)
-#     ax.get_yaxis().set_visible(False)
+plt.imshow(reconstruction_test[0])
 
-#     # display reconstruction
-#     ax = plt.subplot(2, n, i + 1 + n)
-#     plt.imshow(reconstruction_test[i].reshape(28, 28))
-#     plt.gray()
-#     ax.get_xaxis().set_visible(False)
-#     ax.get_yaxis().set_visible(False)
-# plt.show()
+
+# - visulization -
+for a, _ in tst_tf_train:
+    reconstruction = m.predict(a)
+    # display decoded
+    # plt.imshow(a[0])
+    # plt.gray()
+    # # display original
+    plt.imshow(reconstruction[0])
+    # plt.gray()
+    break
 
 
 # ------ save model ------
@@ -353,10 +350,11 @@ tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
                                manual_labels=None, label_sep=None, pd_labels_var_name=None, model_type='classification',
                                multilabel_classification=False, x_scaling='minmax', x_min_max_range=[0, 1], resmaple_method='random',
                                training_percentage=0.8, verbose=False, random_state=1)
-tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data(batch_size=32)
+tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data(batch_size=4)
 
 for a in tst_tf_train:
     print(a)
+    print(type(a))
     break
 
 tst_tf_train.element_spec
@@ -391,11 +389,11 @@ plot_x = np.arange(1, len(plot_y1) + 1)
 fig, ax = plt.subplots(figsize=(5, 5))
 fig.set_facecolor('white')
 ax.set_facecolor('white')
-ax.plot(plot_x, plot_y1, linestyle='-', color='red', label='val_loss')
-ax.plot(plot_x, plot_y2, linestyle='-', color='blue', label='loss')
-ax.set_title('loss', color='black')
+ax.plot(plot_x, plot_y1, linestyle='-', color='red', label='val_acc')
+ax.plot(plot_x, plot_y2, linestyle='-', color='blue', label='acc')
+ax.set_title('acc', color='black')
 ax.set_xlabel('epochs', fontsize=10, color='black')
-ax.set_ylabel('loss', fontsize=10, color='black')
+ax.set_ylabel('acc', fontsize=10, color='black')
 ax.tick_params(labelsize=5, color='black', labelcolor='black')
 plt.setp(ax.spines.values(), color='black')
 # plt.savefig(filepath, dpi=600, bbox_inches='tight', facecolor='white')
