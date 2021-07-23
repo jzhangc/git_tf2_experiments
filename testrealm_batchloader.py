@@ -105,9 +105,9 @@ class CNN2d_decoder(Layer):
         return x
 
 
-class autoencoder_decoder(Model):
+class AutoEncoderDecoder(Model):
     def __init__(self, initial_shape, bottleneck_dim):
-        super(autoencoder_decoder, self).__init__()
+        super(AutoEncoderDecoder, self).__init__()
         self.initial_shape = initial_shape
         self.bottleneck_dim = bottleneck_dim
         self.encoder = CNN2d_encoder(
@@ -306,7 +306,7 @@ optm = Adam(learning_rate=0.001)
 
 # -- model --
 # -batch loader data -
-m = autoencoder_decoder(initial_shape=(90, 90, 1), bottleneck_dim=64)
+m = AutoEncoderDecoder(initial_shape=(90, 90, 1), bottleneck_dim=64)
 
 m.model().summary()
 

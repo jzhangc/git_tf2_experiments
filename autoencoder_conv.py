@@ -1,6 +1,6 @@
 """
 things to fiddle:
-[x] 1. CNN autoencoder_decoder with CNN
+[x] 1. CNN AutoEncoderDecoder with CNN
 [ ] 2. CNN hyperparameter tuning
 
 overall notes:
@@ -111,9 +111,9 @@ class CNN2d_decoder(Layer):
         return x
 
 
-class autoencoder_decoder(Model):
+class AutoEncoderDecoder(Model):
     def __init__(self, initial_shape, bottleneck_dim):
-        super(autoencoder_decoder, self).__init__()
+        super(AutoEncoderDecoder, self).__init__()
         self.initial_shape = initial_shape
         self.bottleneck_dim = bottleneck_dim
         self.encoder = CNN2d_encoder(
@@ -168,7 +168,7 @@ callbacks = [earlystop]
 optm = Adam(learning_rate=0.001)
 
 # -- model --
-m = autoencoder_decoder(initial_shape=x_train.shape[1:], bottleneck_dim=64)
+m = AutoEncoderDecoder(initial_shape=x_train.shape[1:], bottleneck_dim=64)
 # the output is sigmoid, therefore binary_crossentropy
 m.compile(optimizer=optm, loss="binary_crossentropy")
 
