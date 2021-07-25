@@ -19,6 +19,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.python.keras.callbacks import History
 from utils.dl_utils import BatchMatrixLoader
+from utils.other_utils import warn
 
 # ------ TF device check ------
 tf.config.list_physical_devices()
@@ -226,10 +227,26 @@ def epochs_plot(model_history,
     """
     # -- argument check --
     if not isinstance(model_history, History):
-        raise TypeError("model_history needs to be a keras History object.")
+        raise TypeError('model_history needs to be a keras History object."')
+
+    if not all(hist_key in model_history.history for hist_key in [loss_var, val_loss_var]):
+        raise ValueError(
+            'Make sure both loss_var and val_loss_var exist in model_history.')
 
     if all(acc is not None for acc in [accuracy_var, val_accuracy_var]):
-        acc_plot = True
+        if not all(hist_key in model_history.history for hist_key in [accuracy_var, val_accuracy_var]):
+            raise ValueError(
+                'Make sure both accuracy_var and val_accuracy_var exist in model_history.')
+        else:
+            acc_plot = True
+    elif any(acc is not None for acc in [accuracy_var, val_accuracy_var]):
+        try:
+            raise ValueError
+        except ValueError as e:
+            warn('Only one of accuracy_var, val_accuracy_var are set.',
+                 'Proceed with only loss plot.')
+        finally:
+            acc_plot = False
     else:
         acc_plot = False
 
@@ -247,33 +264,43 @@ def epochs_plot(model_history,
     # -- plotting --
     if acc_plot:  # two plots
         fig, ax = plt.subplots(1, 2, figsize=(15, 5))
-        ax[0].plot(plot_x, plot_loss, linestyle='-', color='blue')
-        ax[0].plot(plot_x, plot_val_loss, linestyle='-', color='red')
+        ax[0].plot(plot_x, plot_loss, linestyle='-',
+                   color='blue', label='train')
+        ax[0].plot(plot_x, plot_val_loss, linestyle='-',
+                   color='red', label='validation')
         ax[0].set_facecolor('white')
         ax[0].set_title(plot_title_loss, color='black')
         ax[0].set_xlabel(xlabel, fontsize=10, color='black')
         ax[0].set_ylabel(ylabel, fontsize=10, color='black')
+        ax[0].legend()
         ax[0].tick_params(labelsize=5, color='black', labelcolor='black')
 
-        ax[1].plot(plot_x, plot_acc, linestyle='-', color='blue')
-        ax[1].plot(plot_x, plot_val_acc, linestyle='-', color='red')
+        ax[1].plot(plot_x, plot_acc, linestyle='-',
+                   color='blue', label='train')
+        ax[1].plot(plot_x, plot_val_acc, linestyle='-',
+                   color='red', label='validation')
         ax[1].set_facecolor('white')
         ax[1].set_title(plot_title_acc, color='black')
         ax[1].set_xlabel(xlabel, fontsize=10, color='black')
         ax[1].set_ylabel(ylabel, fontsize=10, color='black')
         ax[1].tick_params(labelsize=5, color='black', labelcolor='black')
+
+        plt.setp(ax[0].spines.values(), color='black')
+        plt.setp(ax[1].spines.values(), color='black')
     else:
         fig, ax = plt.subplots(figsize=figure_size)
-        ax.plot(plot_x, plot_loss, linestyle='-', color='blue')
-        ax.plot(plot_x, plot_val_loss, linestyle='-', color='red')
+        ax.plot(plot_x, plot_loss, linestyle='-', color='blue', label='train')
+        ax.plot(plot_x, plot_val_loss, linestyle='-',
+                color='red', label='validation')
         ax.set_facecolor('white')
         ax.set_title(plot_title_loss, color='black')
         ax.set_xlabel(xlabel, fontsize=10, color='black')
         ax.set_ylabel(ylabel, fontsize=10, color='black')
         ax.tick_params(labelsize=5, color='black', labelcolor='black')
 
+        plt.setp(ax.spines.values(), color='black')
+
     fig.set_facecolor('white')
-    plt.setp(ax.spines.values(), color='black')
     fig
 
     # - save output -
@@ -383,8 +410,25 @@ tst_tf_dat.test_n
 tst_m_history.history['val_loss']
 
 
-tst_m_history.history.keys()
+tst_keys = tst_m_history.history.keys()
 
+if 'loss' in tst_m_history.history:
+    print('Yes')
+else:
+    print('No')
+
+epochs_plot(model_history=tst_m_history,
+            accuracy_var='categorical_accuracy',
+            val_accuracy_var='val_categorical_accuracy')
+
+
+accuracy_var = None
+val_accuracy_var = 12
+if all(acc is not None for acc in [accuracy_var, val_accuracy_var]):
+    print('True')
+else:
+    print('False')
+    raise ValueError
 
 plot_y1 = np.array(tst_m_history.history['val_categorical_accuracy'])
 plot_y2 = np.array(tst_m_history.history['categorical_accuracy'])
