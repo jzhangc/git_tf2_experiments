@@ -280,42 +280,6 @@ tst_m_history = tst_m.fit(tst_tf_train, epochs=80,
 tst_tf_dat.test_n
 tst_m_history.history['val_loss']
 
-
-tst_keys = tst_m_history.history.keys()
-
-if 'loss' in tst_m_history.history:
-    print('Yes')
-else:
-    print('No')
-
 epochsPlot(model_history=tst_m_history,
            accuracy_var='categorical_accuracy',
            val_accuracy_var='val_categorical_accuracy')
-
-
-accuracy_var = None
-val_accuracy_var = 12
-if all(acc is not None for acc in [accuracy_var, val_accuracy_var]):
-    print('True')
-else:
-    print('False')
-    raise ValueError
-
-plot_y1 = np.array(tst_m_history.history['val_categorical_accuracy'])
-plot_y2 = np.array(tst_m_history.history['categorical_accuracy'])
-
-plot_x = np.arange(1, len(plot_y1) + 1)
-
-# -- plotting --
-fig, ax = plt.subplots(figsize=(5, 5))
-fig.set_facecolor('white')
-ax.set_facecolor('white')
-ax.plot(plot_x, plot_y1, linestyle='-', color='red', label='val_acc')
-ax.plot(plot_x, plot_y2, linestyle='-', color='blue', label='acc')
-ax.set_title('acc', color='black')
-ax.set_xlabel('epochs', fontsize=10, color='black')
-ax.set_ylabel('acc', fontsize=10, color='black')
-ax.tick_params(labelsize=5, color='black', labelcolor='black')
-plt.setp(ax.spines.values(), color='black')
-# plt.savefig(filepath, dpi=600, bbox_inches='tight', facecolor='white')
-fig
