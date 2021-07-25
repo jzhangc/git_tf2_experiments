@@ -10,14 +10,16 @@ Objecitves
 
 # ------ modules ------
 import os
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 import tensorflow as tf
+from sklearn.model_selection import StratifiedShuffleSplit, train_test_split
+from sklearn.preprocessing import LabelBinarizer, MinMaxScaler, StandardScaler
+
 from utils.data_utils import getSelectedDataset, getSingleCsvDataset
 from utils.other_utils import error
-from sklearn.model_selection import StratifiedShuffleSplit
-from sklearn.preprocessing import MinMaxScaler, StandardScaler, LabelBinarizer
-from sklearn.model_selection import train_test_split
+
 # from skmultilearn.model_selection import iterative_train_test_split
 
 

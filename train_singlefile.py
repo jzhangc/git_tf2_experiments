@@ -20,12 +20,14 @@ the application.
 # ------ import modules ------
 import argparse
 import os
+
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from utils.dl_utils import SingleCsvMemLoader
-from utils.other_utils import AppArgParser, addBoolArg, colr, csvPath, error, warn
 
+from utils.dl_utils import SingleCsvMemLoader
+from utils.other_utils import (AppArgParser, addBoolArg, colr, csvPath, error,
+                               warn)
 
 # ------ GLOBAL variables -------
 __version__ = '0.1.0'

@@ -12,14 +12,18 @@ Objectives:
 # ------ load modules ------
 import os
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import matplotlib.pyplot as plt
 from tensorflow.keras.callbacks import EarlyStopping
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Layer, Flatten, Dense, Reshape, Input, BatchNormalization, LeakyReLU
+from tensorflow.keras.layers import (BatchNormalization, Conv2D, Dense,
+                                     Flatten, Input, Layer, LeakyReLU,
+                                     MaxPooling2D, Reshape, UpSampling2D)
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
+from sklearn.metrics import roc_auc_score, roc_curve
+
 from utils.dl_utils import BatchMatrixLoader
 from utils.plot_utils import epochsPlot
 
@@ -282,6 +286,7 @@ tst_m_history = tst_m.fit(tst_tf_train, epochs=80,
 
 tst_tf_dat.test_n
 tst_m_history.history['val_loss']
+
 
 epochsPlot(model_history=tst_m_history,
            accuracy_var='categorical_accuracy',
