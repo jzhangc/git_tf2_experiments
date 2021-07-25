@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Current objectives:
+Objectives:
 [x] test argparse
     [x] Add groupped arguments
 [ ] test output directory creation
@@ -11,9 +11,7 @@ Current objectives:
 [x] use convert to tf.dataset
 [x] implement multilabel compatibility
 [ ] Finalize the argument check section
-[ ] Implement cross validation
-[ ] Implement additional performance metrics (AUC, recall, precision, F1, top-k accuracy)
-[ ] Implement plotting functions for the above metrics
+
 
 NOTE
 All the argparser inputs are loaded from method arguments, making the class more portable, i.e. not tied to

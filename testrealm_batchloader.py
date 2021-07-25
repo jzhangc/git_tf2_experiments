@@ -1,8 +1,11 @@
 """
 this is test realm for DL models with BatchMatrixLoader
 
-things to fiddle:
-[ ] 1. CNN autoencoder_decoder BatchMatrixLoader
+Objectives:
+[x] CNN autoencoder_decoder BatchMatrixLoader
+[ ] Implement cross validation
+[ ] Implement additional performance metrics (AUC, recall, precision, F1, top-k accuracy)
+[ ] Implement plotting functions for the above metrics
 """
 
 

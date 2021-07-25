@@ -1,6 +1,11 @@
 """
 Current objectives:
 test smalls things for implementing single file "out of memory" data loading
+
+Objecitves
+[ ] Implement cross validation
+[ ] Implement additional performance metrics (AUC, recall, precision, F1, top-k accuracy)
+[ ] Implement plotting functions for the above metrics
 """
 
 # ------ modules ------
