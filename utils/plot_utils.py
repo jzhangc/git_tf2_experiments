@@ -5,6 +5,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from utils.other_utils import warn
+from tensorflow.python.keras.callbacks import History
 
 
 # ----- functions ------

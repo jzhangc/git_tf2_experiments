@@ -12,11 +12,11 @@ import os
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+import matplotlib.pyplot as plt
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Layer, Flatten, Dense, Reshape, Input, BatchNormalization, LeakyReLU
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
-from tensorflow.python.keras.callbacks import History
 from utils.dl_utils import BatchMatrixLoader
 from utils.plot_utils import epochsPlot
 
@@ -303,9 +303,9 @@ if 'loss' in tst_m_history.history:
 else:
     print('No')
 
-epochs_plot(model_history=tst_m_history,
-            accuracy_var='categorical_accuracy',
-            val_accuracy_var='val_categorical_accuracy')
+epochsPlot(model_history=tst_m_history,
+           accuracy_var='categorical_accuracy',
+           val_accuracy_var='val_categorical_accuracy')
 
 
 accuracy_var = None
