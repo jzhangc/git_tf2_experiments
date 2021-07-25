@@ -10,7 +10,9 @@ Current objectives:
     [x] converting to numpy arrays
 [ ] Implement "balanced" data resampling
 [x] Implement data resampling for cross-validation (maybe move this out of the dataloader)
-[ ] implement cross validation
+[ ] Implement cross validation
+[ ] Implement additional performance metrics (AUC, recall, precision, F1, top-k accuracy)
+[ ] Implement plotting functions for the above metrics
 
 NOTE
 All the argparser inputs are loaded from method arguments, making the class more portable, i.e. not tied to

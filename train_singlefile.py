@@ -10,8 +10,10 @@ Current objectives:
     [x] converting to numpy arrays
 [x] use convert to tf.dataset
 [x] implement multilabel compatibility
-[ ] finalize the argument check section
-[ ] implement cross validation
+[ ] Finalize the argument check section
+[ ] Implement cross validation
+[ ] Implement additional performance metrics (AUC, recall, precision, F1, top-k accuracy)
+[ ] Implement plotting functions for the above metrics
 
 NOTE
 All the argparser inputs are loaded from method arguments, making the class more portable, i.e. not tied to
