@@ -26,6 +26,7 @@ from sklearn.metrics import roc_auc_score, roc_curve
 
 from utils.dl_utils import BatchMatrixLoader
 from utils.plot_utils import epochsPlot
+from utils.other_utils import flatten
 
 # ------ TF device check ------
 tf.config.list_physical_devices()
@@ -263,11 +264,6 @@ tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
                                training_percentage=0.8, verbose=False, random_state=1)
 tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data(batch_size=4)
 
-for a in tst_tf_train:
-    print(a)
-    print(type(a))
-    break
-
 tst_tf_train.element_spec
 
 
@@ -279,14 +275,27 @@ tst_m = CnnClassifier(initial_shape=(90, 90, 1),
 tst_m.model().summary()
 
 tst_m.compile(optimizer=optm, loss="categorical_crossentropy",
-              metrics=['categorical_accuracy'])
+              metrics=['categorical_accuracy', tf.keras.metrics.AUC()])
 tst_m_history = tst_m.fit(tst_tf_train, epochs=80,
                           callbacks=callbacks,
                           validation_data=tst_tf_test)
 
-tst_tf_dat.test_n
-tst_m_history.history['val_loss']
+pred = tst_m.predict(tst_tf_test)
+pred[0]
+pred.shape
+tst_tf_test
 
+tst_test = np.ndarray()
+
+tst_t = np.ndarray((0, 10))
+for _, b in tst_tf_train:
+    # print(b.numpy())
+    bn = b.numpy()
+    # print(type(bn))
+    tst_t = np.concatenate((tst_t, bn), axis=0)
+tst_t.shape
+
+tst_tf_dat.test_batch_n
 
 epochsPlot(model_history=tst_m_history,
            accuracy_var='categorical_accuracy',

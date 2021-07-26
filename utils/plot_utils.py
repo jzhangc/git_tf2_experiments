@@ -62,10 +62,9 @@ def epochsPlot(model_history,
     plot_x = np.arange(1, len(plot_loss) + 1)
 
     if acc_plot:
-        plot_acc = np.sqrt(
-            np.array(model_history.history[accuracy_var]))  # RMSE
+        plot_acc = np.array(model_history.history[accuracy_var])
         plot_val_acc = np.array(
-            model_history.history[val_accuracy_var])  # RMSE
+            model_history.history[val_accuracy_var])
 
     # -- plotting --
     if acc_plot:  # two plots

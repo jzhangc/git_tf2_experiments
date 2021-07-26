@@ -336,7 +336,7 @@ class BatchMatrixLoader(object):
 
                 self.test_set_map = test_ds.map(lambda x, y: tf.py_function(self._map_func, [x, y, True], [tf.float32, tf.uint8]),
                                                 num_parallel_calls=tf.data.AUTOTUNE)
-                self.test_set_map = self.train_set_map.map(
+                self.test_set_map = self.test_set_map.map(
                     self._fixup_shape, num_parallel_calls=tf.data.AUTOTUNE)
 
             self.test_batch_n = 0
