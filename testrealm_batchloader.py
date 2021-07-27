@@ -280,6 +280,10 @@ tst_m_history = tst_m.fit(tst_tf_train, epochs=80,
                           callbacks=callbacks,
                           validation_data=tst_tf_test)
 
+epochsPlot(model_history=tst_m_history,
+           accuracy_var='categorical_accuracy',
+           val_accuracy_var='val_categorical_accuracy')
+
 pred = tst_m.predict(tst_tf_test)
 pred[0]
 pred.shape
@@ -288,7 +292,7 @@ tst_tf_test
 tst_test = np.ndarray()
 
 tst_t = np.ndarray((0, 10))
-for _, b in tst_tf_train:
+for _, b in tst_tf_test:
     # print(b.numpy())
     bn = b.numpy()
     # print(type(bn))
@@ -296,7 +300,3 @@ for _, b in tst_tf_train:
 tst_t.shape
 
 tst_tf_dat.test_batch_n
-
-epochsPlot(model_history=tst_m_history,
-           accuracy_var='categorical_accuracy',
-           val_accuracy_var='val_categorical_accuracy')
