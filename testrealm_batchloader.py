@@ -264,9 +264,6 @@ tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
                                training_percentage=0.8, verbose=False, random_state=1)
 tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data(batch_size=4)
 
-tst_tf_train.element_spec
-
-
 earlystop = EarlyStopping(monitor='val_loss', patience=5)
 callbacks = [earlystop]
 optm = Adam(learning_rate=0.001)
@@ -290,6 +287,12 @@ pred.shape
 tst_tf_test
 
 tst_test = np.ndarray()
+
+
+for a, b, in tst_tf_train.take(1):
+    print(a.numpy().shape[1:])
+    print(b.numpy().shape[1:])
+
 
 tst_t = np.ndarray((0, 10))
 for _, b in tst_tf_test:

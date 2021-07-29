@@ -356,6 +356,11 @@ class BatchMatrixLoader(object):
         else:
             test_batched = None
 
+        # - retain real data shapes -
+        for a, b in train_batched.take(1):  # only take one samples
+            self.x_shape = a.numpy().shape[1:]  # [1:]: [0] is sample number
+            self.y_shape = b.numpy().shape[1:]
+
         return train_batched, test_batched
 
 

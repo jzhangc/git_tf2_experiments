@@ -5,6 +5,8 @@ import os
 import sys
 import argparse
 
+from tensorflow.python.types.core import Value
+
 
 # ------ classes -------
 class colr:
@@ -88,11 +90,11 @@ def csvPath(string):
         # return full_path
         _, file_ext = os.path.splitext(full_path)
         if file_ext != '.csv':
-            error('Input file needs to be .csv type.')
+            raise ValueError('Input file needs to be .csv type.')
         else:
             return full_path
     else:
-        error('Invalid input file or input file not found.')
+        raise ValueError('Invalid input file or input file not found.')
 
 
 def fileDir(string):
@@ -107,7 +109,7 @@ def fileDir(string):
     if os.path.isdir(full_path):
         return full_path
     else:
-        error('Directory not found.')
+        raise ValueError('Directory not found.')
 
 
 def flatten(x): return [item for sublist in x for item in sublist]

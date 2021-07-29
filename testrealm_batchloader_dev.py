@@ -8,8 +8,9 @@ import os
 import pandas as pd
 import numpy as np
 import tensorflow as tf
-from utils.data_utils import adjmatAnnotLoader, labelMapping, labelOneHot, getSelectedDataset
-from utils.other_utils import error
+from tqdm import tqdm
+from utils.data_utils import adjmatAnnotLoader, labelMapping, labelOneHot, getSelectedDataset, scanFiles
+from utils.other_utils import error, csvPath
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, LabelBinarizer
 from sklearn.model_selection import train_test_split, StratifiedKFold, KFold
@@ -156,7 +157,7 @@ def tst_generate_data(batch_size=4, cv_only=False, shuffle=True, **kwargs):
     # Details\n
         - When cv_only=True, the loader returns only one tf.dataset object, without train/test split.
             In such case, further cross validation resampling can be done using followup resampling functions.
-            However, it is not to say train/test split data cannot be applied with further CV operations.\n        
+            However, it is not to say train/test split data cannot be applied with further CV operations.\n
     """
     batch_size = batch_size
     cv_only = cv_only
@@ -196,11 +197,79 @@ def tst_generate_data(batch_size=4, cv_only=False, shuffle=True, **kwargs):
     return train_set, test_set
 
 
+def tst_adjmatAnnotLoader(dir, targetExt=None, autoLabel=True, annotFile=None, fileNameVar=None, labelVar=None):
+    """
+    # Purpose\n
+        Scan and extract file paths (export as pandas data frame).\n
+        Optionally, the function can also construct file labels using
+            folder names and exports as a numpy array.\n
+
+    # Arguments\n
+        path: str. The root directory path to scan.\n
+        targetExt: str. Optionally set target file extension to extract.\n
+        autoLabel: bool. If to automatically construct file labels using folder names.\n
+        annotFile: str or None. Required when autoLabel=False, a csv file for file names and labels.\n
+        fileNameVar: str or None. Required when autoLabel=False, variable name in annotFile for file names.\n
+        labelVar: str or None. Required when autoLabel=False, vriable nam ein annotFile for lables.\n
+
+    # Return\n
+        Pandas data frame containing all file paths. Optionially, a numpy array with all
+            file labels. Order: file_path, labels.\n
+
+    # Details\n
+        - When targetExt=None, the function scans root and sub directories.\n
+        - The targetExt string should exclude the "." symbol, e.g. 'txt' instead of '.txt'.\n
+        - The function returns None for "labels" when autoLabel=False.\n
+        - 
+    """
+    # -- check arguments --
+    if autoLabel == False:
+        if (any(annotF is None for annotF in [annotFile, fileNameVar, labelVar])):
+            raise ValueError(
+                'Set annotFile, fileNameVar and labelVar when autoLabel=False.')
+        else:
+            annotFile_path = os.path.normpath(
+                os.path.abspath(os.path.expanduser(annotFile)))
+
+            if os.path.isfile(annotFile_path):
+                # return full_path
+                _, file_ext = os.path.splitext(annotFile_path)
+                if file_ext != '.csv':
+                    raise ValueError('annotFile needs to be .csv type.')
+            else:
+                raise ValueError('Invalid annotFile or annotFile not found.')
+
+            annot_pd = pd.read_csv(annotFile_path, engine='python')
+            if not all(annot_var in annot_pd.columns for annot_var in [fileNameVar, labelVar]):
+                raise ValueError(
+                    'fileNameVar and labelVar should both be present in the annotFile')
+
+    # -- scan files --
+    adjmat_paths = list(scanFiles(dir, validExts=targetExt))
+    file_annot = pd.DataFrame()
+
+    # -- labels --
+    if autoLabel:
+        labels = []
+        for i, adjmat_path in tqdm(enumerate(adjmat_paths), total=len(adjmat_paths)):
+            # os.path.sep returns "/" which is used for str.split
+            label = adjmat_path.split(os.path.sep)[-2]
+            file_annot.loc[i, 'path'] = adjmat_path
+            labels.append(label)
+
+        labels = np.array(labels)
+    else:  # manual label
+        labels
+
+    return file_annot, labels
+
+
 # ------ test realm ------
 main_dir = os.path.abspath('./')
 dat_dir = os.path.join(main_dir, 'data/tf_data')
 
-file_annot, labels = adjmatAnnotLoader(dat_dir, targetExt='txt')
+file_annot, labels = adjmatAnnotLoader(
+    dat_dir, targetExt='txt', autoLabel=False)
 file_annot['path'][0]
 
 file_annot['path'].to_list()
