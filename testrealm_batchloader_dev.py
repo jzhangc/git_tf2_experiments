@@ -220,9 +220,12 @@ def tst_adjmatAnnotLoader(dir, targetExt=None, autoLabel=True, annotFile=None, f
         - When targetExt=None, the function scans root and sub directories.\n
         - The targetExt string should exclude the "." symbol, e.g. 'txt' instead of '.txt'.\n
         - The function returns None for "labels" when autoLabel=False.\n
-        - 
+        - When autoLabel=False, the sub folder is not currently supported.
+            Sub folder support is not impossible. It is just too complicated to implement in a timely fashion. 
+            This means all data files should be in one folder, i.e. dir.\n
+        - When autoLabel=False, the CSV file should at least two columens, one for file name and one for the corresponding labels.\n
     """
-    # -- check arguments --
+    # -- check arguments for autoLabel=False --
     if autoLabel == False:
         if (any(annotF is None for annotF in [annotFile, fileNameVar, labelVar])):
             raise ValueError(
