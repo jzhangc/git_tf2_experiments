@@ -18,7 +18,7 @@ from collections import Counter
 
 from utils.data_utils import (adjmatAnnotLoader, getSelectedDataset,
                               labelMapping, labelOneHot, scanFiles)
-from utils.other_utils import csvPath, error
+from utils.other_utils import csvPath, error, flatten
 
 # from skmultilearn.model_selection import iterative_train_test_split
 
@@ -203,14 +203,36 @@ def tst_generate_data(batch_size=4, cv_only=False, shuffle=True, **kwargs):
     return train_set, test_set
 
 
-def tst_sameFileCheck(dir):
-    filepaths = list(scanFiles(dir))
+def tst_sameFileCheck(dir, **kwargs):
+    """check if dir or sub dirs contain duplicated filenames."""
+    filepaths = list(scanFiles(dir, **kwargs))
     filenames = []
+
     for filepath in filepaths:
         filename = os.path.basename(filepath)
         filenames.append(filename)
 
-    return dir
+    dup = [k for k, v in Counter(filenames).items() if v > 1]
+    if len(dup) > 0:
+        print(f'Sub-directories contain duplicated file names: {dup}.')
+
+    return dir, dup, filepaths, filenames
+
+
+def tst_findFiles(tgt_filename, dir):
+    """find specific file in a dir and return full path"""
+    for rootDir, dirNames, filenames in os.walk(dir):
+        if tgt_filename in filenames:
+            filePath = os.path.join(rootDir, tgt_filename)
+            yield filePath
+
+
+_, _, _, filenames = tst_sameFileCheck('./data', validExts='txt')
+
+tst_path = []
+for f in filenames:
+    tst_path.append(list(tst_findFiles(f, './data')))
+flatten(tst_path)
 
 
 def tst_adjmatAnnotLoader(dir, targetExt=None, autoLabel=True, annotFile=None, fileNameVar=None, labelVar=None):
@@ -381,7 +403,7 @@ for train_idx, test_idx in kf.split(X_indices, encoded_labels):
     print(test_idx)
 
 
-mylist = [20, 30, 25, 20]
+mylist = ['a.txt', 'a.txt', 25, 20]
 [k for k, v in Counter(mylist).items() if v > 1]
 
 
