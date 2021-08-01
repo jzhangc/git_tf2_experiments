@@ -3,17 +3,23 @@ Current objectives:
 small things for data loaders
 """
 
+
 # ------ modules ------
 import os
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 import tensorflow as tf
+from sklearn.model_selection import (KFold, StratifiedKFold,
+                                     StratifiedShuffleSplit, train_test_split)
+from sklearn.preprocessing import LabelBinarizer, MinMaxScaler, StandardScaler
 from tqdm import tqdm
-from utils.data_utils import adjmatAnnotLoader, labelMapping, labelOneHot, getSelectedDataset, scanFiles
-from utils.other_utils import error, csvPath
-from sklearn.model_selection import StratifiedShuffleSplit
-from sklearn.preprocessing import MinMaxScaler, StandardScaler, LabelBinarizer
-from sklearn.model_selection import train_test_split, StratifiedKFold, KFold
+from collections import Counter
+
+from utils.data_utils import (adjmatAnnotLoader, getSelectedDataset,
+                              labelMapping, labelOneHot, scanFiles)
+from utils.other_utils import csvPath, error
+
 # from skmultilearn.model_selection import iterative_train_test_split
 
 
@@ -197,6 +203,16 @@ def tst_generate_data(batch_size=4, cv_only=False, shuffle=True, **kwargs):
     return train_set, test_set
 
 
+def tst_sameFileCheck(dir):
+    filepaths = list(scanFiles(dir))
+    filenames = []
+    for filepath in filepaths:
+        filename = os.path.basename(filepath)
+        filenames.append(filename)
+
+    return dir
+
+
 def tst_adjmatAnnotLoader(dir, targetExt=None, autoLabel=True, annotFile=None, fileNameVar=None, labelVar=None):
     """
     # Purpose\n
@@ -363,6 +379,11 @@ kf = KFold(n_splits=10, shuffle=True, random_state=12)
 for train_idx, test_idx in kf.split(X_indices, encoded_labels):
     print(train_idx)
     print(test_idx)
+
+
+mylist = [20, 30, 25, 20]
+[k for k, v in Counter(mylist).items() if v > 1]
+
 
 # ------ ref ------
 # - tf.dataset reference: https://cs230.stanford.edu/blog/datapipeline/ -
