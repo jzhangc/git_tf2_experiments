@@ -7,6 +7,7 @@ import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
 from utils.other_utils import flatten
+from collections import Counter
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
@@ -102,6 +103,28 @@ def scanFiles(basePath, validExts=None, contains=None):
                 # construct the path to the image and yield it
                 filePath = os.path.join(rootDir, filename)
                 yield filePath  # yield is "return" without terminating the function
+
+
+def sameFileCheck(dir, **kwargs):
+    """check if dir or sub dirs contain duplicated filenames."""
+    filepaths = list(scanFiles(dir, **kwargs))
+    filenames = []
+
+    for filepath in filepaths:
+        filename = os.path.basename(filepath)
+        filenames.append(filename)
+
+    dup = [k for k, v in Counter(filenames).items() if v > 1]
+
+    return dup
+
+
+def findFilePath(tgt_filename, dir):
+    """find specific file in a dir and return full path"""
+    for rootDir, dirNames, filenames in os.walk(dir):
+        if tgt_filename in filenames:
+            filePath = os.path.join(rootDir, tgt_filename)
+            yield filePath
 
 
 def adjmatAnnotLoader(dir, autoLabel=True, targetExt=None):

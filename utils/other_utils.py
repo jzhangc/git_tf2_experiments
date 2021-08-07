@@ -5,8 +5,6 @@ import os
 import sys
 import argparse
 
-from tensorflow.python.types.core import Value
-
 
 # ------ classes -------
 class colr:

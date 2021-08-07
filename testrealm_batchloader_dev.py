@@ -219,7 +219,7 @@ def tst_sameFileCheck(dir, **kwargs):
     return dup
 
 
-def tst_findFiles(tgt_filename, dir):
+def tst_findFilePath(tgt_filename, dir):
     """find specific file in a dir and return full path"""
     for rootDir, dirNames, filenames in os.walk(dir):
         if tgt_filename in filenames:
@@ -305,6 +305,7 @@ def tst_adjmatAnnotLoader(dir, targetExt=None, autoLabel=True, annotFile=None, f
             labels.append(label)
 
         labels = np.array(labels)
+        file_annot['label'] = labels
     else:  # manual label
         # Check duplicated files
         dup = tst_sameFileCheck(dir=dir, validExts=targetExt)
@@ -317,7 +318,7 @@ def tst_adjmatAnnotLoader(dir, targetExt=None, autoLabel=True, annotFile=None, f
         manual_filename_paths = []
         for manual_filename in tqdm(manual_filenames):
             manual_filename_paths.append(
-                list(tst_findFiles(manual_filename, dir)))
+                list(tst_findFilePath(manual_filename, dir)))
         manual_filename_paths = flatten(manual_filename_paths).to_numpy()
 
         file_annot['filename'] = annot_pd[fileNameVar]
@@ -334,6 +335,10 @@ dat_dir = os.path.join(main_dir, 'data/tf_data')
 file_annot, labels = adjmatAnnotLoader(
     dat_dir, targetExt='txt', autoLabel=True)
 file_annot['path'][0]
+
+
+file_annot, labels = tst_adjmatAnnotLoader(
+    dat_dir, targetExt='txt', autoLabel=True)
 
 file_annot['path'].to_list()
 file_annot.loc[0:1]
