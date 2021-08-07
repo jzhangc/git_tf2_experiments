@@ -25,9 +25,8 @@ from sklearn.model_selection import (KFold, LeaveOneOut, ShuffleSplit,
                                      StratifiedKFold, StratifiedShuffleSplit)
 from sklearn.preprocessing import LabelEncoder
 
+
 # ------ system classes ------
-
-
 class colr:
     WHITE = '\033[0;97m'
     WHITE_B = '\033[1;97m'

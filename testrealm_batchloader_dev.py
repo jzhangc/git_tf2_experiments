@@ -213,10 +213,10 @@ def tst_sameFileCheck(dir, **kwargs):
         filenames.append(filename)
 
     dup = [k for k, v in Counter(filenames).items() if v > 1]
-    if len(dup) > 0:
-        print(f'Sub-directories contain duplicated file names: {dup}.')
-
-    return dir, dup, filepaths, filenames
+    # if len(dup) > 0:
+    #     print(f'Sub-directories contain duplicated file names: {dup}.')
+    # return dir, dup, filepaths, filenames
+    return dup
 
 
 def tst_findFiles(tgt_filename, dir):
@@ -228,11 +228,17 @@ def tst_findFiles(tgt_filename, dir):
 
 
 _, _, _, filenames = tst_sameFileCheck('./data', validExts='txt')
+dup = tst_sameFileCheck('./data', validExts='txt')
+
 
 tst_path = []
-for f in filenames:
+for f in tqdm(filenames):
     tst_path.append(list(tst_findFiles(f, './data')))
-flatten(tst_path)
+tst_path = flatten(tst_path)
+
+tst_annot = pd.DataFrame()
+tst_annot['path'] = tst_path
+tst_annot['path2'] = tst_annot['path']
 
 
 def tst_adjmatAnnotLoader(dir, targetExt=None, autoLabel=True, annotFile=None, fileNameVar=None, labelVar=None):
@@ -300,7 +306,23 @@ def tst_adjmatAnnotLoader(dir, targetExt=None, autoLabel=True, annotFile=None, f
 
         labels = np.array(labels)
     else:  # manual label
-        labels
+        # Check duplicated files
+        dup = tst_sameFileCheck(dir=dir, validExts=targetExt)
+        if len(dup) > 0:
+            raise ValueError(
+                f'File duplicates found when autoLabel=False: {dup}')
+
+        labels = annot_pd[labelVar].to_numpy()
+        manual_filenames = annot_pd[fileNameVar].to_list()
+        manual_filename_paths = []
+        for manual_filename in tqdm(manual_filenames):
+            manual_filename_paths.append(
+                list(tst_findFiles(manual_filename, dir)))
+        manual_filename_paths = flatten(manual_filename_paths).to_numpy()
+
+        file_annot['filename'] = annot_pd[fileNameVar]
+        file_annot['path'] = manual_filename_paths
+        file_annot['label'] = annot_pd[labelVar]
 
     return file_annot, labels
 
@@ -310,7 +332,7 @@ main_dir = os.path.abspath('./')
 dat_dir = os.path.join(main_dir, 'data/tf_data')
 
 file_annot, labels = adjmatAnnotLoader(
-    dat_dir, targetExt='txt', autoLabel=False)
+    dat_dir, targetExt='txt', autoLabel=True)
 file_annot['path'][0]
 
 file_annot['path'].to_list()
