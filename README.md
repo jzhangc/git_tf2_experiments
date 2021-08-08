@@ -34,7 +34,7 @@ NOTE: The following contains steps to install on Intel Mac running macOS 11.
         https://pypi.org/project/tensorflow-macos/#files
         https://pypi.org/project/tensorflow-metal/#files
 
-   (Intel chip) Remame the file names as following:
+   (Intel chip) Remame the file names as following (verion numbers: 2.5.0 or 0.1.1 could be different):
 
         tensorflow_macos-2.5.0-cp38-cp38-macosx_11_0_x86_64.whl -> tensorflow_macos-2.5.0-cp38-cp38-macosx_10_11_x86_64.whl
         tensorflow_metal-0.1.1-cp38-cp38-macosx_11_0_x86_64.whl -> tensorflow_metal-0.1.1-cp38-cp38-macosx_10_11_x86_64.whl

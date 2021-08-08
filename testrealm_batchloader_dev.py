@@ -17,7 +17,8 @@ from tqdm import tqdm
 from collections import Counter
 
 from utils.data_utils import (adjmatAnnotLoader, getSelectedDataset,
-                              labelMapping, labelOneHot, scanFiles)
+                              labelMapping, labelOneHot, scanFiles, sameFileCheck,
+                              findFilePath)
 from utils.other_utils import csvPath, error, flatten
 
 # from skmultilearn.model_selection import iterative_train_test_split
@@ -233,7 +234,7 @@ dup = tst_sameFileCheck('./data', validExts='txt')
 
 tst_path = []
 for f in tqdm(filenames):
-    tst_path.append(list(tst_findFiles(f, './data')))
+    tst_path.append(list(tst_findFilePath(f, './data')))
 tst_path = flatten(tst_path)
 
 tst_annot = pd.DataFrame()
@@ -308,7 +309,7 @@ def tst_adjmatAnnotLoader(dir, targetExt=None, autoLabel=True, annotFile=None, f
         file_annot['label'] = labels
     else:  # manual label
         # Check duplicated files
-        dup = tst_sameFileCheck(dir=dir, validExts=targetExt)
+        dup = sameFileCheck(dir=dir, validExts=targetExt)
         if len(dup) > 0:
             raise ValueError(
                 f'File duplicates found when autoLabel=False: {dup}')
@@ -318,7 +319,7 @@ def tst_adjmatAnnotLoader(dir, targetExt=None, autoLabel=True, annotFile=None, f
         manual_filename_paths = []
         for manual_filename in tqdm(manual_filenames):
             manual_filename_paths.append(
-                list(tst_findFilePath(manual_filename, dir)))
+                list(findFilePath(manual_filename, dir)))
         manual_filename_paths = flatten(manual_filename_paths).to_numpy()
 
         file_annot['filename'] = annot_pd[fileNameVar]
