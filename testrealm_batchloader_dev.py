@@ -214,10 +214,9 @@ def tst_sameFileCheck(dir, **kwargs):
         filenames.append(filename)
 
     dup = [k for k, v in Counter(filenames).items() if v > 1]
-    # if len(dup) > 0:
-    #     print(f'Sub-directories contain duplicated file names: {dup}.')
-    # return dir, dup, filepaths, filenames
-    return dup
+    if len(dup) > 0:
+        print(f'Sub-directories contain duplicated file names: {dup}.')
+    return dir, dup, filepaths, filenames
 
 
 def tst_findFilePath(tgt_filename, dir):
