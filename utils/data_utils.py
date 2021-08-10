@@ -166,6 +166,93 @@ def adjmatAnnotLoader(dir, autoLabel=True, targetExt=None):
         return file_annot, None
 
 
+def adjmatAnnotLoaderV2(dir, targetExt=None, autoLabel=True, annotFile=None, fileNameVar=None, labelVar=None):
+    """
+    # Purpose\n
+        Scan and extract file paths (export as pandas data frame).\n
+        Optionally, the function can also construct file labels using
+            folder names and exports as a numpy array.\n
+
+    # Arguments\n
+        path: str. The root directory path to scan.\n
+        targetExt: str. Optionally set target file extension to extract.\n
+        autoLabel: bool. If to automatically construct file labels using folder names.\n
+        annotFile: str or None. Required when autoLabel=False, a csv file for file names and labels.\n
+        fileNameVar: str or None. Required when autoLabel=False, variable name in annotFile for file names.\n
+        labelVar: str or None. Required when autoLabel=False, vriable nam ein annotFile for lables.\n
+
+    # Return\n
+        Pandas data frame containing all file paths. Optionially, a numpy array with all
+            file labels. Order: file_path, labels.\n
+
+    # Details\n
+        - When targetExt=None, the function scans root and sub directories.\n
+        - The targetExt string should exclude the "." symbol, e.g. 'txt' instead of '.txt'.\n
+        - The function returns None for "labels" when autoLabel=False.\n
+        - When autoLabel=False, the sub folder is not currently supported.
+            Sub folder support is not impossible. It is just too complicated to implement in a timely fashion. 
+            This means all data files should be in one folder, i.e. dir.\n
+        - When autoLabel=False, the CSV file should at least two columens, one for file name and one for the corresponding labels.\n
+    """
+    # -- check arguments for autoLabel=False --
+    if autoLabel == False:
+        if (any(annotF is None for annotF in [annotFile, fileNameVar, labelVar])):
+            raise ValueError(
+                'Set annotFile, fileNameVar and labelVar when autoLabel=False.')
+        else:
+            annotFile_path = os.path.normpath(
+                os.path.abspath(os.path.expanduser(annotFile)))
+
+            if os.path.isfile(annotFile_path):
+                # return full_path
+                _, file_ext = os.path.splitext(annotFile_path)
+                if file_ext != '.csv':
+                    raise ValueError('annotFile needs to be .csv type.')
+            else:
+                raise ValueError('Invalid annotFile or annotFile not found.')
+
+            annot_pd = pd.read_csv(annotFile_path, engine='python')
+            if not all(annot_var in annot_pd.columns for annot_var in [fileNameVar, labelVar]):
+                raise ValueError(
+                    'fileNameVar and labelVar should both be present in the annotFile')
+
+    # -- scan files --
+    adjmat_paths = list(scanFiles(dir, validExts=targetExt))
+    file_annot = pd.DataFrame()
+
+    # -- labels --
+    if autoLabel:
+        labels = []
+        for i, adjmat_path in tqdm(enumerate(adjmat_paths), total=len(adjmat_paths)):
+            # os.path.sep returns "/" which is used for str.split
+            label = adjmat_path.split(os.path.sep)[-2]
+            file_annot.loc[i, 'path'] = adjmat_path
+            labels.append(label)
+
+        labels = np.array(labels)
+        file_annot['label'] = labels
+    else:  # manual label
+        # Check duplicated files
+        dup = sameFileCheck(dir=dir, validExts=targetExt)
+        if len(dup) > 0:
+            raise ValueError(
+                f'File duplicates found when autoLabel=False: {dup}')
+
+        labels = annot_pd[labelVar].to_numpy()
+        manual_filenames = annot_pd[fileNameVar].to_list()
+        manual_filename_paths = []
+        for manual_filename in tqdm(manual_filenames):
+            manual_filename_paths.append(
+                list(findFilePath(manual_filename, dir)))
+        manual_filename_paths = flatten(manual_filename_paths).to_numpy()
+
+        file_annot['filename'] = annot_pd[fileNameVar]
+        file_annot['path'] = manual_filename_paths
+        file_annot['label'] = annot_pd[labelVar]
+
+    return file_annot, labels
+
+
 def labelMapping(labels, sep=None, pd_labels_var_name=None):
     """
     # Purpose\n
