@@ -8,7 +8,7 @@ Apple has now implemented metal TF2.5 plugin for GPU acceleration. See [here](ht
 
 NOTE: The following contains steps to install on Intel Mac running macOS 11.
 
-1. System requrement
+1. System requirement
 
     Apple suggests to have at least macOS 12.0 (Monterey), which has not been out to the public yet. However, test seemed to be successful on M1 13 inch Macbook Pro and Intel i9/AMD GPU iMac running macOS 11.4 (Big Sur).
 
