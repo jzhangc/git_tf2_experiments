@@ -4,7 +4,7 @@ Experimental codes for Tensorflow 2.5 with Apple-Metal GPU acceleration for Mac 
 
 ## UPDATE (July.2021)
 
-Apple has now implmented metal TF2.5 plugin for GPU acceleration. See [here](https://developer.apple.com/metal/tensorflow-plugin/) for details.
+Apple has now implemented metal TF2.5 plugin for GPU acceleration. See [here](https://developer.apple.com/metal/tensorflow-plugin/) for details.
 
 NOTE: The following contains steps to install on Intel Mac running macOS 11.
 
@@ -34,7 +34,7 @@ NOTE: The following contains steps to install on Intel Mac running macOS 11.
         https://pypi.org/project/tensorflow-macos/#files
         https://pypi.org/project/tensorflow-metal/#files
 
-   (Intel chip) Remame the file names as following (verion numbers: 2.5.0 or 0.1.1 could be different):
+   (Intel chip) Rename the file names as following (verizon numbers: 2.5.0 or 0.1.1 could be different):
 
         tensorflow_macos-2.5.0-cp38-cp38-macosx_11_0_x86_64.whl -> tensorflow_macos-2.5.0-cp38-cp38-macosx_10_11_x86_64.whl
         tensorflow_metal-0.1.1-cp38-cp38-macosx_11_0_x86_64.whl -> tensorflow_metal-0.1.1-cp38-cp38-macosx_10_11_x86_64.whl
@@ -71,7 +71,7 @@ NOTE: The following contains steps to install on Intel Mac running macOS 11.
 
         python -m pip install scikit-multilearn
 
-## Install via conda enviroment (OLD)
+## Install via conda environment (OLD)
 
 1. (Apple and Intel chips) install miniforge3 (mini coda with forge channel as default)
 
@@ -79,7 +79,7 @@ NOTE: The following contains steps to install on Intel Mac running macOS 11.
 
         conda env create -f ./inst/environment.yml --prefix ./conda_venv_atf24
 
-3. install additional pacakges
+3. install additional packages
 
         conda env create -f ./inst/environment.yml --prefix ./conda_venv_atf24
         conda install scikit-learn setuptools cached-property six packaging matplotlib autopep8 jupyter tqdm pandas numpy

@@ -4,7 +4,7 @@ things to fiddle:
 [ ] 2. CNN hyperparameter tuning
 
 overall notes:
-1. how to calcualte output shape for the CNN layers, using input (28, 28, 1) as an example
+1. how to calculate output shape for the CNN layers, using input (28, 28, 1) as an example
 a. padding='same': when padding is set to 'same', the output shape is the as as the input shape.
     '0's are padded to fill the shrinkage created by convolution
 # filter number is the output channel (third dim) number
@@ -120,7 +120,7 @@ class AutoEncoderDecoder(Model):
             initial_shape=self.initial_shape, bottleneck_dim=bottleneck_dim)
         self.decoder = CNN2d_decoder(encoded_dim=bottleneck_dim)
 
-    def call(self, input):  # putting two models togeter
+    def call(self, input):  # putting two models together
         x = self.encoder(input)
         z = self.decoder(x)
         return z
@@ -184,7 +184,7 @@ reconstruction_test = m.predict(x_test)
 m.encode(x_test).shape
 m.encode(x_test)[0]  # use the trained encoder to encode the input data
 
-# - visulization -
+# - visualization -
 n = 10  # how many digits we will display
 plt.figure(figsize=(20, 4))
 for i in range(n):
