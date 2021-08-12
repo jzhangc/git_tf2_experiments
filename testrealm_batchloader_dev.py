@@ -16,7 +16,7 @@ from sklearn.preprocessing import LabelBinarizer, MinMaxScaler, StandardScaler
 from tqdm import tqdm
 from collections import Counter
 
-from utils.data_utils import (adjmatAnnotLoader, getSelectedDataset,
+from utils.data_utils import (adjmatAnnotLoader, adjmatAnnotLoaderV2, getSelectedDataset,
                               labelMapping, labelOneHot, scanFiles, sameFileCheck,
                               findFilePath)
 from utils.other_utils import csvPath, error, flatten
@@ -125,83 +125,6 @@ def tst_map_func(filepath: tf.Tensor, label: tf.Tensor, processing=False):
 
     f = tf.convert_to_tensor(f, dtype=tf.float32)
     return f, lb
-
-
-def tst_data_resample(total_data, n_total_sample, encoded_labels, resample_method='random'):
-    """
-    NOTE: regression cannot use stratified splitting\n
-    NOTE: "stratified" (keep class ratios) is NOT the same as "balanced" (make class ratio=1)\n
-    NOTE: "balanced" mode will be implemented at a later time\n
-    NOTE: depending on how "balanced" is implemented, the if/else block could be implified\n
-    """
-    X_indices = np.arange(n_total_sample)
-    if resample_method == 'random':
-        X_train_indices, X_test_indices, _, _ = train_test_split(
-            X_indices, encoded_labels, test_size=0.8, stratify=None, random_state=1)
-    elif resample_method == 'stratified':
-        X_train_indices, X_test_indices, _, _ = train_test_split(
-            X_indices, encoded_labels, test_size=0.8, stratify=encoded_labels, random_state=1)
-    else:
-        raise NotImplementedError(
-            '\"balanced\" resmapling method has not been implemented.')
-
-    train_ds, train_n = getSelectedDataset(total_data, X_train_indices)
-    test_ds, test_n = getSelectedDataset(total_data, X_test_indices)
-
-    return train_ds, train_n, test_ds, test_n
-
-
-def tst_generate_data(batch_size=4, cv_only=False, shuffle=True, **kwargs):
-    """
-    # Purpose\n
-        To generate working data.\n
-
-    # Arguments\n
-        batch_size: int. Batch size for the tf.dataset batches.\n
-        cv_only: bool. When True, there is no train/test split.\n
-        shuffle: bool. Effective when cv_only=True, if to shuffle the order of samples for the output data.\n
-
-    # Details\n
-        - When cv_only=True, the loader returns only one tf.dataset object, without train/test split.
-            In such case, further cross validation resampling can be done using followup resampling functions.
-            However, it is not to say train/test split data cannot be applied with further CV operations.\n
-    """
-    batch_size = batch_size
-    cv_only = cv_only
-    shuffle = shuffle
-
-    # - load paths -
-    filepath_list, encoded_labels, _, _ = tst_get_file_annot(**kwargs)
-    total_ds = tf.data.Dataset.from_tensor_slices(
-        (filepath_list, encoded_labels))
-    n_total_sample = total_ds.cardinality().numpy()
-
-    # return total_ds, n_total_sample
-
-    # - resample data -
-    if cv_only:
-        train_set = total_ds.map(lambda x, y: tf.py_function(tst_map_func, [x, y, True], [tf.float32, tf.uint8]),
-                                 num_parallel_calls=tf.data.AUTOTUNE)
-        train_n = n_total_sample
-        if shuffle:  # check this
-            train_set = train_set.shuffle(seed=1)
-        test_set = None
-        test_n = None
-    else:
-        train_ds, train_n, test_ds, test_n = tst_data_resample(
-            total_data=total_ds, n_total_sample=n_total_sample, encoded_labels=encoded_labels)
-        train_set = train_ds.map(lambda x, y: tf.py_function(tst_map_func, [x, y, True], [tf.float32, tf.uint8]),
-                                 num_parallel_calls=tf.data.AUTOTUNE)
-        test_set = test_ds.map(lambda x, y: tf.py_function(tst_map_func, [x, y, True], [tf.float32, tf.uint8]),
-                               num_parallel_calls=tf.data.AUTOTUNE)
-
-    # - set up batch and prefeching -
-    train_set = train_set.batch(
-        batch_size).cache().prefetch(tf.data.AUTOTUNE)
-    test_set = train_set.batch(
-        batch_size).cache().prefetch(tf.data.AUTOTUNE) if test_set is not None else None
-
-    return train_set, test_set
 
 
 def tst_sameFileCheck(dir, **kwargs):
