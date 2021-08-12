@@ -26,7 +26,7 @@ class BatchMatrixLoader(object):
         label_sep: str or None.  Optional str to separate label strings. When none, the loader uses the entire string as file labels.
         pd_labelse_bar_name: list of str or None. Set when manual_labels is not None, variable name for file labels.\n
         model_type: str. Model (label) type. Options are "classification", "regression" and "semisupervised".\n
-        multilabel_classification: bool. If the classifiation is a "multilabel" type. Only effective when model_type='classification'.\n
+        multilabel_classification: bool. If the classification is a "multilabel" type. Only effective when model_type='classification'.\n
         x_scaling: str. If and how to scale x values. Options are "none", "max" and "minmax".\n
         x_min_max_range: two num list. Only effective when x_scaling='minmax', the range for the x min max scaling.\n
         resampole_method: str. Effective when cv_only is not True. Train/test split method. Options are "random" and "stratified".
@@ -46,10 +46,10 @@ class BatchMatrixLoader(object):
         - When multilabel, make sure to set up label_sep argument.\n
         - For multilabels, a mixture of continuous and discrete labels are not supported.\n
         - For x_min_max_range, a two tuple is required. Order: min, max. \n
-        - It is noted that for regression, multilabel modelling is automatically supported via multiple labels in the maual label data frame.
+        - It is noted that for regression, multilabel modelling is automatically supported via multiple labels in the manual label data frame.
             Therefore, for regression, manual_labels argument cannot be None.\n
         - When resample_method='random', the loader randomly draws samples according to the split percentage from the full data.
-            When resample_method='stratified', the loader randomly draws samples accoridng to the split percentage within each label.
+            When resample_method='stratified', the loader randomly draws samples according to the split percentage within each label.
             Currently, the "balanced" method, i.e. drawing equal amount of samples from each label, has not been implemented.\n
     """
 
@@ -93,7 +93,7 @@ class BatchMatrixLoader(object):
 
     def _parse_file(self):
         """
-        - parse file path to get file path annotatin and, optionally, label information\n
+        - parse file path to get file path annotation and, optionally, label information\n
         - set up manual label information\n
         """
 
@@ -124,7 +124,7 @@ class BatchMatrixLoader(object):
                             )
                         except Exception as e:
                             print(
-                                'Manual label parsing failed. Hint: check if pd_labels_var_name is present in the maual label data frame.')
+                                'Manual label parsing failed. Hint: check if pd_labels_var_name is present in the manual label data frame.')
                 elif isinstance(self.manual_labels, np.ndarray):
                     labels = self.manual_labels
                 else:
@@ -164,7 +164,7 @@ class BatchMatrixLoader(object):
     def _x_data_process(self, x_array):
         """NOTE: reshaping to (_, _, 1) is mandatory"""
         # - variables -
-        if isinstance(x_array, np.ndarray):  # this check can be done outside of the classs
+        if isinstance(x_array, np.ndarray):  # this check can be done outside of the class
             X = x_array
         else:
             raise TypeError('data processing function should be a np.ndarray.')
@@ -227,7 +227,7 @@ class BatchMatrixLoader(object):
         NOTE: regression cannot use stratified splitting\n
         NOTE: "stratified" (keep class ratios) is NOT the same as "balanced" (make class ratio=1)\n
         NOTE: "balanced" mode will be implemented at a later time\n
-        NOTE: depending on how "balanced" is implemented, the if/else block could be implified\n
+        NOTE: depending on how "balanced" is implemented, the if/else block could be simplified\n
         """
         # _, encoded_labels, _, _ = self._get_file_annot()
         X_indices = np.arange(n_total_sample)
@@ -272,7 +272,7 @@ class BatchMatrixLoader(object):
                 However, it is not to say train/test split data cannot be applied with further CV operations.\n
             - As per tf.dataset behaviour, self.train_set_map and self.test_set_map do not contain data content. 
                 Instead, these objects contain data map information, which can be used by tf.dataset.batch() tf.dataset.prefetch()
-                methods to load the acteual data content.\n
+                methods to load the actual data content.\n
         """
         self.batch_size = batch_size
         self.cv_only = cv_only
@@ -379,7 +379,7 @@ class SingleCsvMemLoader(object):
         random_state: int. random state.\n
         verbose: bool. verbose.\n
     # Methods\n
-        __init__: initalization.\n
+        __init__: initialization.\n
         _label_onehot_encode: one hot encoding for labels.\n
         _x_minmax: min-max normalization for x data.\n        
     # Public class attributes\n
@@ -396,8 +396,8 @@ class SingleCsvMemLoader(object):
         self.labels_working: np.ndarray. Working labels. For classification, working labels are one hot encoded.
         self.filename: str. input file name without extension
         self.raw: pandas dataframe. input data
-        self.raw_working: pands dataframe. working input data
-        self.complete_annot_vars: list of strings. column names for the annotation variables in the input dataframe, INDCLUDING label varaible
+        self.raw_working: pandas dataframe. working input data
+        self.complete_annot_vars: list of strings. column names for the annotation variables in the input dataframe, INCLUDING label variable
         self.n_features: int. number of features
         self.le: sklearn LabelEncoder for classification study
         self.label_mapping: dict. Class label mapping codes, when model_type='classification'.\n
@@ -481,7 +481,7 @@ class SingleCsvMemLoader(object):
         self.labels = self.raw_working[self.label_var].to_numpy()
 
     def _label_onehot_encode(self, labels):
-        """one hot encoding for labels. labels: shoud be a np.ndarray"""
+        """one hot encoding for labels. labels: should be a np.ndarray"""
         labels_list, labels_count, labels_map, labels_map_rev = labelMapping(
             labels, sep=self.label_sep)
 
