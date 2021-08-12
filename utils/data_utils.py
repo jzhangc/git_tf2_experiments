@@ -81,7 +81,7 @@ def scanFiles(basePath, validExts=None, contains=None):
             file is a image. Instead, it optionally only grabs
             files with the pre-set extension.\n 
 
-        - When validExts=None, the funciton extracts all files.\n
+        - When validExts=None, the function extracts all files.\n
     """
     if not os.path.isdir(basePath):
         raise FileNotFoundError(f'Directory not found: {basePath}')
@@ -140,7 +140,7 @@ def adjmatAnnotLoader(dir, autoLabel=True, targetExt=None):
         targetExt: str. Optionally set target file extension to extract.
 
     # Return\n
-        Pandas data frame containing all file paths. Optionially, a numpy array with all
+        Pandas data frame containing all file paths. Optionally, a numpy array with all
             file labels. Order: file_path, labels.\n
 
     # Details\n
@@ -179,10 +179,10 @@ def adjmatAnnotLoaderV2(dir, targetExt=None, autoLabel=True, annotFile=None, fil
         autoLabel: bool. If to automatically construct file labels using folder names.\n
         annotFile: str or None. Required when autoLabel=False, a csv file for file names and labels.\n
         fileNameVar: str or None. Required when autoLabel=False, variable name in annotFile for file names.\n
-        labelVar: str or None. Required when autoLabel=False, vriable nam ein annotFile for lables.\n
+        labelVar: str or None. Required when autoLabel=False, variable nam ein annotFile for lables.\n
 
     # Return\n
-        Pandas data frame containing all file paths. Optionially, a numpy array with all
+        Pandas data frame containing all file paths. Optionally, a numpy array with all
             file labels. Order: file_path, labels.\n
 
     # Details\n
@@ -328,12 +328,12 @@ def labelOneHot(labels_list, labels_map):
         labels_map: dict. A map of labels.\n 
 
     # Return\n
-        A numpy array with one hot encoded mulitple labels, and can be used as the "y" input for tensorflow models.\n
+        A numpy array with one hot encoded multiple labels, and can be used as the "y" input for tensorflow models.\n
 
     # Details\n
         - labels_list can be created by the function multilabel_mapping from utils.data_utils.\n
 
-        - Exmaple for labels_map (can be created by the function multilabel_mapping from utils.data_utils):
+        - Example for labels_map (can be created by the function multilabel_mapping from utils.data_utils):
             >>> labels_map\n
             {'all': 0,
             'alpha': 1,
@@ -369,7 +369,7 @@ def labelOneHot(labels_list, labels_map):
 
 def labelOneHotRev(onehot_labels, labels_map_rev):
     """
-    # Purpuuse\n
+    # Purpure\n
         Convert a list of one hot encoded labels back to a list the labels.
 
     # Arguments\n
@@ -392,7 +392,7 @@ def labelOneHotRev(onehot_labels, labels_map_rev):
             8: 'sc_fmri_megs_pc',
             9: 'sc_fmri_megs_pt'}
     """
-    # - check argumments -
+    # - check arguments -
     if not isinstance(labels_map_rev, dict):
         raise TypeError('labels_map_rev needs to be a dict.')
 
@@ -423,13 +423,13 @@ def getSelectedDataset(ds, X_indices_np):
         #
         # '==' compares the specified index value with each values in X_indices_ts.
         # The result is a boolean tensor, looks like [ False, True, ..., False ].
-        # reduce_any() returns Ture if True is included in the specified tensor.
+        # reduce_any() returns True if True is included in the specified tensor.
         return tf.math.reduce_any(index == X_indices_ts)
 
     def drop_index(index, rest):
         return rest
 
-    # Dataset.enumerate() is similter to Python's enumerate().
+    # Dataset.enumerate() is similar to Python's enumerate().
     # The method adds indices to each elements. Then, the elements are filtered
     # by using the specified indices. Finally unnecessary indices are dropped.
     selected_ds = ds.enumerate().filter(is_index_in).map(drop_index)
@@ -471,17 +471,17 @@ def trainingtestSpliterFinal(data, model_type='classification',
         x_standardization: boolean. if to center scale (z score standardization) the input X data.\n
         x_scale_column_to_exclude: list. the name of the columns.
                                 to remove from the X columns for scaling.
-                                makes sure to also inlcude the y column(s.)\n
+                                makes sure to also include the y column(s.)\n
         y_column: list. column(s) to use as outcome for scaling.\n
         y_min_max_scaling: boolean. For regression study, if to do a Min_Max scaling to outcome.\n
         y_scale_range: two-tuple. the Min_Max range.\n
     # Details\n
         The data normalization is applied AFTER the training/test splitting
         "Standardization" is z score standardization ("center and scale"): (x - mean(x))/SD
-        "min_max_scaling" is min-max nomalization
+        "min_max_scaling" is min-max normalization
         When x_standardization=True, the test data is standardized using training data mean and SD.
         When y_min_max_scaling=True, the test data is scaled using training data min-max parameters.
-        For X, both standardiation and min-max normalization can be applied.
+        For X, both standardization and min-max normalization can be applied.
         For Y, only min-max normalization can be chosen. 
         The z score standardization is used for X standardization.
     # Examples\n
@@ -494,7 +494,7 @@ def trainingtestSpliterFinal(data, model_type='classification',
                 y_min_max_scaling=True,
                 y_column=['PCL'], y_scale_range=(0, 1))
 
-        - w/o noralization\n
+        - w/o normalization\n
             training, test, _, _ = training_test_spliter_final(
                 data=raw, random_state=1,
                 man_split=True, man_split_colname='subject', man_split_testset_value=selected_features[1],

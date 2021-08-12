@@ -52,14 +52,14 @@ def map_func(filepath: tf.Tensor, label: tf.Tensor, processing=False):
 def tst_parse_file(filepath, target_ext=None, model_type='classification', manual_labels=None,
                    pd_labels_var_name=None):
     """
-    - parse file path to get file path annotatin and, optionally, label information\n
+    - parse file path to get file path annotation and, optionally, label information\n
     - set up manual label information\n
     """
 
     if model_type == 'classification':
         file_annot, labels = adjmatAnnotLoader(
             filepath, targetExt=target_ext)
-    else:  # regeression
+    else:  # regression
         if manual_labels is None:
             raise ValueError(
                 'Set manual_labels when model_type=\"regression\".')
@@ -154,14 +154,14 @@ _, _, _, filenames = tst_sameFileCheck('./data', validExts='txt')
 dup = tst_sameFileCheck('./data', validExts='txt')
 
 
-tst_path = []
-for f in tqdm(filenames):
-    tst_path.append(list(tst_findFilePath(f, './data')))
-tst_path = flatten(tst_path)
+# tst_path = []
+# for f in tqdm(filenames):
+#     tst_path.append(list(tst_findFilePath(f, './data')))
+# tst_path = flatten(tst_path)
 
-tst_annot = pd.DataFrame()
-tst_annot['path'] = tst_path
-tst_annot['path2'] = tst_annot['path']
+# tst_annot = pd.DataFrame()
+# tst_annot['path'] = tst_path
+# tst_annot['path2'] = tst_annot['path']
 
 
 def tst_adjmatAnnotLoader(dir, targetExt=None, autoLabel=True, annotFile=None, fileNameVar=None, labelVar=None):
@@ -177,10 +177,10 @@ def tst_adjmatAnnotLoader(dir, targetExt=None, autoLabel=True, annotFile=None, f
         autoLabel: bool. If to automatically construct file labels using folder names.\n
         annotFile: str or None. Required when autoLabel=False, a csv file for file names and labels.\n
         fileNameVar: str or None. Required when autoLabel=False, variable name in annotFile for file names.\n
-        labelVar: str or None. Required when autoLabel=False, vriable nam ein annotFile for lables.\n
+        labelVar: str or None. Required when autoLabel=False, variable nam ein annotFile for lables.\n
 
     # Return\n
-        Pandas data frame containing all file paths. Optionially, a numpy array with all
+        Pandas data frame containing all file paths. Optionally, a numpy array with all
             file labels. Order: file_path, labels.\n
 
     # Details\n
