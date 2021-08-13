@@ -244,7 +244,7 @@ def adjmatAnnotLoaderV2(dir, targetExt=None, autoLabel=True, annotFile=None, fil
         for manual_filename in tqdm(manual_filenames):
             manual_filename_paths.append(
                 list(findFilePath(manual_filename, dir)))
-        manual_filename_paths = flatten(manual_filename_paths).to_numpy()
+        manual_filename_paths = flatten(manual_filename_paths)
 
         file_annot['filename'] = annot_pd[fileNameVar]
         file_annot['path'] = manual_filename_paths

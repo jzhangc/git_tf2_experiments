@@ -228,7 +228,7 @@ def tst_adjmatAnnotLoader(dir, targetExt=None, autoLabel=True, annotFile=None, f
         for manual_filename in tqdm(manual_filenames):
             manual_filename_paths.append(
                 list(findFilePath(manual_filename, dir)))
-        manual_filename_paths = flatten(manual_filename_paths).to_numpy()
+        manual_filename_paths = flatten(manual_filename_paths)
 
         file_annot['filename'] = annot_pd[fileNameVar]
         file_annot['path'] = manual_filename_paths
@@ -268,6 +268,14 @@ tst_pd = pd.DataFrame()
 tst_pd['filename'] = filenames
 tst_pd['label'] = labels
 tst_pd.to_csv(os.path.join(dat_dir, 'tst_annot.csv'), index=False)
+
+
+file_annot, labels = tst_adjmatAnnotLoader(
+    dat_dir, targetExt='txt', autoLabel=False, annotFile='./data/tst_annot.csv', fileNameVar='filename', labelVar='label')
+
+file_annot['path'].to_list()
+file_annot.loc[0:1]
+
 
 # - below: create one hot encoding for multiclass labels -
 # lb_binarizer = LabelBinarizer()
