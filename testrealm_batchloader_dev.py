@@ -150,20 +150,6 @@ def tst_findFilePath(tgt_filename, dir):
             yield filePath
 
 
-_, _, _, filenames = tst_sameFileCheck('./data', validExts='txt')
-dup = tst_sameFileCheck('./data', validExts='txt')
-
-
-# tst_path = []
-# for f in tqdm(filenames):
-#     tst_path.append(list(tst_findFilePath(f, './data')))
-# tst_path = flatten(tst_path)
-
-# tst_annot = pd.DataFrame()
-# tst_annot['path'] = tst_path
-# tst_annot['path2'] = tst_annot['path']
-
-
 def tst_adjmatAnnotLoader(dir, targetExt=None, autoLabel=True, annotFile=None, fileNameVar=None, labelVar=None):
     """
     # Purpose\n
@@ -266,6 +252,22 @@ file_annot, labels = tst_adjmatAnnotLoader(
 file_annot['path'].to_list()
 file_annot.loc[0:1]
 
+_, _, _, filenames = tst_sameFileCheck('./data', validExts='txt')
+dup = tst_sameFileCheck('./data', validExts='txt')
+
+# tst_path = []
+# for f in tqdm(filenames):
+#     tst_path.append(list(tst_findFilePath(f, './data')))
+# tst_path = flatten(tst_path)
+
+# tst_annot = pd.DataFrame()
+# tst_annot['path'] = tst_path
+# tst_annot['path2'] = tst_annot['path']
+
+tst_pd = pd.DataFrame()
+tst_pd['filename'] = filenames
+tst_pd['label'] = labels
+tst_pd.to_csv(os.path.join(dat_dir, 'tst_annot.csv'), index=False)
 
 # - below: create one hot encoding for multiclass labels -
 # lb_binarizer = LabelBinarizer()
