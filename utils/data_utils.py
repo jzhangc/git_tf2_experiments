@@ -443,19 +443,19 @@ def getSelectedDataset(ds, X_indices_np):
     return selected_ds, n
 
 
-def trainingtestSpliterFinal(data, model_type='classification',
-                             training_percent=0.8, random_state=None,
-                             man_split=False, man_split_colname=None,
-                             man_split_testset_value=None,
-                             x_standardization=True,
-                             x_min_max_scaling=False,
-                             x_scale_column_to_exclude=None,
-                             y_min_max_scaling=False,
-                             y_column=None,
-                             min_max_scale_range=(0, 1)):
+def trainingtestSplitterFinal(data, model_type='classification',
+                              training_percent=0.8, random_state=None,
+                              man_split=False, man_split_colname=None,
+                              man_split_testset_value=None,
+                              x_standardization=True,
+                              x_min_max_scaling=False,
+                              x_scale_column_to_exclude=None,
+                              y_min_max_scaling=False,
+                              y_column=None,
+                              min_max_scale_range=(0, 1)):
     """
     # Purpose\n
-        This is a training_test_spliter, with data standardization and normalization functionalities
+        This is a training_test_splitter, with data standardization and normalization functionalities
     # Return\n
         Pandas DataFrame (for now) for training and test data.
         Scalers for training and test data sets are also returned, if applicable.
@@ -486,7 +486,7 @@ def trainingtestSpliterFinal(data, model_type='classification',
         The z score standardization is used for X standardization.
     # Examples\n
         - w normalization\n
-            training, test, training_scaler_X, training_scaler_Y = training_test_spliter_final(
+            training, test, training_scaler_X, training_scaler_Y = training_test_splitter_final(
                 data=raw, random_state=1,
                 man_split=True, man_split_colname='subject', man_split_testset_value=selected_features[0],
                 x_standardization=True,
@@ -495,7 +495,7 @@ def trainingtestSpliterFinal(data, model_type='classification',
                 y_column=['PCL'], y_scale_range=(0, 1))
 
         - w/o normalization\n
-            training, test, _, _ = training_test_spliter_final(
+            training, test, _, _ = training_test_splitter_final(
                 data=raw, random_state=1,
                 man_split=True, man_split_colname='subject', man_split_testset_value=selected_features[1],
                 x_standardization=False,
