@@ -6,7 +6,7 @@ Objectives:
 [ ] Test output directory creation
 [x] Test file reading
 [x] Test file processing
-    [x] normalization and scalling
+    [x] normalization and scaling
     [x] converting to numpy arrays
 [ ] Implement "balanced" data resampling
 [x] Implement data resampling for cross-validation (maybe move this out of the dataloader)
@@ -62,16 +62,18 @@ add_g2_arg = arg_g2.add_argument  # processing and resampling
 add_g3_arg = arg_g3.add_argument  # modelling
 add_g4_arg = arg_g4.add_argument  # others
 
-# - add arugments to the argument groups -
-# g1: inpout and ouput
+# - add arguments to the argument groups -
+# g1: input and output
 add_g1_arg('path', nargs=1, type=fileDir,
            help='Directory contains all input files. (Default: %(default)s)')
-add_g1_arg('-il', '--manual_label_file', type=str,
-           help='Optional one manual labels CSV file. (Default: %(default)s)')
 add_g1_arg('-te', '--target_file_ext', type=str, default=None,
            help='str. When manual labels are provided and imported as a pandas dataframe, the label variable name for this pandas dataframe, e.g. \'txt\'. (Default: %(default)s)')
-add_g1_arg('-lv', '--pd_labels_var_name', type=str, default=None,
-           help='str. When manual labels are provided and imported as a pandas dataframe, the label variable name for this pandas dataframe. (Default: %(default)s)')
+add_g1_arg('-lf', '--manual_label_file', type=str,
+           help='Optional one manual labels CSV file. (Default: %(default)s)')
+add_g1_arg('-ln', '--manual_label_filename_var', type=str,
+           help='Filename variable name in the optional manual labels CSV file. (Default: %(default)s)')
+add_g1_arg('-lv', '--manual_label_var', type=str, default=None,
+           help='str. Label variable name in the optional manual labels CSV file. (Default: %(default)s)')
 add_g1_arg('-ls', '--label_string_sep', type=str, default=None,
            help='str. Separator to separate label string, to create multilabel labels. (Default: %(default)s)')
 add_g1_arg('-o', '--output_dir', type=str,
@@ -103,7 +105,7 @@ add_g3_arg('-mt', '--model_type', type=str, default='classification',
            choices=['classification', 'regression'],
            help='Model (label) type. (Default: %(default)s)')
 addBoolArg(parser=arg_g3, name='multilabel_classification', input_type='flag', default=False,
-           help='If the classifiation is a \"multilabel\" type. Only effective when model_type=\'classification\'. (Default: %(default)s)')
+           help='If the classification is a \"multilabel\" type. Only effective when model_type=\'classification\'. (Default: %(default)s)')
 
 # g4: others
 add_g4_arg('-se', '--random_state', type=int,
@@ -118,6 +120,14 @@ print(args)
 
 # ------- check arguments -------
 # - below: we use custom script to check files and folders (not csvPath or fileDir functions) for custom error messages. -
+if os.path.isdir(args.output_dir):
+    # below: the output directory information is stored in output_dir
+    # instead of args.output_dir, which only has the input string.
+    output_dir = os.path.normpath(os.path.abspath(
+        os.path.expanduser(args.output_dir)))
+else:
+    error('Output directory not found.')
+
 if args.manual_label_file is not None:
     if os.path.isfile(args.manual_label_file):
         # return full_path
@@ -127,24 +137,21 @@ if args.manual_label_file is not None:
         else:
             manual_label_file = os.path.normpath(os.path.abspath(
                 os.path.expanduser(args.manual_label_file)))
+            manual_label_fileNameVar = args.manual_label_filename_var
+            manual_label_labelVar = args.manual_label_var
     else:
         error('Invalid manual label file or file not found.')
 else:
-    manual_label_file = args.manual_label_file
-
-if os.path.isdir(args.output_dir):
-    # below: the output directory information is stored in output_dir
-    # instead of args.output_dir, which only has the input string.
-    output_dir = os.path.normpath(os.path.abspath(
-        os.path.expanduser(args.output_dir)))
-else:
-    error('Output directory not found.')
+    manual_label_file, manual_label_fileNameVar, manual_label_labelVar = None, None, None
 
 
 # ------ ad-hoc test ------
 tst_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
-                            manual_labels=None, label_sep=None, pd_labels_var_name=None, model_type='classification',
-                            multilabel_classification=False, x_scaling='none', x_min_max_range=[0, 1], resmaple_method='stratified',
+                            model_type='classification', multilabel_classification=False,
+                            manual_labels=manual_label_file,
+                            manual_labels_fileNameVar=manual_label_fileNameVar, manual_labels_labelVar=manual_label_labelVar,
+                            label_sep=None,
+                            x_scaling='none', x_min_max_range=[0, 1], resmaple_method='stratified',
                             training_percentage=0.8, verbose=False, random_state=1)
 
 tst_train, tst_test = tst_dat.generate_batched_data(

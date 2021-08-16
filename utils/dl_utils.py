@@ -6,7 +6,7 @@ import random
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from utils.data_utils import adjmatAnnotLoader, labelMapping, labelOneHot, getSelectedDataset
+from utils.data_utils import adjmatAnnotLoader, adjmatAnnotLoaderV2, labelMapping, labelOneHot, getSelectedDataset
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 
@@ -23,8 +23,9 @@ class BatchMatrixLoader(object):
         target_file_ext: str or None. Optional extension of the files to scan. When None, the data loader scans all files.\n
         manual_labels: pd.DataFrame or None. Optional file label data frame. When None, the loader's _parse_file() method automatically
             parses subfolder's name as file labels. Cannot be None when model_type='regression'.\n
+        manual_labels_fileNameVar: string or None. Required for manual_labels, variable name in annotFile for file names.\n
+        manual_labels_labelVar: string or None. Required for manual_labels, variable nam ein annotFile for lables.\n
         label_sep: str or None.  Optional str to separate label strings. When none, the loader uses the entire string as file labels.
-        pd_labelse_bar_name: list of str or None. Set when manual_labels is not None, variable name for file labels.\n
         model_type: str. Model (label) type. Options are "classification", "regression" and "semisupervised".\n
         multilabel_classification: bool. If the classification is a "multilabel" type. Only effective when model_type='classification'.\n
         x_scaling: str. If and how to scale x values. Options are "none", "max" and "minmax".\n
@@ -51,13 +52,16 @@ class BatchMatrixLoader(object):
         - When resample_method='random', the loader randomly draws samples according to the split percentage from the full data.
             When resample_method='stratified', the loader randomly draws samples according to the split percentage within each label.
             Currently, the "balanced" method, i.e. drawing equal amount of samples from each label, has not been implemented.\n
+        - For manual_labels, the CSV file needs to have at least two columns: one for file names (no path, but with extension), one for labels.
+            For regression modelling, the  
     """
 
     def __init__(self, filepath,
                  new_shape=None,
                  target_file_ext=None,
-                 manual_labels=None, label_sep=None, pd_labels_var_name=None,
                  model_type='classification', multilabel_classification=False,
+                 manual_labels=None, manual_labels_fileNameVar=None, manual_labels_labelVar=None,
+                 label_sep=None,
                  x_scaling="none", x_min_max_range=[0, 1],
                  resmaple_method="random",
                  training_percentage=0.8,
@@ -69,7 +73,9 @@ class BatchMatrixLoader(object):
         self.filepath = filepath
         self.target_ext = target_file_ext
         self.manual_labels = manual_labels
-        self.pd_labels_var_name = pd_labels_var_name
+        self.manual_labels_fileNameVar = manual_labels_fileNameVar
+        self.manual_labels_labelVar = manual_labels_labelVar
+        # self.pd_labels_var_name = pd_labels_var_name  # deprecated argument
         self.label_sep = label_sep
         self.new_shape = new_shape
 
@@ -93,45 +99,56 @@ class BatchMatrixLoader(object):
 
     def _parse_file(self):
         """
-        - parse file path to get file path annotation and, optionally, label information\n
+        - parse file path to get file path annotation and label information\n
         - set up manual label information\n
         """
-
         if self.model_type == 'classification':
-            file_annot, labels = adjmatAnnotLoader(
-                self.filepath, targetExt=self.target_ext)
+            if self.manual_labels is None:
+                # file_annot, labels = adjmatAnnotLoader(
+                #     self.filepath, targetExt=self.target_ext)
+                file_annot, labels = adjmatAnnotLoaderV2(
+                    self.filepath, targetExt=self.target_ext)
+            else:
+                file_annot, labels = adjmatAnnotLoaderV2(
+                    self.filepath, targetExt=self.target_ext, autoLabel=False,
+                    annotFile=self.manual_labels,
+                    fileNameVar=self.manual_labels_fileNameVar, labelVar=self.manual_labels_labelVar)
         elif self.model_type == 'regression':
             if self.manual_labels is None:
                 raise ValueError(
                     'Set manual_labels when model_type=\"regression\".')
-            file_annot, _ = adjmatAnnotLoader(
-                self.filepath, targetExt=self.target_ext, autoLabel=False)
+            else:
+                file_annot, labels = adjmatAnnotLoaderV2(
+                    self.filepath, targetExt=self.target_ext, autoLabel=False,
+                    annotFile=self.manual_labels,
+                    fileNameVar=self.manual_labels_fileNameVar, labelVar=self.manual_labels_labelVar)
         else:  # semisupervised
             file_annot, _ = adjmatAnnotLoader(
                 self.filepath, targetExt=self.target_ext)
-
-        if self.semi_supervised:
             labels = None
-        else:
-            if self.manual_labels is not None:  # update labels to the manually set array
-                if isinstance(self.manual_labels, pd.DataFrame):
-                    if self.pd_labels_var_name is None:
-                        raise TypeError(
-                            'Set pd_labels_var_name when manual_labels is a pd.Dataframe.')
-                    else:
-                        try:
-                            labels = self.manual_labels[self.pd_labels_var_name].to_numpy(
-                            )
-                        except Exception as e:
-                            print(
-                                'Manual label parsing failed. Hint: check if pd_labels_var_name is present in the manual label data frame.')
-                elif isinstance(self.manual_labels, np.ndarray):
-                    labels = self.manual_labels
-                else:
-                    raise TypeError(
-                        'When not None, manual_labels needs to be pd.Dataframe or np.ndarray.')
 
-                labels = self.manual_labels
+        # if self.semi_supervised:
+        #     labels = None
+        # else:
+        #     if self.manual_labels is not None:  # update labels to the manually set array
+        #         if isinstance(self.manual_labels, pd.DataFrame):
+        #             if self.pd_labels_var_name is None:
+        #                 raise TypeError(
+        #                     'Set pd_labels_var_name when manual_labels is a pd.Dataframe.')
+        #             else:
+        #                 try:
+        #                     labels = self.manual_labels[self.pd_labels_var_name].to_numpy(
+        #                     )
+        #                 except Exception as e:
+        #                     print(
+        #                         'Manual label parsing failed. Hint: check if pd_labels_var_name is present in the manual label data frame.')
+        #         elif isinstance(self.manual_labels, np.ndarray):
+        #             labels = self.manual_labels
+        #         else:
+        #             raise TypeError(
+        #                 'When not None, manual_labels needs to be pd.Dataframe or np.ndarray.')
+
+        #         labels = self.manual_labels
 
         return file_annot, labels
 

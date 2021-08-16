@@ -193,6 +193,7 @@ def adjmatAnnotLoaderV2(dir, targetExt=None, autoLabel=True, annotFile=None, fil
             Sub folder support is not impossible. It is just too complicated to implement in a timely fashion. 
             This means all data files should be in one folder, i.e. dir.\n
         - When autoLabel=False, the CSV file should at least two columens, one for file name and one for the corresponding labels.\n
+        - For regression modelling and when autoLabel=False, labelVar is used for the outcome variable.\n
     """
     # -- check arguments for autoLabel=False --
     if autoLabel == False:

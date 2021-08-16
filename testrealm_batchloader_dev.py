@@ -249,28 +249,21 @@ file_annot['path'][0]
 file_annot, labels = tst_adjmatAnnotLoader(
     dat_dir, targetExt='txt', autoLabel=True)
 
+file_annot, labels = adjmatAnnotLoaderV2(
+    dat_dir, targetExt='txt', autoLabel=True)
+
 file_annot['path'].to_list()
 file_annot.loc[0:1]
 
 _, _, _, filenames = tst_sameFileCheck('./data', validExts='txt')
 dup = tst_sameFileCheck('./data', validExts='txt')
-
-# tst_path = []
-# for f in tqdm(filenames):
-#     tst_path.append(list(tst_findFilePath(f, './data')))
-# tst_path = flatten(tst_path)
-
-# tst_annot = pd.DataFrame()
-# tst_annot['path'] = tst_path
-# tst_annot['path2'] = tst_annot['path']
-
 tst_pd = pd.DataFrame()
 tst_pd['filename'] = filenames
 tst_pd['label'] = labels
 tst_pd.to_csv(os.path.join(dat_dir, 'tst_annot.csv'), index=False)
 
 
-file_annot, labels = tst_adjmatAnnotLoader(
+file_annot, labels = adjmatAnnotLoaderV2(
     dat_dir, targetExt='txt', autoLabel=False, annotFile='./data/tst_annot.csv', fileNameVar='filename', labelVar='label')
 
 file_annot['path'].to_list()
