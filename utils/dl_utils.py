@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from utils.data_utils import adjmatAnnotLoader, adjmatAnnotLoaderV2, labelMapping, labelOneHot, getSelectedDataset
+from utils.other_utils import VariableNotFoundError, FileError
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 
@@ -102,53 +103,76 @@ class BatchMatrixLoader(object):
         - parse file path to get file path annotation and label information\n
         - set up manual label information\n
         """
-        if self.model_type == 'classification':
-            if self.manual_labels is None:
+        if self.manual_labels is None:
+            if self.model_type == 'classification':
                 # file_annot, labels = adjmatAnnotLoader(
                 #     self.filepath, targetExt=self.target_ext)
                 file_annot, labels = adjmatAnnotLoaderV2(
                     self.filepath, targetExt=self.target_ext)
-            else:
-                file_annot, labels = adjmatAnnotLoaderV2(
-                    self.filepath, targetExt=self.target_ext, autoLabel=False,
-                    annotFile=self.manual_labels,
-                    fileNameVar=self.manual_labels_fileNameVar, labelVar=self.manual_labels_labelVar)
-        elif self.model_type == 'regression':
-            if self.manual_labels is None:
+            elif self.model_type == 'regression':
                 raise ValueError(
                     'Set manual_labels when model_type=\"regression\".')
+            elif self.model_type == 'semisupervised':
+                file_annot, _ = adjmatAnnotLoaderV2(
+                    self.filepath, targetExt=self.target_ext)
+                labels = None
             else:
-                file_annot, labels = adjmatAnnotLoaderV2(
-                    self.filepath, targetExt=self.target_ext, autoLabel=False,
-                    annotFile=self.manual_labels,
-                    fileNameVar=self.manual_labels_fileNameVar, labelVar=self.manual_labels_labelVar)
-        else:  # semisupervised
-            file_annot, _ = adjmatAnnotLoader(
-                self.filepath, targetExt=self.target_ext)
-            labels = None
+                raise NotImplemented('Unknown model type.')
+        else:
+            if self.model_type == 'semisupervised':
+                raise ValueError(
+                    'Manual labels not supported for \'semisupervised\' model type.')
+            elif self.model_type in ('classification', 'regression'):
+                try:
+                    file_annot, labels = adjmatAnnotLoaderV2(
+                        self.filepath, targetExt=self.target_ext, autoLabel=False,
+                        annotFile=self.manual_labels,
+                        fileNameVar=self.manual_labels_fileNameVar, labelVar=self.manual_labels_labelVar)
+                except VariableNotFoundError as e:
+                    print(e)
+                except FileNotFoundError as e:
+                    print(e)
+                except FileError as e:
+                    print(e)
+            else:
+                raise NotImplemented('Unknown model type.')
 
-        # if self.semi_supervised:
+        # if self.model_type == 'classification':
+        #     if self.manual_labels is None:
+        #         # file_annot, labels = adjmatAnnotLoader(
+        #         #     self.filepath, targetExt=self.target_ext)
+        #         file_annot, labels = adjmatAnnotLoaderV2(
+        #             self.filepath, targetExt=self.target_ext)
+        #     else:
+        #         try:
+        #             file_annot, labels = adjmatAnnotLoaderV2(
+        #                 self.filepath, targetExt=self.target_ext, autoLabel=False,
+        #                 annotFile=self.manual_labels,
+        #                 fileNameVar=self.manual_labels_fileNameVar, labelVar=self.manual_labels_labelVar)
+        #         except VariableNotFoundError as e:
+        #             print(e)
+        #         except FileNotFoundError as e:
+        #             print(e)
+
+        # elif self.model_type == 'regression':
+        #     if self.manual_labels is None:
+        #         raise ValueError(
+        #             'Set manual_labels when model_type=\"regression\".')
+        #     else:
+        #         try:
+        #             file_annot, labels = adjmatAnnotLoaderV2(
+        #                 self.filepath, targetExt=self.target_ext, autoLabel=False,
+        #                 annotFile=self.manual_labels,
+        #                 fileNameVar=self.manual_labels_fileNameVar, labelVar=self.manual_labels_labelVar)
+        #         except VariableNotFoundError as e:
+        #             print(e)
+        #         except FileNotFoundError as e:
+        #             print(e)
+
+        # else:  # semisupervised
+        #     file_annot, _ = adjmatAnnotLoader(
+        #         self.filepath, targetExt=self.target_ext)
         #     labels = None
-        # else:
-        #     if self.manual_labels is not None:  # update labels to the manually set array
-        #         if isinstance(self.manual_labels, pd.DataFrame):
-        #             if self.pd_labels_var_name is None:
-        #                 raise TypeError(
-        #                     'Set pd_labels_var_name when manual_labels is a pd.Dataframe.')
-        #             else:
-        #                 try:
-        #                     labels = self.manual_labels[self.pd_labels_var_name].to_numpy(
-        #                     )
-        #                 except Exception as e:
-        #                     print(
-        #                         'Manual label parsing failed. Hint: check if pd_labels_var_name is present in the manual label data frame.')
-        #         elif isinstance(self.manual_labels, np.ndarray):
-        #             labels = self.manual_labels
-        #         else:
-        #             raise TypeError(
-        #                 'When not None, manual_labels needs to be pd.Dataframe or np.ndarray.')
-
-        #         labels = self.manual_labels
 
         return file_annot, labels
 

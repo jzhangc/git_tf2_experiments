@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
-from utils.other_utils import flatten
+from utils.other_utils import flatten, VariableNotFoundError, FileError
 from collections import Counter
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
@@ -208,13 +208,14 @@ def adjmatAnnotLoaderV2(dir, targetExt=None, autoLabel=True, annotFile=None, fil
                 # return full_path
                 _, file_ext = os.path.splitext(annotFile_path)
                 if file_ext != '.csv':
-                    raise ValueError('annotFile needs to be .csv type.')
+                    raise FileError('annotFile needs to be .csv type.')
             else:
-                raise ValueError('Invalid annotFile or annotFile not found.')
+                raise FileNotFoundError(
+                    'Invalid annotFile or annotFile not found.')
 
             annot_pd = pd.read_csv(annotFile_path, engine='python')
             if not all(annot_var in annot_pd.columns for annot_var in [fileNameVar, labelVar]):
-                raise ValueError(
+                raise VariableNotFoundError(
                     'fileNameVar and labelVar should both be present in the annotFile')
 
     # -- scan files --
@@ -236,7 +237,7 @@ def adjmatAnnotLoaderV2(dir, targetExt=None, autoLabel=True, annotFile=None, fil
         # Check duplicated files
         dup = sameFileCheck(dir=dir, validExts=targetExt)
         if len(dup) > 0:
-            raise ValueError(
+            raise FileError(
                 f'File duplicates found when autoLabel=False: {dup}')
 
         labels = annot_pd[labelVar].to_numpy()

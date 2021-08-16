@@ -197,7 +197,7 @@ class CnnClassifier(Model):
 # ------ data ------
 # -- batch loader data --
 tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
-                               manual_labels=None, label_sep=None, pd_labels_var_name=None, model_type='semisupervised',
+                               manual_labels=None, label_sep=None, model_type='semisupervised',
                                multilabel_classification=False, x_scaling='minmax', x_min_max_range=[0, 1], resmaple_method='random',
                                training_percentage=0.8, verbose=False, random_state=1)
 tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data()
@@ -259,7 +259,15 @@ m.save('./results/subclass_autoencoder_batch', save_format='tf')
 
 # ------ testing ------
 tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
-                               manual_labels=None, label_sep=None, pd_labels_var_name=None, model_type='classification',
+                               manual_labels=None, label_sep=None, model_type='classification',
+                               multilabel_classification=False, x_scaling='minmax', x_min_max_range=[0, 1], resmaple_method='random',
+                               training_percentage=0.8, verbose=False, random_state=1)
+
+# below: manual labels
+tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
+                               manual_labels='./data/tst_annot.csv',
+                               manual_labels_fileNameVar='filename', manual_labels_labelVar='label',
+                               label_sep=None, model_type='classification',
                                multilabel_classification=False, x_scaling='minmax', x_min_max_range=[0, 1], resmaple_method='random',
                                training_percentage=0.8, verbose=False, random_state=1)
 tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data(batch_size=4)

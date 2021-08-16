@@ -7,6 +7,14 @@ import argparse
 
 
 # ------ classes -------
+class VariableNotFoundError(ValueError):
+    pass
+
+
+class FileError(ValueError):
+    pass
+
+
 class colr:
     WHITE = '\033[0;97m'
     WHITE_B = '\033[1;97m'
@@ -28,12 +36,13 @@ class AppArgParser(argparse.ArgumentParser):
         The help page will display when (1) no argumment was provided, or (2) there is an error
     """
 
-    def error(self, message, *lines):
-        string = "\n{}ERROR: " + message + "{}\n" + \
-            "\n".join(lines) + ("{}\n" if lines else "{}")
-        print(string.format(colr.RED_B, colr.RED, colr.ENDC))
-        self.print_help()
-        sys.exit(2)
+
+def error(self, message, *lines):
+    string = "\n{}ERROR: " + message + "{}\n" + \
+        "\n".join(lines) + ("{}\n" if lines else "{}")
+    print(string.format(colr.RED_B, colr.RED, colr.ENDC))
+    self.print_help()
+    sys.exit(2)
 
 
 # ------ functions -------
