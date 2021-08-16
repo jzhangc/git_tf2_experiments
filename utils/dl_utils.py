@@ -129,11 +129,12 @@ class BatchMatrixLoader(object):
                         annotFile=self.manual_labels,
                         fileNameVar=self.manual_labels_fileNameVar, labelVar=self.manual_labels_labelVar)
                 except VariableNotFoundError as e:
-                    print(e)
+                    raise VariableNotFoundError(
+                        'Filename variable or label variable names not found in manual_labels file.')
                 except FileNotFoundError as e:
-                    print(e)
+                    raise e
                 except FileError as e:
-                    print(e)
+                    raise e
             else:
                 raise NotImplemented('Unknown model type.')
 

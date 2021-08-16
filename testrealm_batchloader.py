@@ -241,7 +241,7 @@ reconstruction_test.shape
 plt.imshow(reconstruction_test[0])
 
 
-# - visulization -
+# - visualization -
 for a, _ in tst_tf_test:
     reconstruction = m.predict(a)
     # display decoded
