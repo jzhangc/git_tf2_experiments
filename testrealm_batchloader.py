@@ -22,6 +22,7 @@ from tensorflow.keras.layers import (BatchNormalization, Conv2D, Dense,
                                      MaxPooling2D, Reshape, UpSampling2D)
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.utils import to_categorical
 from sklearn.metrics import roc_auc_score, roc_curve
 
 from utils.dl_utils import BatchMatrixLoader
@@ -193,6 +194,24 @@ class CnnClassifier(Model):
         x = Input(self.initial_shape)
         return Model(inputs=[x], outputs=self.call(x))
 
+    def predict_classes(self, x, batch_size=32, verbose=1):
+        """
+        Generate class predictions for the input samples
+        batch by batch.
+        # Arguments
+            x: input data, as a Numpy array or list of Numpy arrays
+                (if the model has multiple inputs).
+            batch_size: integer.
+            verbose: verbosity mode, 0 or 1.
+        # Returns
+            A numpy array of class predictions.
+        """
+        proba = self.predict(x, batch_size=batch_size, verbose=verbose)
+        if proba.shape[-1] > 1:
+            return to_categorical(proba.argmax(axis=1), proba.shape[-1])
+        else:
+            return (proba > 0.5).astype('int32')
+
 
 # ------ data ------
 # -- batch loader data --
@@ -280,7 +299,7 @@ tst_m = CnnClassifier(initial_shape=(90, 90, 1),
 tst_m.model().summary()
 
 tst_m.compile(optimizer=optm, loss="categorical_crossentropy",
-              metrics=['categorical_accuracy', tf.keras.metrics.AUC()])
+              metrics=['categorical_accuracy', tf.keras.metrics.Recall()])
 tst_m_history = tst_m.fit(tst_tf_train, epochs=80,
                           callbacks=callbacks,
                           validation_data=tst_tf_test)
@@ -291,9 +310,13 @@ epochsPlot(model_history=tst_m_history,
 
 
 pred = tst_m.predict(tst_tf_test)
+pred_class = tst_m.predict_classes(tst_tf_test)
 pred[0]
 pred.shape
 tst_tf_test
+
+to_categorical(np.argmax(pred, axis=1), 10)
+
 
 for _, b in tst_tf_test:
     print(b)
@@ -306,3 +329,8 @@ for _, b in tst_tf_test:
     # print(type(bn))
     tst_t = np.concatenate((tst_t, bn), axis=0)
 tst_t.shape
+
+
+def tstfoo(y, pred):
+
+    return None
