@@ -307,30 +307,3 @@ tst_m_history = tst_m.fit(tst_tf_train, epochs=80,
 epochsPlot(model_history=tst_m_history,
            accuracy_var='categorical_accuracy',
            val_accuracy_var='val_categorical_accuracy')
-
-
-pred = tst_m.predict(tst_tf_test)
-pred_class = tst_m.predict_classes(tst_tf_test)
-pred[0]
-pred.shape
-tst_tf_test
-
-to_categorical(np.argmax(pred, axis=1), 10)
-
-
-for _, b in tst_tf_test:
-    print(b)
-    # break
-
-tst_t = np.ndarray((0, 10))
-for _, b in tst_tf_test:
-    # print(b.numpy())
-    bn = b.numpy()
-    # print(type(bn))
-    tst_t = np.concatenate((tst_t, bn), axis=0)
-tst_t.shape
-
-
-def tstfoo(y, pred):
-
-    return None
