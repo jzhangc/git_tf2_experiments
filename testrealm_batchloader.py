@@ -270,7 +270,7 @@ tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
                                label_sep=None, model_type='classification',
                                multilabel_classification=False, x_scaling='minmax', x_min_max_range=[0, 1], resmaple_method='random',
                                training_percentage=0.8, verbose=False, random_state=1)
-tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data(batch_size=4)
+tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data(batch_size=10)
 
 earlystop = EarlyStopping(monitor='val_loss', patience=5)
 callbacks = [earlystop]
@@ -289,18 +289,15 @@ epochsPlot(model_history=tst_m_history,
            accuracy_var='categorical_accuracy',
            val_accuracy_var='val_categorical_accuracy')
 
+
 pred = tst_m.predict(tst_tf_test)
 pred[0]
 pred.shape
 tst_tf_test
 
-tst_test = np.ndarray()
-
-
-for a, b, in tst_tf_train.take(1):
-    print(a.numpy().shape[1:])
-    print(b.numpy().shape[1:])
-
+for _, b in tst_tf_test:
+    print(b)
+    # break
 
 tst_t = np.ndarray((0, 10))
 for _, b in tst_tf_test:
@@ -309,5 +306,3 @@ for _, b in tst_tf_test:
     # print(type(bn))
     tst_t = np.concatenate((tst_t, bn), axis=0)
 tst_t.shape
-
-tst_tf_dat.test_batch_n
