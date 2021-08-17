@@ -38,40 +38,6 @@ tf.config.list_physical_devices()
 
 
 # ------ model ------
-class AutoEncoderDecoder(Model):
-    def __init__(self, initial_shape, bottleneck_dim):
-        super(AutoEncoderDecoder, self).__init__()
-        self.initial_shape = initial_shape
-        self.bottleneck_dim = bottleneck_dim
-        self.encoder = CNN2d_encoder(
-            initial_shape=self.initial_shape, bottleneck_dim=bottleneck_dim)
-        self.decoder = CNN2d_decoder(encoded_dim=bottleneck_dim)
-
-    def call(self, input):  # putting two models togeter
-        x = self.encoder(input)
-        z = self.decoder(x)
-        return z
-
-    def encode(self, x):
-        """
-        This method is used to encode data using the trained encoder
-        """
-        x = self.encoder(x)
-        return x
-
-    def decode(self, z):
-        z = self.decoder(z)
-        return z
-
-    def model(self):
-        """
-        This method enables correct model.summary() results:
-        model.model().summary()
-        """
-        x = Input(self.initial_shape)
-        return Model(inputs=[x], outputs=self.call(x))
-
-
 class CnnClassifier(Model):
     def __init__(self, initial_shape, bottleneck_dim, outpout_n):
         super(CnnClassifier, self).__init__()
@@ -137,6 +103,13 @@ class CnnClassifier(Model):
             return (proba > 0.5).astype('int32')
 
 
+# ------ functions ------
+def tstfoo(y, pred):
+    """ROC-AUC plot function"""
+
+    return None
+
+
 # ------ data ------
 # -- batch loader data --
 tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
@@ -173,7 +146,7 @@ tst_m_history = tst_m.fit(tst_tf_train, epochs=80,
                           validation_data=tst_tf_test)
 
 
-# ------ plot function test ------
+# ------ plot function ------
 epochsPlot(model_history=tst_m_history,
            accuracy_var='categorical_accuracy',
            val_accuracy_var='val_categorical_accuracy')
@@ -209,9 +182,3 @@ plt.axis([0, 1, 0, 1])
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.show()
-
-
-def tstfoo(y, pred):
-    """ROC-AUC plot function"""
-
-    return None
