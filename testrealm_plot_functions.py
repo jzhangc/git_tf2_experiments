@@ -113,9 +113,11 @@ def tstfoo(y, pred):
 # ------ data ------
 # -- batch loader data --
 tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
-                               manual_labels=None, label_sep=None, model_type='classification',
-                               multilabel_classification=False, x_scaling='minmax', x_min_max_range=[0, 1], resmaple_method='random',
+                               manual_labels=None, model_type='classification',
+                               multilabel_classification=False, label_sep="_",
+                               x_scaling='minmax', x_min_max_range=[0, 1], resmaple_method='random',
                                training_percentage=0.8, verbose=False, random_state=1)
+tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data(batch_size=10)
 
 # below: manual labels
 tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
@@ -125,6 +127,9 @@ tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
                                multilabel_classification=False, x_scaling='minmax', x_min_max_range=[0, 1], resmaple_method='random',
                                training_percentage=0.8, verbose=False, random_state=1)
 tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data(batch_size=10)
+
+
+tst_tf_dat.lables_count
 
 
 # ------ training ------

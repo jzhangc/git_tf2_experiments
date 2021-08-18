@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from utils.data_utils import adjmatAnnotLoader, adjmatAnnotLoaderV2, labelMapping, labelOneHot, getSelectedDataset
-from utils.other_utils import VariableNotFoundError, FileError
+from utils.other_utils import VariableNotFoundError, FileError, warn
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 
@@ -33,12 +33,12 @@ class BatchMatrixLoader(object):
         x_min_max_range: two num list. Only effective when x_scaling='minmax', the range for the x min max scaling.\n
         resampole_method: str. Effective when cv_only is not True. Train/test split method. Options are "random" and "stratified".
         training_percentage: num. Training data set percentage.\n
-        verbose: bool. verbose.\n 
+        verbose: bool. verbose.\n
         randome_state: int. randome state.\n
 
     # Details\n
         - This data loader is designed for matrices (similar to AxB resolution pictures).\n
-        - For semisupervised model, the "label" would be the input data itself. This is typically used for autoencoder-decoder.\n      
+        - For semisupervised model, the "label" would be the input data itself. This is typically used for autoencoder-decoder.\n
         - It is possible to stack matrix with A,B,N, and use new_shape argument to reshape the data into A,B,N shape.\n
         - For filepath, one can set up each subfolder as data labels. In such case, the _parse_file() method will automatically
             parse the subfolder name as labales for the files inside.\n
@@ -54,21 +54,34 @@ class BatchMatrixLoader(object):
             When resample_method='stratified', the loader randomly draws samples according to the split percentage within each label.
             Currently, the "balanced" method, i.e. drawing equal amount of samples from each label, has not been implemented.\n
         - For manual_labels, the CSV file needs to have at least two columns: one for file names (no path, but with extension), one for labels.
-            For regression modelling, the  
+            For regression modelling, the
     """
 
     def __init__(self, filepath,
                  new_shape=None,
                  target_file_ext=None,
-                 model_type='classification', multilabel_classification=False,
+                 model_type='classification', multilabel_classification=False, label_sep=None,
                  manual_labels=None, manual_labels_fileNameVar=None, manual_labels_labelVar=None,
-                 label_sep=None,
                  x_scaling="none", x_min_max_range=[0, 1],
                  resmaple_method="random",
                  training_percentage=0.8,
                  verbose=True, random_state=1):
         """Initialization"""
-        # model information
+        # - argument check -
+        # for multilabel modelling label separation
+        if model_type == 'classification':
+            if multilabel_classification:
+                if label_sep is None:
+                    raise ValueError(
+                        'set label_sep for multilabel classification.')
+                else:
+                    self.label_sep = label_sep
+            else:
+                if label_sep is not None:
+                    warn('label_sep ignored when multilabel_class=False')
+                    self.label_sep = None
+
+        # - model information -
         self.model_type = model_type
         self.multilabel_class = multilabel_classification
         self.filepath = filepath
@@ -77,7 +90,7 @@ class BatchMatrixLoader(object):
         self.manual_labels_fileNameVar = manual_labels_fileNameVar
         self.manual_labels_labelVar = manual_labels_labelVar
         # self.pd_labels_var_name = pd_labels_var_name  # deprecated argument
-        self.label_sep = label_sep
+        # self.label_sep = label_sep
         self.new_shape = new_shape
 
         if model_type == 'semisupervised':
@@ -85,16 +98,16 @@ class BatchMatrixLoader(object):
         else:
             self.semi_supervised = False
 
-        # processing
+        # - processing -
         self.x_scaling = x_scaling
         self.x_min_max_range = x_min_max_range
 
-        # resampling
+        # - resampling -
         self.resample_method = resmaple_method
         self.train_percentage = training_percentage
         self.test_percentage = 1 - training_percentage
 
-        # random state and other settings
+        # - random state and other settings -
         self.rand = random_state
         self.verbose = verbose
 
@@ -181,16 +194,21 @@ class BatchMatrixLoader(object):
         file_annot, labels = self._parse_file(**kwargs)
 
         if self.model_type == 'classification':
-            if self.multilabel_class:
-                if self.label_sep is None:
-                    raise ValueError(
-                        'set label_sep for multilabel classification.')
+            labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
+                labels=labels, sep=self.label_sep)
+            # if self.multilabel_class:
+            #     if self.label_sep is None:
+            #         raise ValueError(
+            #             'set label_sep for multilabel classification.')
 
-                labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
-                    labels=labels, sep=self.label_sep)
-            else:
-                labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
-                    labels=labels, sep=None)
+            #     labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
+            #         labels=labels, sep=self.label_sep)
+            # else:
+            #     if self.label_sep is not None:
+            #         warn('label_sep ignored when multilabel_class=False')
+
+            #     labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
+            #         labels=labels, sep=None)
             encoded_labels = labelOneHot(labels_list, labels_map)
         else:
             encoded_labels = labels
