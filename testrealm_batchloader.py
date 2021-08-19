@@ -149,8 +149,14 @@ class AutoEncoderDecoder(Model):
 
 
 class CnnClassifier(Model):
-    def __init__(self, initial_shape, bottleneck_dim, outpout_n):
+    def __init__(self, initial_shape, bottleneck_dim, outpout_n, output_activation='softmax'):
+        """
+        Details:\n
+            - Use "softmax" for binary or mutually exclusive multiclass modelling,
+                and use "sigmoid" for multilabel classification.\n
+        """
         super(CnnClassifier, self).__init__()
+        self.output_activation = output_activation
         self.initial_shape = initial_shape
         self.bottleneck_dim = bottleneck_dim
         # CNN encoding sub layers
@@ -169,7 +175,7 @@ class CnnClassifier(Model):
         self.dense1 = Dense(bottleneck_dim, activation='relu',
                             activity_regularizer=tf.keras.regularizers.l2(l2=0.01))
         self.encoded = LeakyReLU()
-        self.dense2 = Dense(outpout_n, activation='softmax')
+        self.dense2 = Dense(outpout_n, activation=output_activation)
 
     def call(self, input):
         x = self.conv2d_1(input)
@@ -194,23 +200,75 @@ class CnnClassifier(Model):
         x = Input(self.initial_shape)
         return Model(inputs=[x], outputs=self.call(x))
 
-    def predict_classes(self, x, batch_size=32, verbose=1):
+    def predict_classes(self, label_dict,
+                        x, proba_threshold=None,
+                        batch_size=32, verbose=1):
         """
-        Generate class predictions for the input samples
-        batch by batch.
-        # Arguments
+        # Purpose:\n
+            Generate class predictions for the input samples batch by batch.\n
+        # Arguments:\n
+            label_dict: dict. Dictionary with index (integers) as keys.\n
             x: input data, as a Numpy array or list of Numpy arrays
-                (if the model has multiple inputs).
-            batch_size: integer.
-            verbose: verbosity mode, 0 or 1.
-        # Returns
-            A numpy array of class predictions.
+                (if the model has multiple inputs).\n
+            proba_threshold: None or float. The probability threshold to allocate class labels to multilabel prediction.\n
+            batch_size: integer.\n
+            verbose: verbosity mode, 0 or 1.\n
+        # Return:\n
+            A numpy array of class predictions.\n
+        # Details:\n
+            - For label_dict, this is a dictionary with keys as index integers.
+                Example:
+                {0: 'all', 1: 'alpha', 2: 'beta', 3: 'fmri', 4: 'hig', 5: 'megs', 6: 'pc', 7: 'pt', 8: 'sc'}. 
+                This can be derived from the "label_map_rev" attribtue from BatchDataLoader class.\n            
         """
-        proba = self.predict(x, batch_size=batch_size, verbose=verbose)
-        if proba.shape[-1] > 1:
-            return to_categorical(proba.argmax(axis=1), proba.shape[-1])
+        # - argument check -
+        if not isinstance(label_dict, dict):
+            raise ValueError('label_dict needs to be a dictionary.')
         else:
-            return (proba > 0.5).astype('int32')
+            keys = label_dict.keys()
+
+        if not all(isinstance(key, int) for key in keys):
+            raise ValueError('The keys in label_dict need to be integers.')
+
+        if self.output_activation == 'sigmoid' and proba_threshold is None:
+            raise ValueError(
+                'Set proba_threshold for multilabel class prediction.')
+
+        # - prediction -
+        proba = self.predict(x, batch_size=batch_size, verbose=verbose)
+        self.proba = proba
+        self.label_dict = label_dict
+        if self.output_activation == 'softmax':
+            if proba.shape[-1] > 1:
+                return to_categorical(proba.argmax(axis=1), proba.shape[-1])
+            else:
+                return (proba > 0.5).astype('int32')
+        elif self.output_activation == 'sigmoid':
+            """this is to display percentages for each class"""
+            # raise NotImplemented('TBC')
+            multilabel_res = np.zeros(proba.shape)
+            for i, j in enumerate(proba):
+                print(f'{i}: {j}')
+                sample_res = j >= proba_threshold
+                for m, n in enumerate(sample_res):
+                    print(f'{m}: {n}')
+                    multilabel_res[i, m] = n
+                # break
+
+            if verbose:
+                idxs = np.argsort(proba)
+                for i, j in enumerate(idxs):
+                    print(f'Sample: {i}')
+                    idx_decrease = j[::-1]  # [::-1] to make decreasing order
+                    sample_proba = proba[i]
+                    for m, n in enumerate(idx_decrease):
+                        print(f'\t{label_dict[m]}: {sample_proba[n]*100:.2f}%')
+                # break
+
+            return multilabel_res
+        else:
+            raise NotImplemented(
+                f'predict_classes method not implemented for {self.output_activation}')
 
 
 # ------ data ------

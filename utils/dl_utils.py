@@ -219,7 +219,7 @@ class BatchMatrixLoader(object):
         except KeyError as e:
             print('Failed to load files. Hint: check target extension or directory.')
 
-        return filepath_list, encoded_labels, lables_count, labels_map_rev
+        return filepath_list, labels_list, lables_count, labels_map_rev, encoded_labels
 
     def _x_data_process(self, x_array):
         """NOTE: reshaping to (_, _, 1) is mandatory"""
@@ -339,7 +339,7 @@ class BatchMatrixLoader(object):
         self.shuffle_for_cv_only = shuffle_for_cv_only
 
         # - load paths -
-        filepath_list, encoded_labels, self.lables_count, self.labels_map_rev = self._get_file_annot()
+        filepath_list, labels_list, lables_count, labels_map_rev, encoded_labels = self._get_file_annot()
 
         if self.semi_supervised:
             total_ds = tf.data.Dataset.from_tensor_slices(filepath_list)
@@ -400,6 +400,13 @@ class BatchMatrixLoader(object):
                     self._fixup_shape, num_parallel_calls=tf.data.AUTOTUNE)
 
             self.test_batch_n = 0
+
+        # - export attributes -
+        self.filepath_list = filepath_list
+        self.labels_list = labels_list
+        self.lables_count = lables_count
+        self.labels_map_rev = labels_map_rev
+        self.encoded_labels = encoded_labels
 
         # - set up batch and prefeching -
         # NOTE: the train_set and test_set are tensorflow.python.data.ops.dataset_ops.PrefetchDataset type
