@@ -123,8 +123,9 @@ tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data(batch_size=10)
 tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
                                manual_labels='./data/tst_annot.csv',
                                manual_labels_fileNameVar='filename', manual_labels_labelVar='label',
-                               label_sep=None, model_type='classification',
-                               multilabel_classification=False, x_scaling='minmax', x_min_max_range=[0, 1], resmaple_method='random',
+                               model_type='classification',
+                               multilabel_classification=True, label_sep='_',
+                               x_scaling='minmax', x_min_max_range=[0, 1], resmaple_method='random',
                                training_percentage=0.8, verbose=False, random_state=1)
 tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data(batch_size=10)
 
@@ -140,7 +141,7 @@ optm = Adam(learning_rate=0.001)
 
 # -- model --
 tst_m = CnnClassifier(initial_shape=(90, 90, 1),
-                      bottleneck_dim=64, outpout_n=10)
+                      bottleneck_dim=64, outpout_n=9)
 tst_m.model().summary()
 
 # -- training --
@@ -170,7 +171,7 @@ for _, b in tst_tf_test:
     print(b)
     # break
 
-tst_t = np.ndarray((0, 10))
+tst_t = np.ndarray((0, 9))
 for _, b in tst_tf_test:
     # print(b.numpy())
     bn = b.numpy()
