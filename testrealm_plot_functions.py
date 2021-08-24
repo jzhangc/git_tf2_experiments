@@ -243,41 +243,9 @@ pred = tst_m.predict(tst_tf_test)
 proba, pred_class = tst_m.predict_classes(label_dict=label_dict, x=tst_tf_test)
 to_categorical(np.argmax(pred, axis=1), len(tst_tf_dat.lables_count))
 
-tst_m.proba
-
-tst_dict = {0: 'case'}
-res_colnames = [None]*len(tst_dict)
-for key, val in tst_dict.items():
-    res_colnames[key] = val
-
-
-tst_pd = pd.DataFrame(pred, dtype=float)
-tst_pd.columns = res_colnames
-
-tstkeys = tst_dict.keys()
-tst_dict[0] = tst_dict.pop(tstkeys[0])
-
-tst_dict.keys()
-
 # - multilabel -
 pred_class = tst_m.predict_classes(
     label_dict=label_dict, x=tst_tf_test, proba_threshold=0.5)
-
-for i, j in enumerate(idxs):
-    print(f'Sample: {i}')
-    print(j)
-    idx_decrease = j[::-1]  # [::-1] decreasing order
-    sample_prob = pred[i]
-    print(sample_prob)
-    for m, n in enumerate(idx_decrease):
-        # print(f'{m}: {n}')
-        print(f'\t{label_dict[m]}: {sample_prob[n]*100:.2f}%')
-    break
-
-
-for _, b in tst_tf_test:
-    print(b)
-    # break
 
 tst_t = np.ndarray((0, 9))
 for _, b in tst_tf_test:
