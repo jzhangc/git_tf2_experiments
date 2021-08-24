@@ -104,35 +104,54 @@ class CnnClassifier(Model):
             batch_size: integer.\n
             verbose: verbosity mode, 0 or 1.\n
         # Return:\n
-            A numpy array of class predictions.\n
+            Two pandas dataframes for probability results and 0/1 classification results, in this order.\n
         # Details:\n
             - For label_dict, this is a dictionary with keys as index integers.
                 Example:
                 {0: 'all', 1: 'alpha', 2: 'beta', 3: 'fmri', 4: 'hig', 5: 'megs', 6: 'pc', 7: 'pt', 8: 'sc'}. 
-                This can be derived from the "label_map_rev" attribtue from BatchDataLoader class.\n            
+                This can be derived from the "label_map_rev" attribtue from BatchDataLoader class.\n
+            - For binary classification, the length of the label_dict should be 1.
+                Example: {0: 'case'}. \n        
         """
         # - argument check -
         if not isinstance(label_dict, dict):
             raise ValueError('label_dict needs to be a dictionary.')
         else:
-            keys = label_dict.keys()
+            label_keys = list(label_dict.keys())
 
-        if not all(isinstance(key, int) for key in keys):
+        if not all(isinstance(key, int) for key in label_keys):
             raise ValueError('The keys in label_dict need to be integers.')
 
         if self.output_activation == 'sigmoid' and proba_threshold is None:
             raise ValueError(
                 'Set proba_threshold for multilabel class prediction.')
 
+        # - set up output column names -
+        if len(label_dict) == 1:
+            label_dict[0] = label_dict.pop(label_keys[0])
+
+        res_colnames = [None]*len(label_dict)
+        for k, v in label_dict.items():
+            res_colnames[k] = v
+
         # - prediction -
         proba = self.predict(x, batch_size=batch_size, verbose=verbose)
-        self.proba = proba
-        self.label_dict = label_dict
+        proba_res = pd.DataFrame(proba, dtype=float)
+        proba_res.columns = res_colnames
+
+        # self.proba = proba
         if self.output_activation == 'softmax':
             if proba.shape[-1] > 1:
-                return to_categorical(proba.argmax(axis=1), proba.shape[-1])
+                multiclass_res = to_categorical(
+                    proba.argmax(axis=1), proba.shape[-1])
             else:
-                return (proba > 0.5).astype('int32')
+                multiclass_res = (proba > 0.5).astype('int32')
+
+            multiclass_out = pd.DataFrame(multiclass_res, dtype=int)
+            multiclass_out.columns = res_colnames
+
+            return proba_res, multiclass_res
+
         elif self.output_activation == 'sigmoid':
             """this is to display percentages for each class"""
             # raise NotImplemented('TBC')
@@ -155,7 +174,10 @@ class CnnClassifier(Model):
                         print(f'\t{label_dict[m]}: {sample_proba[n]*100:.2f}%')
                 # break
 
-            return multilabel_res
+            multilabel_out = pd.DataFrame(multilabel_res, dtype=int)
+            multilabel_out.columns = res_colnames
+
+            return proba_res, multilabel_res
         else:
             raise NotImplemented(
                 f'predict_classes method not implemented for {self.output_activation}')
@@ -172,7 +194,7 @@ def tstfoo(y, pred):
 # -- batch loader data --
 tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
                                manual_labels=None, model_type='classification',
-                               multilabel_classification=False, label_sep="_",
+                               multilabel_classification=False, label_sep=None,
                                x_scaling='minmax', x_min_max_range=[0, 1], resmaple_method='random',
                                training_percentage=0.8, verbose=False, random_state=1)
 tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data(batch_size=10)
@@ -197,7 +219,7 @@ optm = Adam(learning_rate=0.001, decay=0.001/80)  # decay?? lr/epoch
 # -- model --
 tst_m = CnnClassifier(initial_shape=(90, 90, 1),
                       bottleneck_dim=64, outpout_n=len(tst_tf_dat.lables_count),
-                      output_activation='sigmoid')
+                      output_activation='softmax')
 tst_m.model().summary()
 
 # -- training --
@@ -212,45 +234,34 @@ tst_m_history = tst_m.fit(tst_tf_train, epochs=80,
 
 # ------ plot function ------
 epochsPlot(model_history=tst_m_history,
-           accuracy_var='binary_accuracy',
-           val_accuracy_var='val_binary_accuracy')
-
-
-pred = tst_m.predict(tst_tf_test)
-pred_class = tst_m.predict_classes(tst_tf_test)
-pred[0]
-proba_t = 0.5
-pred.shape
-tst_tf_test
-
-tst_true_idx = np.zeros(pred.shape)
-for i, j in enumerate(pred):
-    print(f'{i}: {j}')
-    true_classes = j >= proba_t
-    # print(true_classes)
-    for m, n in enumerate(true_classes):
-        print(f'{m}: {n}')
-        tst_true_idx[i, m] = n
-    break
-
-
-tst_true_class = pred[0] >= proba_t
-tst_true_idx = np.zeros(len(tst_true_class))
-for i, j in enumerate(tst_true_class):
-    tst_true_idx[i] = j
-tst_true_idx
-
-
-to_categorical(np.argmax(pred, axis=1), len(tst_tf_dat.lables_count))
-
-
-idxs = np.argsort(pred)
-idxs = np.argsort(pred[0])[::-1]  # [::-1] decreasing order
-idxs
-
+           accuracy_var='categorical_accuracy',
+           val_accuracy_var='val_categorical_accuracy')
 label_dict = tst_tf_dat.labels_map_rev
 
-pred
+# - single label multiclass -
+pred = tst_m.predict(tst_tf_test)
+proba, pred_class = tst_m.predict_classes(label_dict=label_dict, x=tst_tf_test)
+to_categorical(np.argmax(pred, axis=1), len(tst_tf_dat.lables_count))
+
+tst_m.proba
+
+tst_dict = {0: 'case'}
+res_colnames = [None]*len(tst_dict)
+for key, val in tst_dict.items():
+    res_colnames[key] = val
+
+
+tst_pd = pd.DataFrame(pred, dtype=float)
+tst_pd.columns = res_colnames
+
+tstkeys = tst_dict.keys()
+tst_dict[0] = tst_dict.pop(tstkeys[0])
+
+tst_dict.keys()
+
+# - multilabel -
+pred_class = tst_m.predict_classes(
+    label_dict=label_dict, x=tst_tf_test, proba_threshold=0.5)
 
 for i, j in enumerate(idxs):
     print(f'Sample: {i}')

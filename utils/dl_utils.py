@@ -80,6 +80,8 @@ class BatchMatrixLoader(object):
                 if label_sep is not None:
                     warn('label_sep ignored when multilabel_class=False')
                     self.label_sep = None
+                else:
+                    self.label_sep = label_sep
 
         # - model information -
         self.model_type = model_type
