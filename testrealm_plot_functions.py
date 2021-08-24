@@ -150,7 +150,7 @@ class CnnClassifier(Model):
             multiclass_out = pd.DataFrame(multiclass_res, dtype=int)
             multiclass_out.columns = res_colnames
 
-            return proba_res, multiclass_res
+            return proba_res, multiclass_out
 
         elif self.output_activation == 'sigmoid':
             """this is to display percentages for each class"""
@@ -177,7 +177,7 @@ class CnnClassifier(Model):
             multilabel_out = pd.DataFrame(multilabel_res, dtype=int)
             multilabel_out.columns = res_colnames
 
-            return proba_res, multilabel_res
+            return proba_res, multilabel_out
         else:
             raise NotImplemented(
                 f'predict_classes method not implemented for {self.output_activation}')
