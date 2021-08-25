@@ -2,7 +2,7 @@
 this is test realm for plot functions with tf.keras models using the data from BatchDataLoader()
 
 Objectives:
-[ ] extract values from tf.dataset objects
+[x] extract values from tf.dataset objects
 [ ] ROC-AUC
     [ ] calculate AUC
     [ ] construct simple ROC
@@ -10,6 +10,7 @@ Objectives:
     [ ] from One-Hot back to labels (figure legends)
 [ ] Recall and precision curve
 [ ] F1 curve
+[ ] Update the epochsPlot function
 """
 
 
