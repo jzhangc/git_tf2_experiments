@@ -32,6 +32,8 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Layer, F
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tqdm import tqdm
+from utils.plot_utils import epochsPlot
+
 
 # ------ TF device check ------
 tf.config.list_physical_devices()
@@ -203,6 +205,9 @@ for i in range(n):
     ax.get_yaxis().set_visible(False)
 plt.show()
 
+epochsPlot(model_history=tst_m_history,
+           accuracy_var='categorical_accuracy',
+           val_accuracy_var='val_categorical_accuracy')
 
 # ------ save model ------
 m.save('./results/subclass_autoencoder', save_format='tf')
