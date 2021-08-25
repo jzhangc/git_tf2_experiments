@@ -205,7 +205,7 @@ for i in range(n):
     ax.get_yaxis().set_visible(False)
 plt.show()
 
-epochsPlot(model_history=tst_m_history,
+epochsPlot(model_history=m_history,
            accuracy_var='categorical_accuracy',
            val_accuracy_var='val_categorical_accuracy')
 
