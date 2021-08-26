@@ -219,7 +219,7 @@ def tstPlot(model_history,
                 hist_keys.append(key)
             else:
                 warn(
-                    f'Input metric {key} not found in the input model_history.\n')
+                    f'Input metric {key} not found in the model_history.\n')
                 pass
 
     # -- set up data and plotting-
@@ -231,7 +231,8 @@ def tstPlot(model_history,
             plot_x = np.arange(1, len(plot_metric) + 1)
 
             try:
-                plot_val_metric
+                plot_val_metric = np.array(
+                    model_history.history['val_'+hist_key])
 
                 fig, ax = plt.subplots(figsize=figure_size)
                 ax.plot(plot_x, plot_metric, linestyle='-',
@@ -247,6 +248,9 @@ def tstPlot(model_history,
 
                 plt.setp(ax.spines.values(), color='black')
             except:
+                warn(
+                    f'Metric {hist_key} on validation data not found in model_history.\n')
+
                 fig, ax = plt.subplots(figsize=figure_size)
                 ax.plot(plot_x, plot_metric, linestyle='-',
                         color='blue', label='train')
