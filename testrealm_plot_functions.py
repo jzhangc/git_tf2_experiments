@@ -33,7 +33,7 @@ from sklearn.metrics import roc_auc_score, roc_curve
 
 from utils.dl_utils import BatchMatrixLoader
 from utils.plot_utils import epochsPlot
-from utils.other_utils import flatten
+from utils.other_utils import flatten, warn
 
 # ------ TF device check ------
 tf.config.list_physical_devices()
@@ -214,22 +214,59 @@ def tstPlot(model_history,
 
     if len(kwargs) > 0:
         hist_keys = []
-        for key in kwargs:
+        for key, _ in kwargs.items():
+            if key in model_history.history:
+                hist_keys.append(key)
+            else:
+                warn(
+                    f'Input metric {key} not found in the input model_history.\n')
+                pass
+
+    # -- set up data and plotting-
+    if len(key) < 1:
+        raise ValueError('Not valid metrics found.')
+    else:
+        for hist_key in hist_keys:
+            plot_metric = np.array(model_history.history[hist_key])
+            plot_x = np.arange(1, len(plot_metric) + 1)
+
             try:
-                None  # block
-                hist_keys.append(kwargs[key])
+                plot_val_metric
+
+                fig, ax = plt.subplots(figsize=figure_size)
+                ax.plot(plot_x, plot_metric, linestyle='-',
+                        color='blue', label='train')
+                ax.plot(plot_x, plot_val_metric, linestyle='-',
+                        color='red', label='validation')
+                ax.set_facecolor('white')
+                ax.set_title(hist_key, color='black')
+                ax.set_xlabel('Epoch', fontsize=10, color='black')
+                ax.set_ylabel('Accuracy', fontsize=10, color='black')
+                ax.legend()
+                ax.tick_params(labelsize=5, color='black', labelcolor='black')
+
+                plt.setp(ax.spines.values(), color='black')
             except:
-                None  # block
+                fig, ax = plt.subplots(figsize=figure_size)
+                ax.plot(plot_x, plot_metric, linestyle='-',
+                        color='blue', label='train')
+                # ax.plot(plot_x, plot_val_loss, linestyle='-',
+                #         color='red', label='validation')
+                ax.set_facecolor('white')
+                ax.set_title(hist_key, color='black')
+                ax.set_xlabel('Epoch', fontsize=10, color='black')
+                ax.set_ylabel('Accuracy', fontsize=10, color='black')
+                ax.legend()
+                ax.tick_params(labelsize=5, color='black', labelcolor='black')
+
+                plt.setp(ax.spines.values(), color='black')
+        else:
+            None  # to be impletmented
 
     # -- prepare data --
     plot_loss = np.array(model_history.history[loss_var])  # RMSE
     plot_val_loss = np.array(model_history.history[val_loss_var])  # RMSE
     plot_x = np.arange(1, len(plot_loss) + 1)
-
-    if acc_plot:
-        plot_acc = np.array(model_history.history[accuracy_var])
-        plot_val_acc = np.array(
-            model_history.history[val_accuracy_var])
 
     # -- plotting --
     if acc_plot:  # two plots
@@ -335,10 +372,27 @@ epochsPlot(model_history=tst_m_history,
            val_accuracy_var='val_binary_accuracy')
 label_dict = tst_tf_dat.labels_map_rev
 
+tst_dict = tst_m_history.history
+
+tst_args = {'loss': 'loss', 'joker': 'joker', 'recall': "recall"}
+
+valid_keys = []
+for key, val in tst_args.items():
+    if key in tst_dict:
+        # print(f'key {key} is in the tst_dict')
+        valid_keys.append(key)
+    else:
+        warn(f'key {key} is NOT in the tst_dict')
+        pass
+
+
+tst_m_history.history.keys()
+
 # - single label multiclass -
 pred = tst_m.predict(tst_tf_test)
-proba, pred_class = tst_m.predict_classes(label_dict=label_dict, x=tst_tf_test)
-to_categorical(np.argmax(pred, axis=1), len(tst_tf_dat.lables_count))
+proba, pred_class = tst_m.predict_classes(
+    label_dict=label_dict, x=tst_tf_test, proba_threshold=0.5)
+# to_categorical(np.argmax(pred, axis=1), len(tst_tf_dat.lables_count))
 
 # - multilabel -
 pred_class = tst_m.predict_classes(
