@@ -242,7 +242,7 @@ def tstPlot(model_history,
                 ax.set_facecolor('white')
                 ax.set_title(hist_key, color='black')
                 ax.set_xlabel('Epoch', fontsize=10, color='black')
-                ax.set_ylabel('Accuracy', fontsize=10, color='black')
+                ax.set_ylabel(hist_key, fontsize=10, color='black')
                 ax.legend()
                 ax.tick_params(labelsize=5, color='black', labelcolor='black')
 
@@ -254,13 +254,10 @@ def tstPlot(model_history,
                 fig, ax = plt.subplots(figsize=figure_size)
                 ax.plot(plot_x, plot_metric, linestyle='-',
                         color='blue', label='train')
-                # ax.plot(plot_x, plot_val_loss, linestyle='-',
-                #         color='red', label='validation')
                 ax.set_facecolor('white')
                 ax.set_title(hist_key, color='black')
                 ax.set_xlabel('Epoch', fontsize=10, color='black')
                 ax.set_ylabel('Accuracy', fontsize=10, color='black')
-                ax.legend()
                 ax.tick_params(labelsize=5, color='black', labelcolor='black')
 
                 plt.setp(ax.spines.values(), color='black')
