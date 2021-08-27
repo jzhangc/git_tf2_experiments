@@ -15,7 +15,6 @@ Objectives:
 
 
 # ------ load modules ------
-from pylab import *
 import os
 
 import matplotlib.pyplot as plt
@@ -371,13 +370,7 @@ tst_m_history = tst_m.fit(tst_tf_train, epochs=80,
                           validation_data=tst_tf_test)
 
 
-# ------ plot function ------
-epochsPlot(model_history=tst_m_history,
-           accuracy_var='binary_accuracy',
-           val_accuracy_var='val_binary_accuracy')
 label_dict = tst_tf_dat.labels_map_rev
-
-
 tst_m_history.history.keys()
 
 # - single label multiclass -
@@ -399,9 +392,12 @@ for _, b in tst_tf_test:
 tst_t.shape
 
 
-# - test plots -
-tst_dict = tst_m_history.history
+# ------ plot function ------
+epochsPlot(model_history=tst_m_history,
+           accuracy_var='binary_accuracy',
+           val_accuracy_var='val_binary_accuracy')
 
+tst_dict = tst_m_history.history
 tst_args = {'loss': 'loss', 'joker': 'joker', 'recall': "recall"}
 
 valid_keys = []
