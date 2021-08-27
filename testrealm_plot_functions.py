@@ -215,26 +215,26 @@ def tstPlot(model_history,
         raise TypeError('model_history needs to be a keras History object."')
 
     if len(kwargs) > 0:
-        hist_keys = []
-        for key, _ in kwargs.items():
+        hist_metrics = []
+        for _, key_val in kwargs.items():
             if key in model_history.history:
-                hist_keys.append(key)
+                hist_metrics.append(key_val)
             else:
                 warn(
-                    f'Input metric {key} not found in the model_history.\n')
+                    f'Input metric {key_val} not found in the model_history.\n')
                 pass
 
     # -- set up data and plotting-
     if len(key) < 1:
         raise ValueError('Not valid metrics found.')
     elif len(key) == 1:
-        for hist_key in hist_keys:
-            plot_metric = np.array(model_history.history[hist_key])
+        for hist_metric in hist_metrics:
+            plot_metric = np.array(model_history.history[hist_metric])
             plot_x = np.arange(1, len(plot_metric) + 1)
 
             try:
                 plot_val_metric = np.array(
-                    model_history.history['val_'+hist_key])
+                    model_history.history['val_'+hist_metric])
 
                 fig, ax = plt.subplots(figsize=figure_size)
                 ax.plot(plot_x, plot_metric, linestyle='-',
@@ -242,22 +242,22 @@ def tstPlot(model_history,
                 ax.plot(plot_x, plot_val_metric, linestyle='-',
                         color='red', label='validation')
                 ax.set_facecolor('white')
-                ax.set_title(hist_key, color='black')
+                ax.set_title(hist_metric, color='black')
                 ax.set_xlabel('Epoch', fontsize=10, color='black')
-                ax.set_ylabel(hist_key, fontsize=10, color='black')
+                ax.set_ylabel(hist_metric, fontsize=10, color='black')
                 ax.legend()
                 ax.tick_params(labelsize=5, color='black', labelcolor='black')
 
                 plt.setp(ax.spines.values(), color='black')
             except:
                 warn(
-                    f'Metric {hist_key} on validation data not found in model_history.\n')
+                    f'Metric {hist_metric} on validation data not found in model_history.\n')
 
                 fig, ax = plt.subplots(figsize=figure_size)
                 ax.plot(plot_x, plot_metric, linestyle='-',
                         color='blue', label='train')
                 ax.set_facecolor('white')
-                ax.set_title(hist_key, color='black')
+                ax.set_title(hist_metric, color='black')
                 ax.set_xlabel('Epoch', fontsize=10, color='black')
                 ax.set_ylabel('Accuracy', fontsize=10, color='black')
                 ax.tick_params(labelsize=5, color='black', labelcolor='black')
