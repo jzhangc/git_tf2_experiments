@@ -15,6 +15,7 @@ Objectives:
 
 
 # ------ load modules ------
+from pylab import *
 import os
 
 import matplotlib.pyplot as plt
@@ -34,6 +35,8 @@ from sklearn.metrics import roc_auc_score, roc_curve
 from utils.dl_utils import BatchMatrixLoader
 from utils.plot_utils import epochsPlot
 from utils.other_utils import flatten, warn
+
+from pylab import subplots_adjust
 
 # ------ TF device check ------
 tf.config.list_physical_devices()
@@ -225,7 +228,7 @@ def tstPlot(model_history,
     # -- set up data and plotting-
     if len(key) < 1:
         raise ValueError('Not valid metrics found.')
-    else:
+    elif len(key) == 1:
         for hist_key in hist_keys:
             plot_metric = np.array(model_history.history[hist_key])
             plot_x = np.arange(1, len(plot_metric) + 1)
@@ -263,6 +266,7 @@ def tstPlot(model_history,
                 plt.setp(ax.spines.values(), color='black')
         else:
             None  # to be impletmented
+            fig, ax = plt.subplots(1, 2, figsize=(15, 5))
 
     # -- prepare data --
     plot_loss = np.array(model_history.history[loss_var])  # RMSE
@@ -373,19 +377,6 @@ epochsPlot(model_history=tst_m_history,
            val_accuracy_var='val_binary_accuracy')
 label_dict = tst_tf_dat.labels_map_rev
 
-tst_dict = tst_m_history.history
-
-tst_args = {'loss': 'loss', 'joker': 'joker', 'recall': "recall"}
-
-valid_keys = []
-for key, val in tst_args.items():
-    if key in tst_dict:
-        # print(f'key {key} is in the tst_dict')
-        valid_keys.append(key)
-    else:
-        warn(f'key {key} is NOT in the tst_dict')
-        pass
-
 
 tst_m_history.history.keys()
 
@@ -406,6 +397,47 @@ for _, b in tst_tf_test:
     # print(type(bn))
     tst_t = np.concatenate((tst_t, bn), axis=0)
 tst_t.shape
+
+
+# - test plots -
+tst_dict = tst_m_history.history
+
+tst_args = {'loss': 'loss', 'joker': 'joker', 'recall': "recall"}
+
+valid_keys = []
+for key, val in tst_args.items():
+    if key in tst_dict:
+        # print(f'key {key} is in the tst_dict')
+        valid_keys.append(key)
+    else:
+        warn(f'key {key} is NOT in the tst_dict')
+        pass
+
+# # ref
+# import numpy as np
+# import matplotlib.pylab as plt
+
+# def main():
+#     n = 5
+#     nx = 100
+#     x = np.arange(nx)
+#     if n % 2 == 0:
+#         f, axs = plt.subplots(n/2, 2, sharex=True)
+#     else:
+#         f, axs = plt.subplots(n/2+1, 2, sharex=True)
+#     for i in range(n):
+#         y = np.random.rand(nx)
+#         if i % 2 == 0:
+#             axs[i/2, 0].plot(x, y, '-', label='plot '+str(i+1))
+#             axs[i/2, 0].legend()
+#         else:
+#             axs[i/2, 1].plot(x, y, '-', label='plot '+str(i+1))
+#             axs[i/2, 1].legend()
+#     if n % 2 != 0:
+#         for l in axs[i/2-1,1].get_xaxis().get_majorticklabels():
+#             l.set_visible(True)
+#         f.delaxes(axs[i/2, 1])
+#     f.show()
 
 
 fpr, tpr, thresholds = roc_curve(tst_t[:, 0], pred[:, 0])
