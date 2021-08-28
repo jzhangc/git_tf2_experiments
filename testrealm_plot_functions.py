@@ -16,6 +16,7 @@ Objectives:
 
 # ------ load modules ------
 import os
+import math
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -192,6 +193,44 @@ def tstfoo(y, pred):
     """ROC-AUC plot function"""
 
     return None
+
+
+def choose_subplot_dimensions(k):
+    if k < 4:
+        return k, 1
+    elif k < 11:
+        return math.ceil(k/2), 2
+    else:
+        # I've chosen to have a maximum of 3 columns
+        return math.ceil(k/4), 4
+
+
+def generate_subplots(k, row_wise=False):
+    nrow, ncol = choose_subplot_dimensions(k)
+    # Choose your share X and share Y parameters as you wish:
+    figure, axes = plt.subplots(nrow, ncol,
+                                sharex=True,
+                                sharey=False)
+
+    # Check if it's an array. If there's only one plot, it's just an Axes obj
+    if not isinstance(axes, np.ndarray):
+        return figure, [axes]
+    else:
+        # Choose the traversal you'd like: 'F' is col-wise, 'C' is row-wise
+        axes = axes.flatten(order=('C' if row_wise else 'F'))
+
+        # Delete any unused axes from the figure, so that they don't show
+        # blank x- and y-axis lines
+        for idx, ax in enumerate(axes[k:]):
+            figure.delaxes(ax)
+
+            # Turn ticks on for the last ax in each column, wherever it lands
+            idx_to_turn_on_ticks = idx + k - ncol if row_wise else idx + k - 1
+            for tk in axes[idx_to_turn_on_ticks].get_xticklabels():
+                tk.set_visible(True)
+
+        axes = axes[:k]
+        return figure, axes
 
 
 def tstPlot(model_history,
@@ -409,31 +448,33 @@ for key, val in tst_args.items():
         warn(f'key {key} is NOT in the tst_dict')
         pass
 
-# # ref
-# import numpy as np
-# import matplotlib.pylab as plt
+# ref
 
-# def main():
-#     n = 5
-#     nx = 100
-#     x = np.arange(nx)
-#     if n % 2 == 0:
-#         f, axs = plt.subplots(n/2, 2, sharex=True)
-#     else:
-#         f, axs = plt.subplots(n/2+1, 2, sharex=True)
-#     for i in range(n):
-#         y = np.random.rand(nx)
-#         if i % 2 == 0:
-#             axs[i/2, 0].plot(x, y, '-', label='plot '+str(i+1))
-#             axs[i/2, 0].legend()
-#         else:
-#             axs[i/2, 1].plot(x, y, '-', label='plot '+str(i+1))
-#             axs[i/2, 1].legend()
-#     if n % 2 != 0:
-#         for l in axs[i/2-1,1].get_xaxis().get_majorticklabels():
-#             l.set_visible(True)
-#         f.delaxes(axs[i/2, 1])
-#     f.show()
+choose_subplot_dimensions
+
+
+n = 5
+nx = 100
+x = np.arange(nx)
+
+nrow, ncol = choose_subplot_dimensions(n)
+figure, axes = plt.subplots(nrow, ncol,
+                            sharex=True,
+                            sharey=False)
+
+for i in range(n):
+    y = np.random.rand(nx)
+
+    if i % 2 == 0:
+        axs[i/2, 0].plot(x, y, '-', label='plot '+str(i+1))
+        axs[i/2, 0].legend()
+    else:
+        axs[i/2, 1].plot(x, y, '-', label='plot '+str(i+1))
+        axs[i/2, 1].legend()
+
+if n % 2 != 0:
+    f.delaxes(axs[i/2, 1])
+f.show()
 
 
 fpr, tpr, thresholds = roc_curve(tst_t[:, 0], pred[:, 0])
