@@ -17,6 +17,7 @@ Objectives:
 # ------ load modules ------
 import os
 import math
+import time
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -196,10 +197,9 @@ def tstfoo(y, pred):
 
 
 def foo(**kwargs):
-    if kwargs is None:
-        print('kwargs is None')
-    else:
-        print(f'kwargs lengths is {len(kwargs)}')
+    print('Saving...', end='')
+    time.sleep(2)
+    print('Done!')
 
 
 foo()
@@ -215,7 +215,7 @@ def choose_subplot_dimensions(k):
         return math.ceil(k/4), 4
 
 
-def generate_subplots(k, row_wise=False):
+def generate_subplots(k):
     nrow, ncol = choose_subplot_dimensions(k)
     # Choose your share X and share Y parameters as you wish:
     figure, axes = plt.subplots(nrow, ncol,
@@ -226,25 +226,29 @@ def generate_subplots(k, row_wise=False):
     if not isinstance(axes, np.ndarray):
         return figure, [axes]
     else:
-        # Choose the traversal you'd like: 'F' is col-wise, 'C' is row-wise
-        axes = axes.flatten(order=('C' if row_wise else 'F'))
+        # 'C' is row-wise
+        axes = axes.flatten(order='C')
 
         # Delete any unused axes from the figure, so that they don't show
         # blank x- and y-axis lines
         idxes_to_turn_on_ticks = []
-        for idx, ax in enumerate(axes[k:]):
-            figure.delaxes(ax)
 
-            # Turn ticks on for the last ax in each column, wherever it lands
-            idx_to_turn_on_ticks = idx + k - ncol if row_wise else idx + k - 1
-            idxes_to_turn_on_ticks.append(idx_to_turn_on_ticks)
-        idxes_to_turn_on_ticks.append(k-1)
+        if k % 2 != 0:
+            for idx, ax in enumerate(axes[k:]):
+                figure.delaxes(ax)
+                idx_to_turn_on_ticks = idx + k - ncol
+                idxes_to_turn_on_ticks.append(idx_to_turn_on_ticks)
+            idxes_to_turn_on_ticks.append(k-1)
+        else:
+            for idx, ax in enumerate(axes[k-2:]):
+                idx_to_turn_on_ticks = idx + k - ncol
+                idxes_to_turn_on_ticks.append(idx_to_turn_on_ticks)
 
         idxs_to_turn_off_ticks = [elem for elem in list(
             range(k)) if elem not in idxes_to_turn_on_ticks]
 
-        axes = axes[:k]
-        return figure, axes, idxs_to_turn_off_ticks
+        axes = axes[:k]   # maybe move up before "else"
+        return figure, axes, idxes_to_turn_on_ticks, idxs_to_turn_off_ticks
 
 
 def tstPlot(model_history,
@@ -266,6 +270,7 @@ def tstPlot(model_history,
     # -- argument check --
     if not isinstance(model_history, History):
         raise TypeError('model_history needs to be a keras History object."')
+    metrics_dict = model_history.history
 
     # - set up metrics names -
     hist_metrics = []
@@ -286,19 +291,19 @@ def tstPlot(model_history,
 
     # -- set up data and plotting-
     fig, axes, idxes_to_turn_off = generate_subplots(
-        len(hist_metrics), row_wise=True)
+        len(hist_metrics))
 
     for hist_metric, ax in zip(hist_metrics, axes):
-        plot_metric = np.array(tst_dict[hist_metric])
+        plot_metric = np.array(metrics_dict[hist_metric])
         plot_x = np.arange(1, len(plot_metric) + 1)
 
         try:
             plot_val_metric = np.array(
-                tst_dict['val_'+hist_metric])
+                metrics_dict['val_'+hist_metric])
             ax.plot(plot_x, plot_val_metric, linestyle='-',
                     color='red', label='validation')
         except:
-            warn('{hist_metric} on validation data not found.')
+            warn(f'{hist_metric} on validation data not found.')
         finally:
             ax.plot(plot_x, plot_metric, linestyle='-',
                     color='blue', label='train')
@@ -313,6 +318,7 @@ def tstPlot(model_history,
 
     for i in idxes_to_turn_off:
         plt.setp(axes[i].get_xticklabels(), visible=False)
+
     plt.xlabel('Epoch')
     plt.tight_layout()
 
@@ -325,8 +331,10 @@ def tstPlot(model_history,
         if not os.path.isfile(full_path):
             raise ValueError('Invalid input file or input file not found.')
         else:
+            print(f'Saveing plot as {file}...', end='')
             plt.savefig(full_path, dpi=600,
                         bbox_inches='tight', facecolor='white')
+            print('Done!')
 
     return fig, ax
 
@@ -400,45 +408,62 @@ epochsPlot(model_history=tst_m_history,
            accuracy_var='binary_accuracy',
            val_accuracy_var='val_binary_accuracy')
 
-tst_dict = tst_m_history.history
+tstPlot(model_history=tst_m_history)
+
+metrics_dict = tst_m_history.history
 tst_args = {'loss': 'loss', 'joker': 'joker',
             'recall': "recall", 'binary_accuracy': 'binary_accuracy'}
 
 hist_metrics = []
 for _, key_val in tst_args.items():
-    if key_val in tst_dict:
+    if key_val in metrics_dict:
         hist_metrics.append(key_val)
     else:
         warn(
             f'Input metric {key_val} not found in the model_history.\n')
         pass
 
+hist_metrics = []
+for key_val in metrics_dict.keys():
+    hist_metrics.append(key_val)
 
-figure, axes, idxes_to_turn_off = generate_subplots(
+fig, axes, idxes_to_turn_off = generate_subplots(
     len(hist_metrics), row_wise=True)
 
+
 for hist_metric, ax in zip(hist_metrics, axes):
-    plot_metric = np.array(tst_dict[hist_metric])
+    plot_metric = np.array(metrics_dict[hist_metric])
     plot_x = np.arange(1, len(plot_metric) + 1)
 
-    try:
-        plot_val_metric = np.array(
-            tst_dict['val_'+hist_metric])
-        ax.plot(plot_x, plot_val_metric, linestyle='-',
-                color='red', label='validation')
-    except:
-        warn('Not validation data for {hist_metric} not found.')
-    finally:
-        ax.plot(plot_x, plot_metric, linestyle='-',
-                color='blue', label='train')
-        ax.set_facecolor('white')
-        ax.set_title(hist_metric, color='black')
-        # ax.set_xlabel('Epoch', fontsize=10, color='black')
-        ax.set_ylabel(hist_metric, fontsize=10, color='black')
-        ax.legend()
-        ax.tick_params(labelsize=5, color='black', labelcolor='black')
+    ax.plot(plot_x, plot_metric, linestyle='-',
+            color='blue', label='train')
+    ax.set_facecolor('white')
+    ax.set_title(hist_metric, color='black')
+    # ax.set_xlabel('Epoch', fontsize=10, color='black')
+    ax.set_ylabel(hist_metric, fontsize=10, color='black')
+    ax.legend()
+    ax.tick_params(labelsize=5, color='black', labelcolor='black')
 
-        plt.setp(ax.spines.values(), color='black')
+    plt.setp(ax.spines.values(), color='black')
+
+    # try:
+    #     plot_val_metric = np.array(
+    #         metrics_dict['val_'+hist_metric])
+    #     ax.plot(plot_x, plot_val_metric, linestyle='-',
+    #             color='red', label='validation')
+    # except:
+    #     warn(f'{hist_metric} on validation data not found.')
+    # finally:
+    #     ax.plot(plot_x, plot_metric, linestyle='-',
+    #             color='blue', label='train')
+    #     ax.set_facecolor('white')
+    #     ax.set_title(hist_metric, color='black')
+    #     # ax.set_xlabel('Epoch', fontsize=10, color='black')
+    #     ax.set_ylabel(hist_metric, fontsize=10, color='black')
+    #     ax.legend()
+    #     ax.tick_params(labelsize=5, color='black', labelcolor='black')
+
+    #     plt.setp(ax.spines.values(), color='black')
 
 for i in idxes_to_turn_off:
     plt.setp(axes[i].get_xticklabels(), visible=False)
