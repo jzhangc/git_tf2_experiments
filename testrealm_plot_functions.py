@@ -10,7 +10,7 @@ Objectives:
     [ ] from One-Hot back to labels (figure legends)
 [ ] Recall and precision curve
 [ ] F1 curve
-[ ] Update the epochsPlot function
+[x] Update the epochsPlot function
 """
 
 
