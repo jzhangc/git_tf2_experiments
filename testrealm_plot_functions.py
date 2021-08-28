@@ -248,7 +248,7 @@ def generate_subplots(k):
             range(k)) if elem not in idxes_to_turn_on_ticks]
 
         axes = axes[:k]   # maybe move up before "else"
-        return figure, axes, idxes_to_turn_on_ticks, idxs_to_turn_off_ticks
+        return figure, axes, idxs_to_turn_off_ticks
 
 
 def tstPlot(model_history,
@@ -285,6 +285,8 @@ def tstPlot(model_history,
     else:
         for key_val in model_history.history.keys():
             hist_metrics.append(key_val)
+
+        hist_metrics = [x for x in hist_metrics if 'val_' not in x]
 
     if len(hist_metrics) == 0:
         raise ValueError('No valid metrics found to plot.')
@@ -413,6 +415,9 @@ tstPlot(model_history=tst_m_history)
 metrics_dict = tst_m_history.history
 tst_args = {'loss': 'loss', 'joker': 'joker',
             'recall': "recall", 'binary_accuracy': 'binary_accuracy'}
+
+[x for x in metrics_dict.keys() if 'val_' not in x]
+
 
 hist_metrics = []
 for _, key_val in tst_args.items():
