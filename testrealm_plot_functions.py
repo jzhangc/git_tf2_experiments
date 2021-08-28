@@ -209,7 +209,7 @@ def generate_subplots(k, row_wise=False):
     nrow, ncol = choose_subplot_dimensions(k)
     # Choose your share X and share Y parameters as you wish:
     figure, axes = plt.subplots(nrow, ncol,
-                                sharex=True,
+                                sharex=False,
                                 sharey=False)
 
     # Check if it's an array. If there's only one plot, it's just an Axes obj
@@ -221,16 +221,20 @@ def generate_subplots(k, row_wise=False):
 
         # Delete any unused axes from the figure, so that they don't show
         # blank x- and y-axis lines
+        idxes_to_turn_on_ticks = []
         for idx, ax in enumerate(axes[k:]):
             figure.delaxes(ax)
 
             # Turn ticks on for the last ax in each column, wherever it lands
             idx_to_turn_on_ticks = idx + k - ncol if row_wise else idx + k - 1
-            for tk in axes[idx_to_turn_on_ticks].get_xticklabels():
-                tk.set_visible(True)
+            idxes_to_turn_on_ticks.append(idx_to_turn_on_ticks)
+        idxes_to_turn_on_ticks.append(k-1)
+
+        idxs_to_turn_off_ticks = [elem for elem in list(
+            range(k)) if elem not in idxes_to_turn_on_ticks]
 
         axes = axes[:k]
-        return figure, axes
+        return figure, axes, idxs_to_turn_off_ticks
 
 
 def tstPlot(model_history,
@@ -256,7 +260,7 @@ def tstPlot(model_history,
     if len(kwargs) > 0:
         hist_metrics = []
         for _, key_val in kwargs.items():
-            if key in model_history.history:
+            if key_val in model_history.history:
                 hist_metrics.append(key_val)
             else:
                 warn(
@@ -264,93 +268,32 @@ def tstPlot(model_history,
                 pass
 
     # -- set up data and plotting-
-    if len(key) < 1:
-        raise ValueError('Not valid metrics found.')
-    elif len(key) == 1:
-        for hist_metric in hist_metrics:
-            plot_metric = np.array(model_history.history[hist_metric])
-            plot_x = np.arange(1, len(plot_metric) + 1)
+    fig, axes, idxes_to_turn_off = generate_subplots(
+        len(hist_metrics), row_wise=True)
 
-            try:
-                plot_val_metric = np.array(
-                    model_history.history['val_'+hist_metric])
+    for hist_metric, ax in zip(hist_metrics, axes):
+        plot_metric = np.array(tst_dict[hist_metric])
+        plot_x = np.arange(1, len(plot_metric) + 1)
+        plot_val_metric = np.array(
+            tst_dict['val_'+hist_metric])
 
-                fig, ax = plt.subplots(figsize=figure_size)
-                ax.plot(plot_x, plot_metric, linestyle='-',
-                        color='blue', label='train')
-                ax.plot(plot_x, plot_val_metric, linestyle='-',
-                        color='red', label='validation')
-                ax.set_facecolor('white')
-                ax.set_title(hist_metric, color='black')
-                ax.set_xlabel('Epoch', fontsize=10, color='black')
-                ax.set_ylabel(hist_metric, fontsize=10, color='black')
-                ax.legend()
-                ax.tick_params(labelsize=5, color='black', labelcolor='black')
-
-                plt.setp(ax.spines.values(), color='black')
-            except:
-                warn(
-                    f'Metric {hist_metric} on validation data not found in model_history.\n')
-
-                fig, ax = plt.subplots(figsize=figure_size)
-                ax.plot(plot_x, plot_metric, linestyle='-',
-                        color='blue', label='train')
-                ax.set_facecolor('white')
-                ax.set_title(hist_metric, color='black')
-                ax.set_xlabel('Epoch', fontsize=10, color='black')
-                ax.set_ylabel('Accuracy', fontsize=10, color='black')
-                ax.tick_params(labelsize=5, color='black', labelcolor='black')
-
-                plt.setp(ax.spines.values(), color='black')
-        else:
-            None  # to be impletmented
-            fig, ax = plt.subplots(1, 2, figsize=(15, 5))
-
-    # -- prepare data --
-    plot_loss = np.array(model_history.history[loss_var])  # RMSE
-    plot_val_loss = np.array(model_history.history[val_loss_var])  # RMSE
-    plot_x = np.arange(1, len(plot_loss) + 1)
-
-    # -- plotting --
-    if acc_plot:  # two plots
-        fig, ax = plt.subplots(1, 2, figsize=(15, 5))
-        ax[0].plot(plot_x, plot_loss, linestyle='-',
-                   color='blue', label='train')
-        ax[0].plot(plot_x, plot_val_loss, linestyle='-',
-                   color='red', label='validation')
-        ax[0].set_facecolor('white')
-        ax[0].set_title(plot_title_loss, color='black')
-        ax[0].set_xlabel('Epoch', fontsize=10, color='black')
-        ax[0].set_ylabel('Loss', fontsize=10, color='black')
-        ax[0].legend()
-        ax[0].tick_params(labelsize=5, color='black', labelcolor='black')
-
-        ax[1].plot(plot_x, plot_acc, linestyle='-',
-                   color='blue', label='train')
-        ax[1].plot(plot_x, plot_val_acc, linestyle='-',
-                   color='red', label='validation')
-        ax[1].set_facecolor('white')
-        ax[1].set_title(plot_title_acc, color='black')
-        ax[1].set_xlabel('Epoch', fontsize=10, color='black')
-        ax[1].set_ylabel('Accuracy', fontsize=10, color='black')
-        ax[1].legend()
-        ax[1].tick_params(labelsize=5, color='black', labelcolor='black')
-
-        plt.setp(ax[0].spines.values(), color='black')
-        plt.setp(ax[1].spines.values(), color='black')
-    else:
-        fig, ax = plt.subplots(figsize=figure_size)
-        ax.plot(plot_x, plot_loss, linestyle='-', color='blue', label='train')
-        ax.plot(plot_x, plot_val_loss, linestyle='-',
+        ax.plot(plot_x, plot_metric, linestyle='-',
+                color='blue', label='train')
+        ax.plot(plot_x, plot_val_metric, linestyle='-',
                 color='red', label='validation')
         ax.set_facecolor('white')
-        ax.set_title(plot_title_loss, color='black')
-        ax.set_xlabel('Epoch', fontsize=10, color='black')
-        ax.set_ylabel('Accuracy', fontsize=10, color='black')
+        ax.set_title(hist_metric, color='black')
+        # ax.set_xlabel('Epoch', fontsize=10, color='black')
+        ax.set_ylabel(hist_metric, fontsize=10, color='black')
         ax.legend()
         ax.tick_params(labelsize=5, color='black', labelcolor='black')
 
         plt.setp(ax.spines.values(), color='black')
+
+    for i in idxes_to_turn_off:
+        plt.setp(axes[i].get_xticklabels(), visible=False)
+    plt.xlabel('Epoch')
+    plt.tight_layout()
 
     fig.set_facecolor('white')
     fig
@@ -437,44 +380,60 @@ epochsPlot(model_history=tst_m_history,
            val_accuracy_var='val_binary_accuracy')
 
 tst_dict = tst_m_history.history
-tst_args = {'loss': 'loss', 'joker': 'joker', 'recall': "recall"}
+tst_args = {'loss': 'loss', 'joker': 'joker',
+            'recall': "recall", 'binary_accuracy': 'binary_accuracy'}
 
-valid_keys = []
-for key, val in tst_args.items():
-    if key in tst_dict:
-        # print(f'key {key} is in the tst_dict')
-        valid_keys.append(key)
+hist_metrics = []
+for _, key_val in tst_args.items():
+    if key_val in tst_dict:
+        hist_metrics.append(key_val)
     else:
-        warn(f'key {key} is NOT in the tst_dict')
+        warn(
+            f'Input metric {key_val} not found in the model_history.\n')
         pass
 
-# ref
 
-choose_subplot_dimensions
+figure, axes, idxes_to_turn_off = generate_subplots(
+    len(hist_metrics), row_wise=True)
 
+for hist_metric, ax in zip(hist_metrics, axes):
+    plot_metric = np.array(tst_dict[hist_metric])
+    plot_x = np.arange(1, len(plot_metric) + 1)
+    plot_val_metric = np.array(
+        tst_dict['val_'+hist_metric])
 
-n = 5
-nx = 100
-x = np.arange(nx)
+    ax.plot(plot_x, plot_metric, linestyle='-',
+            color='blue', label='train')
+    ax.plot(plot_x, plot_val_metric, linestyle='-',
+            color='red', label='validation')
+    ax.set_facecolor('white')
+    ax.set_title(hist_metric, color='black')
+    # ax.set_xlabel('Epoch', fontsize=10, color='black')
+    ax.set_ylabel(hist_metric, fontsize=10, color='black')
+    ax.legend()
+    ax.tick_params(labelsize=5, color='black', labelcolor='black')
 
-nrow, ncol = choose_subplot_dimensions(n)
-figure, axes = plt.subplots(nrow, ncol,
-                            sharex=True,
-                            sharey=False)
+    plt.setp(ax.spines.values(), color='black')
 
-for i in range(n):
-    y = np.random.rand(nx)
+for i in idxes_to_turn_off:
+    plt.setp(axes[i].get_xticklabels(), visible=False)
 
-    if i % 2 == 0:
-        axs[i/2, 0].plot(x, y, '-', label='plot '+str(i+1))
-        axs[i/2, 0].legend()
-    else:
-        axs[i/2, 1].plot(x, y, '-', label='plot '+str(i+1))
-        axs[i/2, 1].legend()
+plt.xlabel('Epoch')
+plt.tight_layout()
 
-if n % 2 != 0:
-    f.delaxes(axs[i/2, 1])
-f.show()
+x_variable = list(range(-5, 6))
+parameters = list(range(0, 13))
+
+figure, axes, idxes_to_turn_off = generate_subplots(
+    len(parameters), row_wise=True)
+for parameter, ax in zip(parameters, axes):
+    ax.plot(x_variable, [x**parameter for x in x_variable])
+    ax.set_title(label="y=x^{}".format(parameter))
+
+for i in idxes_to_turn_off:
+    plt.setp(axes[i].get_xticklabels(), visible=False)
+
+plt.tight_layout()
 
 
 fpr, tpr, thresholds = roc_curve(tst_t[:, 0], pred[:, 0])
