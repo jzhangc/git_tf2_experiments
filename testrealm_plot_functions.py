@@ -298,7 +298,7 @@ def tstPlot(model_history,
             ax.plot(plot_x, plot_val_metric, linestyle='-',
                     color='red', label='validation')
         except:
-            warn('Not validation data for {hist_metric} not found.')
+            warn('{hist_metric} on validation data not found.')
         finally:
             ax.plot(plot_x, plot_metric, linestyle='-',
                     color='blue', label='train')
