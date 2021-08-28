@@ -282,7 +282,7 @@ def tstPlot(model_history,
             hist_metrics.append(key_val)
 
     if len(hist_metrics) == 0:
-        raise ValueError('Not valid metrics found to plot.')
+        raise ValueError('No valid metrics found to plot.')
 
     # -- set up data and plotting-
     fig, axes, idxes_to_turn_off = generate_subplots(
