@@ -48,21 +48,21 @@ def generate_subplots(k):
         - If only one metric, function returns figure, axes\n
     """
     nrow, ncol = choose_subplot_dimensions(k)
-    # Choose your share X and share Y parameters as you wish:
+    # - set up initial figures and axes -
     figure, axes = plt.subplots(nrow, ncol,
                                 sharex=False,
                                 sharey=False)
 
-    # Check if it's an array. If there's only one plot, it's just an Axes obj
+    # - check if it's an array -
     if not isinstance(axes, np.ndarray):
         return figure, [axes]
     else:
         axes = axes.flatten(order='C')  # 'C' is row-wise
-        # Delete any unused axes from the figure
+        # delete any unused axes from the figure
         for ax in axes[k:]:
             figure.delaxes(ax)
 
-        # Extract indices for the axes to show/hide tick labels
+        # extract indices for the axes to show/hide tick labels
         idxes_to_turn_on_ticks = []
         for idx in range(ncol):
             idx_to_turn_on_ticks = idx + k - ncol
@@ -70,7 +70,7 @@ def generate_subplots(k):
         idxs_to_turn_off_ticks = [elem for elem in list(
             range(k)) if elem not in idxes_to_turn_on_ticks]
 
-        # Finalize axes
+        # finalize axes
         axes = axes[:k]
         return figure, axes, idxs_to_turn_off_ticks
 
