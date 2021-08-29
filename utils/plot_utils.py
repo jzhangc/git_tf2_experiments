@@ -56,28 +56,21 @@ def generate_subplots(k):
     if not isinstance(axes, np.ndarray):
         return figure, [axes]
     else:
-        # 'C' is row-wise
-        axes = axes.flatten(order='C')
+        axes = axes.flatten(order='C')  # 'C' is row-wise
+        # Delete any unused axes from the figure
+        for ax in axes[k:]:
+            figure.delaxes(ax)
 
-        # Delete any unused axes from the figure, so that they don't show
-        # blank x- and y-axis lines
+        # Extract indices for the axes to show/hide tick labels
         idxes_to_turn_on_ticks = []
-
-        if k % 2 != 0:
-            for idx, ax in enumerate(axes[k:]):
-                figure.delaxes(ax)
-                idx_to_turn_on_ticks = idx + k - ncol
-                idxes_to_turn_on_ticks.append(idx_to_turn_on_ticks)
-            idxes_to_turn_on_ticks.append(k-1)
-        else:
-            for idx, ax in enumerate(axes[k-2:]):
-                idx_to_turn_on_ticks = idx + k - ncol
-                idxes_to_turn_on_ticks.append(idx_to_turn_on_ticks)
-
+        for idx in range(ncol):
+            idx_to_turn_on_ticks = idx + k - ncol
+            idxes_to_turn_on_ticks.append(idx_to_turn_on_ticks)
         idxs_to_turn_off_ticks = [elem for elem in list(
             range(k)) if elem not in idxes_to_turn_on_ticks]
 
-        axes = axes[:k]   # maybe move up before "else"
+        # Finalize axes
+        axes = axes[:k]
         return figure, axes, idxs_to_turn_off_ticks
 
 

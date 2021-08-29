@@ -226,28 +226,21 @@ def generate_subplots(k):
     if not isinstance(axes, np.ndarray):
         return figure, [axes]
     else:
-        # 'C' is row-wise
-        axes = axes.flatten(order='C')
+        axes = axes.flatten(order='C')  # 'C' is row-wise
+        # Delete any unused axes from the figure
+        for ax in axes[k:]:
+            figure.delaxes(ax)
 
-        # Delete any unused axes from the figure, so that they don't show
-        # blank x- and y-axis lines
+        # Extract indices for the axes to show/hide tick labels
         idxes_to_turn_on_ticks = []
-
-        if k % 2 != 0:
-            for idx, ax in enumerate(axes[k:]):
-                figure.delaxes(ax)
-                idx_to_turn_on_ticks = idx + k - ncol
-                idxes_to_turn_on_ticks.append(idx_to_turn_on_ticks)
-            idxes_to_turn_on_ticks.append(k-1)
-        else:
-            for idx, ax in enumerate(axes[k-2:]):
-                idx_to_turn_on_ticks = idx + k - ncol
-                idxes_to_turn_on_ticks.append(idx_to_turn_on_ticks)
-
+        for idx in range(ncol):
+            idx_to_turn_on_ticks = idx + k - ncol
+            idxes_to_turn_on_ticks.append(idx_to_turn_on_ticks)
         idxs_to_turn_off_ticks = [elem for elem in list(
             range(k)) if elem not in idxes_to_turn_on_ticks]
 
-        axes = axes[:k]   # maybe move up before "else"
+        # Finalize axes
+        axes = axes[:k]
         return figure, axes, idxs_to_turn_off_ticks
 
 
@@ -416,7 +409,42 @@ metrics_dict = tst_m_history.history
 tst_args = {'loss': 'loss', 'joker': 'joker',
             'recall': "recall", 'binary_accuracy': 'binary_accuracy'}
 
-[x for x in metrics_dict.keys() if 'val_' not in x]
+_, _, turned_off = generate_subplots(15)
+turned_off
+
+k = 17
+nrow, ncol = choose_subplot_dimensions(k)
+# Choose your share X and share Y parameters as you wish:
+figure, axes = plt.subplots(nrow, ncol,
+                            sharex=False,
+                            sharey=False)
+
+# Check if it's an array. If there's only one plot, it's just an Axes obj
+# 'C' is row-wise
+axes = axes.flatten(order='C')
+
+# Delete any unused axes from the figure, so that they don't show
+# blank x- and y-axis lines
+idxes_to_turn_on_ticks = []
+
+if k % 2 != 0:
+    for idx, ax in enumerate(axes[k:]):
+        figure.delaxes(ax)
+        idx_to_turn_on_ticks = idx + k - ncol
+        idxes_to_turn_on_ticks.append(idx_to_turn_on_ticks)
+    idxes_to_turn_on_ticks.append(k-1)
+else:
+    for ax in axes[k:]:
+        figure.delaxes(ax)
+
+    for idx in range(ncol):
+        idx_to_turn_on_ticks = idx + k - ncol
+        idxes_to_turn_on_ticks.append(idx_to_turn_on_ticks)
+
+idxs_to_turn_off_ticks = [elem for elem in list(
+    range(k)) if elem not in idxes_to_turn_on_ticks]
+
+axes = axes[:k]   # maybe move up before "else"
 
 
 hist_metrics = []
