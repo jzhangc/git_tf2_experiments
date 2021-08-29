@@ -34,10 +34,8 @@ from tensorflow.python.keras.callbacks import History
 from sklearn.metrics import roc_auc_score, roc_curve
 
 from utils.dl_utils import BatchMatrixLoader
-from utils.plot_utils import epochsPlot
+from utils.plot_utils import epochsPlot, epochsPlotV2
 from utils.other_utils import flatten, warn
-
-from pylab import subplots_adjust
 
 # ------ TF device check ------
 tf.config.list_physical_devices()
@@ -216,6 +214,17 @@ def choose_subplot_dimensions(k):
 
 
 def generate_subplots(k):
+    """
+    # Purpose\n
+        Generate matplotlib figure and axes with k number of subplots.\n
+
+    # Arguments\n
+        k: int. Number of subplots.\n
+
+    # Return\n
+        - If more than one metric, function returns figure, axes, idxs_to_turn_off_ticks\n
+        - If only one metric, function returns figure, axes\n
+    """
     nrow, ncol = choose_subplot_dimensions(k)
     # Choose your share X and share Y parameters as you wish:
     figure, axes = plt.subplots(nrow, ncol,
@@ -285,8 +294,12 @@ def tstPlot(model_history,
         raise ValueError('No valid metrics found to plot.')
 
     # -- set up data and plotting-
-    fig, axes, idxes_to_turn_off = generate_subplots(
-        len(hist_metrics))
+    if len(hist_metrics) == 1:
+        fig, axes = generate_subplots(
+            len(hist_metrics))
+    else:
+        fig, axes, idxes_to_turn_off = generate_subplots(
+            len(hist_metrics))
 
     for hist_metric, ax in zip(hist_metrics, axes):
         plot_metric = np.array(metrics_dict[hist_metric])
@@ -311,8 +324,9 @@ def tstPlot(model_history,
 
             plt.setp(ax.spines.values(), color='black')
 
-    for i in idxes_to_turn_off:
-        plt.setp(axes[i].get_xticklabels(), visible=False)
+    if len(hist_metrics) > 1:
+        for i in idxes_to_turn_off:
+            plt.setp(axes[i].get_xticklabels(), visible=False)
 
     plt.xlabel('Epoch')
     plt.tight_layout()
@@ -403,7 +417,7 @@ epochsPlot(model_history=tst_m_history,
            accuracy_var='binary_accuracy',
            val_accuracy_var='val_binary_accuracy')
 
-tstPlot(model_history=tst_m_history)
+epochsPlotV2(model_history=tst_m_history)
 
 metrics_dict = tst_m_history.history
 tst_args = {'loss': 'loss', 'joker': 'joker',

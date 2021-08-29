@@ -44,7 +44,8 @@ def generate_subplots(k):
         k: int. Number of subplots.\n
 
     # Return\n
-        figure, axes, idxs_to_turn_off_ticks\n
+        - If more than one metric, function returns figure, axes, idxs_to_turn_off_ticks\n
+        - If only one metric, function returns figure, axes\n
     """
     nrow, ncol = choose_subplot_dimensions(k)
     # Choose your share X and share Y parameters as you wish:
@@ -115,8 +116,12 @@ def epochsPlotV2(model_history,
         raise ValueError('No valid metrics found to plot.')
 
     # -- set up data and plotting-
-    fig, axes, idxes_to_turn_off = generate_subplots(
-        len(hist_metrics))
+    if len(hist_metrics) == 1:
+        fig, axes = generate_subplots(
+            len(hist_metrics))
+    else:
+        fig, axes, idxes_to_turn_off = generate_subplots(
+            len(hist_metrics))
 
     for hist_metric, ax in zip(hist_metrics, axes):
         plot_metric = np.array(metrics_dict[hist_metric])
@@ -141,8 +146,9 @@ def epochsPlotV2(model_history,
 
             plt.setp(ax.spines.values(), color='black')
 
-    for i in idxes_to_turn_off:
-        plt.setp(axes[i].get_xticklabels(), visible=False)
+    if len(hist_metrics) > 1:
+        for i in idxes_to_turn_off:
+            plt.setp(axes[i].get_xticklabels(), visible=False)
 
     plt.xlabel('Epoch')
     plt.tight_layout()
