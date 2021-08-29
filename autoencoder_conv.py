@@ -3,7 +3,7 @@ things to fiddle:
 [x] 1. CNN AutoEncoderDecoder with CNN
 [ ] 2. CNN hyperparameter tuning
 
-overall notes:
+Overall notes:
 1. how to calculate output shape for the CNN layers, using input (28, 28, 1) as an example
 a. padding='same': when padding is set to 'same', the output shape is the as as the input shape.
     '0's are padded to fill the shrinkage created by convolution
@@ -16,6 +16,10 @@ d. Conv2D(filters=8, kernel=(3, 3), padding='same', ...)
     output: 14, 14, 8
 e. UpSampling2D((2, 2))  # 14*2. no change to the number of channels
     output: 28, 28, 8
+
+2. how to decide the filter size
+a. there is a preference for odd number sizes over even number sizes, e.g. 3x3, 5x5 etc.
+    Odd number sizes have a centroid. 3x3 is the most popular one. 
 """
 
 
