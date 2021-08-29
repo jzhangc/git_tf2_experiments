@@ -32,7 +32,7 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Layer, F
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tqdm import tqdm
-from utils.plot_utils import epochsPlot, epochsPlotV2
+from utils.plot_utils import epochsPlot
 
 
 # ------ TF device check ------
