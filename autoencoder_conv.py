@@ -32,7 +32,7 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Layer, F
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tqdm import tqdm
-from utils.plot_utils import epochsPlot
+from utils.plot_utils import epochsPlot, epochsPlotV2
 
 
 # ------ TF device check ------
@@ -177,7 +177,7 @@ m.compile(optimizer=optm, loss="binary_crossentropy")
 m.model().summary()
 
 # -- training --
-m_history = m.fit(x=x_train, y=x_train, batch_size=256, epochs=10, callbacks=callbacks,
+m_history = m.fit(x=x_train, y=x_train, batch_size=256, epochs=80, callbacks=callbacks,
                   shuffle=True, validation_data=(x_test, x_test))
 
 # -- inspection --
