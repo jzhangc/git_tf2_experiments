@@ -43,19 +43,34 @@ tf.config.list_physical_devices()
 
 # ------ model ------
 class CnnClassifier(Model):
-    def __init__(self, initial_shape, bottleneck_dim, outpout_n, output_activation='softmax'):
+    def __init__(self, initial_x_shape, y_len,
+                 bottleneck_dim, outpout_n, output_activation='softmax', multilabel=False):
         """
-        Details:\n
+        # Details:\n
             - Use "softmax" for binary or mutually exclusive multiclass modelling,
                 and use "sigmoid" for multilabel classification.\n
+            - y_len: this is the length of y.
+                y_len = 1 or 2: binary classification.
+                y_len >= 2: multiclass or multilabel classification.
         """
         super(CnnClassifier, self).__init__()
-        self.output_activation = output_activation
-        self.initial_shape = initial_shape
+
+        # - initialization and argument check-
+        self.initial_x_shape = initial_x_shape
+        self.y_len = y_len
         self.bottleneck_dim = bottleneck_dim
+        self.multilabel = multilabel
+        if multilabel and output_activation != 'softmax':
+            warn(
+                'Activation automatically set to \'sigmoid\' for multilabel classification.')
+            self.output_activation = 'sigmoid'
+        else:
+            self.output_activation = output_activation
+
+        # - CNN layers -
         # CNN encoding sub layers
         self.conv2d_1 = Conv2D(16, (3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2=0.01),
-                               padding='same', input_shape=initial_shape)  # output: 28, 28, 16
+                               padding='same', input_shape=initial_x_shape)  # output: 28, 28, 16
         self.bn1 = BatchNormalization()
         self.leakyr1 = LeakyReLU()
         self.maxpooling_1 = MaxPooling2D((2, 2))  # output: 14, 14, 16
@@ -91,7 +106,7 @@ class CnnClassifier(Model):
         This method enables correct model.summary() results:
         model.model().summary()
         """
-        x = Input(self.initial_shape)
+        x = Input(self.initial_x_shape)
         return Model(inputs=[x], outputs=self.call(x))
 
     def predict_classes(self, label_dict,
@@ -112,10 +127,10 @@ class CnnClassifier(Model):
         # Details:\n
             - For label_dict, this is a dictionary with keys as index integers.
                 Example:
-                {0: 'all', 1: 'alpha', 2: 'beta', 3: 'fmri', 4: 'hig', 5: 'megs', 6: 'pc', 7: 'pt', 8: 'sc'}. 
+                {0: 'all', 1: 'alpha', 2: 'beta', 3: 'fmri', 4: 'hig', 5: 'megs', 6: 'pc', 7: 'pt', 8: 'sc'}.
                 This can be derived from the "label_map_rev" attribtue from BatchDataLoader class.\n
             - For binary classification, the length of the label_dict should be 1.
-                Example: {0: 'case'}. \n        
+                Example: {0: 'case'}. \n
         """
         # - argument check -
         if not isinstance(label_dict, dict):
@@ -126,7 +141,7 @@ class CnnClassifier(Model):
         if not all(isinstance(key, int) for key in label_keys):
             raise ValueError('The keys in label_dict need to be integers.')
 
-        if self.output_activation == 'sigmoid' and proba_threshold is None:
+        if self.multilabel and proba_threshold is None:
             raise ValueError(
                 'Set proba_threshold for multilabel class prediction.')
 
@@ -222,12 +237,12 @@ optm = Adam(learning_rate=0.001, decay=0.001/80)  # decay?? lr/epoch
 
 # -- model --
 # - multiclass -
-tst_m = CnnClassifier(initial_shape=(90, 90, 1),
+tst_m = CnnClassifier(initial_x_shape=(90, 90, 1), y_len=len(tst_tf_dat.labels_map_rev), multilabel=False,
                       bottleneck_dim=64, outpout_n=len(tst_tf_dat.lables_count),
                       output_activation='softmax')
 
 # - multilabel -
-tst_m = CnnClassifier(initial_shape=(90, 90, 1),
+tst_m = CnnClassifier(initial_x_shape=(90, 90, 1), y_len=len(tst_tf_dat.labels_map_rev), multilabel=True,
                       bottleneck_dim=64, outpout_n=len(tst_tf_dat.lables_count),
                       output_activation='sigmoid')
 
@@ -265,8 +280,41 @@ proba, pred_class = tst_m.predict_classes(
 
 
 # ------ test plot functions ------
-def tstfoo(y, proba):
+def tstfoo(classifier, x, y=None, **kwargs):
     """ROC-AUC plot function"""
+
+    # - probability calculation -
+    # more model classes are going to be added.
+    if isinstance(classifier, CnnClassifier):
+        raise ValueError('The classifier should be one of \'CnnClassifier\'.')
+
+    if not isinstance(x, (np.ndarray, tf.data.Dataset)):
+        raise TypeError(
+            'x needs to be either a np.ndarray or tf.data.Dataset class.')
+
+    if isinstance(x, np.ndarray):
+        if y is None:
+            raise ValueError('Set y (np.ndarray) when x is np.ndarray')
+        elif not isinstance(y, np.ndarray):
+            raise ValueError('Set y (np.ndarray) when x is np.ndarray')
+        elif y.shape[-1] != classifier.y_len:
+            raise ValueError(
+                'Make sure y is the same length as classifier.y_len.')
+
+    if classifier.multilabel:
+        warn('ROC-AUC for multilabel models should not be used.')
+
+    # - make prediction -
+    proba, _ = classifier.predict_classes(x=x, **kwargs)
+
+    # - set up plotting data -
+    if isinstance(x, tf.data.Dataset):
+        t = np.ndarray((0, proba.shape[-1]))
+        for _, b in x:
+            # print(b.numpy())
+            bn = b.numpy()
+            # print(type(bn))
+            t = np.concatenate((t, bn), axis=0)
 
     # - plotting -
     fg, ax = plt.subplots()
@@ -296,6 +344,9 @@ tst_t.shape
 
 proba_np = proba.to_numpy()
 
+tst_tf_train
+
+
 fg, ax = plt.subplots()
 ax.plot([0, 1], [0, 1], 'k--')
 for class_idx, auc_class in enumerate(proba.columns):
@@ -308,6 +359,12 @@ ax.set_xlabel('False Positive Rate')
 ax.set_ylabel('True Positive Rate')
 ax.legend(loc='best')
 plt.show()
+
+
+if isinstance(tst_tf_test, (np.ndarray, tf.data.Dataset)):
+    print('yes')
+else:
+    print('no')
 
 # - eppochs plot function -
 epochsPlotV2(model_history=tst_m_history)
