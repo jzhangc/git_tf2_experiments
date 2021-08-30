@@ -113,6 +113,9 @@ class BatchMatrixLoader(object):
         self.rand = random_state
         self.verbose = verbose
 
+        # - load paths -
+        self.filepath_list, self.labels_list, self.lables_count, self.labels_map_rev, self.encoded_labels = self._get_file_annot()
+
     def _parse_file(self):
         """
         - parse file path to get file path annotation and label information\n
@@ -340,14 +343,14 @@ class BatchMatrixLoader(object):
         self.cv_only = cv_only
         self.shuffle_for_cv_only = shuffle_for_cv_only
 
-        # - load paths -
-        filepath_list, labels_list, lables_count, labels_map_rev, encoded_labels = self._get_file_annot()
+        # # - load paths -
+        # filepath_list, labels_list, lables_count, labels_map_rev, encoded_labels = self._get_file_annot()
 
         if self.semi_supervised:
-            total_ds = tf.data.Dataset.from_tensor_slices(filepath_list)
+            total_ds = tf.data.Dataset.from_tensor_slices(self.filepath_list)
         else:
             total_ds = tf.data.Dataset.from_tensor_slices(
-                (filepath_list, encoded_labels))
+                (self.filepath_list, self.encoded_labels))
 
         # below: tf.dataset.cardinality().numpy() always displays the number of batches.
         # the reason this can be used for total sample size is because
@@ -378,7 +381,7 @@ class BatchMatrixLoader(object):
             self.test_set_map, self.test_n, self.test_batch_n = None, None, None
         else:
             train_ds, self.train_n, test_ds, self.test_n = self._data_resample(
-                total_ds, self.n_total_sample, encoded_labels)
+                total_ds, self.n_total_sample, self.encoded_labels)
 
             if self.semi_supervised:
                 self.train_set_map = train_ds.map(lambda x: tf.py_function(self._map_func_semisupervised, [x, True], [tf.float32, tf.float32]),
@@ -403,12 +406,12 @@ class BatchMatrixLoader(object):
 
             self.test_batch_n = 0
 
-        # - export attributes -
-        self.filepath_list = filepath_list
-        self.labels_list = labels_list
-        self.lables_count = lables_count
-        self.labels_map_rev = labels_map_rev
-        self.encoded_labels = encoded_labels
+        # # - export attributes -
+        # self.filepath_list = filepath_list
+        # self.labels_list = labels_list
+        # self.lables_count = lables_count
+        # self.labels_map_rev = labels_map_rev
+        # self.encoded_labels = encoded_labels
 
         # - set up batch and prefeching -
         # NOTE: the train_set and test_set are tensorflow.python.data.ops.dataset_ops.PrefetchDataset type

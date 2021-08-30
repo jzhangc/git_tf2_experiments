@@ -4,10 +4,10 @@ this is test realm for plot functions with tf.keras models using the data from B
 Objectives:
 [x] extract values from tf.dataset objects
 [ ] ROC-AUC
-    [ ] calculate AUC
-    [ ] construct simple ROC
-    [ ] multiple classes
-    [ ] from One-Hot back to labels (figure legends)
+    [x] calculate AUC
+    [x] construct simple ROC
+    [x] multiple classes
+    [x] from One-Hot back to labels (figure legends)
 [ ] Recall and precision curve
 [ ] F1 curve
 [x] Update the epochsPlot function
@@ -34,7 +34,7 @@ from tensorflow.python.keras.callbacks import History
 from sklearn.metrics import roc_auc_score, roc_curve
 
 from utils.dl_utils import BatchMatrixLoader
-from utils.plot_utils import epochsPlot, epochsPlotV2
+from utils.plot_utils import epochsPlotV2
 from utils.other_utils import flatten, warn
 
 # ------ TF device check ------
@@ -188,12 +188,6 @@ class CnnClassifier(Model):
 
 
 # ------ functions ------
-def tstfoo(y, pred):
-    """ROC-AUC plot function"""
-
-    return None
-
-
 def foo(**kwargs):
     print('Saving...', end='')
     time.sleep(2)
@@ -201,7 +195,7 @@ def foo(**kwargs):
 
 
 # ------ data ------
-# -- batch loader data --
+# - multiclass -
 tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
                                manual_labels=None, model_type='classification',
                                multilabel_classification=False, label_sep=None,
@@ -209,7 +203,7 @@ tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
                                training_percentage=0.8, verbose=False, random_state=1)
 tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data(batch_size=10)
 
-# below: manual labels
+# - multilabel with manual labels -
 tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
                                manual_labels='./data/tst_annot.csv',
                                manual_labels_fileNameVar='filename', manual_labels_labelVar='label',
@@ -227,35 +221,72 @@ callbacks = [earlystop]
 optm = Adam(learning_rate=0.001, decay=0.001/80)  # decay?? lr/epoch
 
 # -- model --
+# - multiclass -
+tst_m = CnnClassifier(initial_shape=(90, 90, 1),
+                      bottleneck_dim=64, outpout_n=len(tst_tf_dat.lables_count),
+                      output_activation='softmax')
+
+# - multilabel -
 tst_m = CnnClassifier(initial_shape=(90, 90, 1),
                       bottleneck_dim=64, outpout_n=len(tst_tf_dat.lables_count),
                       output_activation='sigmoid')
+
+# - model summary -
 tst_m.model().summary()
 
 # -- training --
+# - multiclass -
 tst_m.compile(optimizer=optm, loss="categorical_crossentropy",
               metrics=['categorical_accuracy', tf.keras.metrics.Recall()])  # for mutually exclusive multiclass
+
+# - multilabel -
 tst_m.compile(optimizer=optm, loss="binary_crossentropy",
               metrics=['binary_accuracy', tf.keras.metrics.Recall()])  # for multilabel
+
+# - fitting -
 tst_m_history = tst_m.fit(tst_tf_train, epochs=80,
                           callbacks=callbacks,
                           validation_data=tst_tf_test)
-
-
-label_dict = tst_tf_dat.labels_map_rev
 tst_m_history.history.keys()
 
+
+# -- prediciton --
+label_dict = tst_tf_dat.labels_map_rev
+# pred = tst_m.predict(tst_tf_test)
+
 # - single label multiclass -
-pred = tst_m.predict(tst_tf_test)
 proba, pred_class = tst_m.predict_classes(
     label_dict=label_dict, x=tst_tf_test, proba_threshold=0.5)
 # to_categorical(np.argmax(pred, axis=1), len(tst_tf_dat.lables_count))
 
 # - multilabel -
-pred_class = tst_m.predict_classes(
+proba, pred_class = tst_m.predict_classes(
     label_dict=label_dict, x=tst_tf_test, proba_threshold=0.5)
 
-tst_t = np.ndarray((0, 9))
+
+# ------ test plot functions ------
+def tstfoo(y, proba):
+    """ROC-AUC plot function"""
+
+    # - plotting -
+    fg, ax = plt.subplots()
+    ax.plot([0, 1], [0, 1], 'k--')
+    for class_idx, auc_class in enumerate(proba.columns):
+        fpr, tpr, thresholds = roc_curve(
+            tst_t[:, class_idx], proba_np[:, class_idx])
+        auc_score = roc_auc_score(tst_t[:, class_idx], proba_np[:, class_idx])
+        ax.plot(fpr, tpr, label=f'{auc_class} vs rest: {auc_score:.3f}')
+    ax.set_title('ROC-AUC')
+    ax.set_xlabel('False Positive Rate')
+    ax.set_ylabel('True Positive Rate')
+    ax.legend(loc='best')
+    plt.show()
+
+    return fg, ax
+
+
+# - ROC-AUC curve -
+tst_t = np.ndarray((0, 10))
 for _, b in tst_tf_test:
     # print(b.numpy())
     bn = b.numpy()
@@ -263,23 +294,22 @@ for _, b in tst_tf_test:
     tst_t = np.concatenate((tst_t, bn), axis=0)
 tst_t.shape
 
+proba_np = proba.to_numpy()
 
-# ------ test plot functions ------
-# - ROC-AUC curve -
-fpr, tpr, thresholds = roc_curve(tst_t[:, 0], pred[:, 0])
-auc_score = roc_auc_score(tst_t[:, 0], pred[:, 0])
-
-plt.plot(fpr, tpr)
-plt.axis([0, 1, 0, 1])
-plt.xlabel('False Positive Rate')
-plt.ylabel('True Positive Rate')
+fg, ax = plt.subplots()
+ax.plot([0, 1], [0, 1], 'k--')
+for class_idx, auc_class in enumerate(proba.columns):
+    fpr, tpr, thresholds = roc_curve(
+        tst_t[:, class_idx], proba_np[:, class_idx])
+    auc_score = roc_auc_score(tst_t[:, class_idx], proba_np[:, class_idx])
+    ax.plot(fpr, tpr, label=f'{auc_class} vs rest: {auc_score:.3f}')
+ax.set_title('ROC-AUC')
+ax.set_xlabel('False Positive Rate')
+ax.set_ylabel('True Positive Rate')
+ax.legend(loc='best')
 plt.show()
 
 # - eppochs plot function -
-epochsPlot(model_history=tst_m_history,
-           accuracy_var='binary_accuracy',
-           val_accuracy_var='val_binary_accuracy')
-
 epochsPlotV2(model_history=tst_m_history)
 
 metrics_dict = tst_m_history.history
