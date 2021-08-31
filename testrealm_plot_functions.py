@@ -370,7 +370,7 @@ tst_m_history = tst_m.fit(tst_tf_train, epochs=80,
 tst_m_history.history.keys()
 
 
-# -- prediciton --
+# -- prediction --
 label_dict = tst_tf_dat.labels_map_rev
 # pred = tst_m.predict(tst_tf_test)
 
@@ -391,7 +391,7 @@ auc_res, _, _ = tstfoo(classifier=tst_m, x=tst_tf_train,
 auc_res, _, _ = rocaucPlot(classifier=tst_m, x=tst_tf_train,
                            label_dict=label_dict, legend_pos='outside')
 
-# - eppochs plot function -
+# - epochs plot function -
 epochsPlotV2(model_history=tst_m_history)
 
 metrics_dict = tst_m_history.history
