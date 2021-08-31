@@ -9,6 +9,7 @@ Objectives:
     [x] multiple classes
     [x] from One-Hot back to labels (figure legends)
 [ ] Recall and precision curve
+    [ ] Micro/Macro precision/recall values
 [ ] F1 curve
 [x] Update the epochsPlot function
 """
@@ -32,6 +33,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 from tensorflow.python.keras.callbacks import History
 from sklearn.metrics import roc_auc_score, roc_curve
+from tensorflow.python.types.core import Value
 
 from utils.dl_utils import BatchMatrixLoader
 from utils.plot_utils import epochsPlotV2
@@ -271,7 +273,7 @@ label_dict = tst_tf_dat.labels_map_rev
 
 # - single label multiclass -
 proba, pred_class = tst_m.predict_classes(
-    label_dict=label_dict, x=tst_tf_test, proba_threshold=0.5)
+    label_dict=label_dict, x=tst_tf_test)
 # to_categorical(np.argmax(pred, axis=1), len(tst_tf_dat.lables_count))
 
 # - multilabel -
@@ -280,9 +282,27 @@ proba, pred_class = tst_m.predict_classes(
 
 
 # ------ test plot functions ------
-def tstfoo(classifier, x, y=None, **kwargs):
-    """ROC-AUC plot function"""
+def tstfoo(classifier, x, y=None, legend_pos='inside', **kwargs):
+    """
+    # Purpose\n
+        To calculate and plot ROC-AUC for binary or mutual multiclass classification.
 
+    # Arguments\n
+        kwargs: additional arguments for the classifier.predict_classes.\n
+
+
+    # Return\n
+        - AUC scores for all the classes.\n
+        - Plot objects "fg" and "ax" from matplotlib.\n
+        - Order: auc, fg, ax.\n
+
+    # Details\n
+        - The function will throw an warning if multilabel classifier is used.\n        
+
+    # Note\n
+        - need to test the non-tf.Dataset inputs.\n
+        - In the case of using tf.Dataset as x, y is not needed.\n
+    """
     # - probability calculation -
     # more model classes are going to be added.
     if isinstance(classifier, CnnClassifier):
@@ -304,6 +324,10 @@ def tstfoo(classifier, x, y=None, **kwargs):
     if classifier.multilabel:
         warn('ROC-AUC for multilabel models should not be used.')
 
+    if legend_pos not in ['none', 'inside', 'outside']:
+        raise ValueError(
+            'Options for legend_pos are \'none\', \'inside\' and \'outside\'.')
+
     # - make prediction -
     proba, _ = classifier.predict_classes(x=x, **kwargs)
 
@@ -315,19 +339,25 @@ def tstfoo(classifier, x, y=None, **kwargs):
             bn = b.numpy()
             # print(type(bn))
             t = np.concatenate((t, bn), axis=0)
+    else:
+        t = y
 
     # - plotting -
     fg, ax = plt.subplots()
     ax.plot([0, 1], [0, 1], 'k--')
+
     for class_idx, auc_class in enumerate(proba.columns):
         fpr, tpr, thresholds = roc_curve(
-            tst_t[:, class_idx], proba_np[:, class_idx])
-        auc_score = roc_auc_score(tst_t[:, class_idx], proba_np[:, class_idx])
+            t[:, class_idx], proba_np[:, class_idx])
+        auc_score = roc_auc_score(t[:, class_idx], proba_np[:, class_idx])
         ax.plot(fpr, tpr, label=f'{auc_class} vs rest: {auc_score:.3f}')
     ax.set_title('ROC-AUC')
     ax.set_xlabel('False Positive Rate')
     ax.set_ylabel('True Positive Rate')
-    ax.legend(loc='best')
+    if legend_pos == 'inside':
+        ax.legend(loc='best')
+    elif legend_pos == 'outside':
+        ax.legend(loc='best', bbox_to_anchor=(1.01, 1.0))
     plt.show()
 
     return fg, ax
@@ -357,14 +387,14 @@ for class_idx, auc_class in enumerate(proba.columns):
 ax.set_title('ROC-AUC')
 ax.set_xlabel('False Positive Rate')
 ax.set_ylabel('True Positive Rate')
-ax.legend(loc='best')
+ax.legend(loc='best', bbox_to_anchor=(1.01, 1.0))
 plt.show()
 
 
-if isinstance(tst_tf_test, (np.ndarray, tf.data.Dataset)):
-    print('yes')
+if 'none' not in ['inside', 'outside']:
+    print('not in')
 else:
-    print('no')
+    print('in')
 
 # - eppochs plot function -
 epochsPlotV2(model_history=tst_m_history)
