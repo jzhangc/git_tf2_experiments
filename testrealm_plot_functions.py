@@ -36,7 +36,7 @@ from sklearn.metrics import roc_auc_score, roc_curve
 from tensorflow.python.types.core import Value
 
 from utils.dl_utils import BatchMatrixLoader
-from utils.plot_utils import epochsPlotV2
+from utils.plot_utils import epochsPlotV2, rocaucPlot
 from utils.other_utils import flatten, warn
 
 # ------ TF device check ------
@@ -387,6 +387,9 @@ proba, pred_class = tst_m.predict_classes(
 # - ROC-AUC curve -
 auc_res, _, _ = tstfoo(classifier=tst_m, x=tst_tf_train,
                        label_dict=label_dict, legend_pos='outside')
+
+auc_res, _, _ = rocaucPlot(classifier=tst_m, x=tst_tf_train,
+                           label_dict=label_dict, legend_pos='outside')
 
 # - eppochs plot function -
 epochsPlotV2(model_history=tst_m_history)
