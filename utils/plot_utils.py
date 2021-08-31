@@ -321,7 +321,7 @@ def rocaucPlot(classifier, x, y=None, label_dict=None, legend_pos='inside', **kw
         - need to test the non-tf.Dataset inputs.\n
         - In the case of using tf.Dataset as x, y is not needed.\n
     """
-    # - probability calculation -
+    # - arguments check -
     # more model classes are going to be added.
     if not isinstance(classifier, CnnClassifier):
         raise ValueError('The classifier should be one of \'CnnClassifier\'.')

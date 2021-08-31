@@ -212,39 +212,7 @@ def foo(**kwargs):
 
 
 def tstfoo(classifier, x, y=None, label_dict=None, legend_pos='inside', **kwargs):
-    """
-    # Purpose\n
-        To calculate and plot ROC-AUC for binary or mutual multiclass classification.
-
-    # Arguments\n
-        classifier: tf.keras.model subclass. 
-            These classes were created with a custom "predict_classes" method, along with other smaller custom attributes.\n
-        x: tf.Dataset or np.ndarray. Input x data for prediction.\n
-        y: None or np.ndarray. Only needed when x is a np.ndarray. Label information.\n
-        label_dict: dict. Dictionary with index (integers) as keys.\n
-        legend_pos: str. Legend position setting. Can be set to 'none' to hide legends.\n
-        **kwargs: additional arguments for the classifier.predict_classes.\n
-
-    # Return\n
-        - AUC scores for all the classes.\n
-        - Plot objects "fg" and "ax" from matplotlib.\n
-        - Order: auc_res, fg, ax.\n
-
-    # Details\n
-        - The function will throw an warning if multilabel classifier is used.\n        
-        - The output auc_res is a pd.DataFrame. 
-            Column names:  'label', 'auc', 'thresholds', 'fpr', 'tpr'.
-            Since the threshold contains multiple values, so as the corresponding 'fpr' and 'tpr',
-            the value of these columns is a list.\n
-        - For label_dict, this is a dictionary with keys as index integers.
-            Example:
-            {0: 'all', 1: 'alpha', 2: 'beta', 3: 'fmri', 4: 'hig', 5: 'megs', 6: 'pc', 7: 'pt', 8: 'sc'}.
-            This can be derived from the "label_map_rev" attribtue from BatchDataLoader class.\n
-
-    # Note\n
-        - need to test the non-tf.Dataset inputs.\n
-        - In the case of using tf.Dataset as x, y is not needed.\n
-    """
+    """test foo for roc-auc plot function"""
     # - probability calculation -
     # more model classes are going to be added.
     if not isinstance(classifier, CnnClassifier):
