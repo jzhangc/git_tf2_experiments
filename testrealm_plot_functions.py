@@ -211,77 +211,6 @@ def foo(**kwargs):
     print('Done!')
 
 
-# ------ data ------
-# - multiclass -
-tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
-                               manual_labels=None, model_type='classification',
-                               multilabel_classification=False, label_sep=None,
-                               x_scaling='minmax', x_min_max_range=[0, 1], resmaple_method='random',
-                               training_percentage=0.8, verbose=False, random_state=1)
-tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data(batch_size=10)
-
-# - multilabel with manual labels -
-tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
-                               manual_labels='./data/tst_annot.csv',
-                               manual_labels_fileNameVar='filename', manual_labels_labelVar='label',
-                               model_type='classification',
-                               multilabel_classification=True, label_sep='_',
-                               x_scaling='minmax', x_min_max_range=[0, 1], resmaple_method='random',
-                               training_percentage=0.8, verbose=False, random_state=1)
-tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data(batch_size=10)
-
-
-# ------ training ------
-# -- early stop and optimizer --
-earlystop = EarlyStopping(monitor='val_loss', patience=5)
-callbacks = [earlystop]
-optm = Adam(learning_rate=0.001, decay=0.001/80)  # decay?? lr/epoch
-
-# -- model --
-# - multiclass -
-tst_m = CnnClassifier(initial_x_shape=(90, 90, 1), y_len=len(tst_tf_dat.labels_map_rev), multilabel=False,
-                      bottleneck_dim=64, outpout_n=len(tst_tf_dat.lables_count),
-                      output_activation='softmax')
-
-# - multilabel -
-tst_m = CnnClassifier(initial_x_shape=(90, 90, 1), y_len=len(tst_tf_dat.labels_map_rev), multilabel=True,
-                      bottleneck_dim=64, outpout_n=len(tst_tf_dat.lables_count),
-                      output_activation='sigmoid')
-
-# - model summary -
-tst_m.model().summary()
-
-# -- training --
-# - multiclass -
-tst_m.compile(optimizer=optm, loss="categorical_crossentropy",
-              metrics=['categorical_accuracy', tf.keras.metrics.Recall()])  # for mutually exclusive multiclass
-
-# - multilabel -
-tst_m.compile(optimizer=optm, loss="binary_crossentropy",
-              metrics=['binary_accuracy', tf.keras.metrics.Recall()])  # for multilabel
-
-# - fitting -
-tst_m_history = tst_m.fit(tst_tf_train, epochs=80,
-                          callbacks=callbacks,
-                          validation_data=tst_tf_test)
-tst_m_history.history.keys()
-
-
-# -- prediciton --
-label_dict = tst_tf_dat.labels_map_rev
-# pred = tst_m.predict(tst_tf_test)
-
-# - single label multiclass -
-proba, pred_class = tst_m.predict_classes(
-    label_dict=label_dict, x=tst_tf_test)
-# to_categorical(np.argmax(pred, axis=1), len(tst_tf_dat.lables_count))
-
-# - multilabel -
-proba, pred_class = tst_m.predict_classes(
-    label_dict=label_dict, x=tst_tf_test, proba_threshold=0.5)
-
-
-# ------ test plot functions ------
 def tstfoo(classifier, x, y=None, label_dict=None, legend_pos='inside', **kwargs):
     """
     # Purpose\n
@@ -385,45 +314,79 @@ def tstfoo(classifier, x, y=None, label_dict=None, legend_pos='inside', **kwargs
     return auc_res, fg, ax
 
 
+# ------ data ------
+# - multiclass -
+tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
+                               manual_labels=None, model_type='classification',
+                               multilabel_classification=False, label_sep=None,
+                               x_scaling='minmax', x_min_max_range=[0, 1], resmaple_method='random',
+                               training_percentage=0.8, verbose=False, random_state=1)
+tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data(batch_size=10)
+
+# - multilabel with manual labels -
+tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
+                               manual_labels='./data/tst_annot.csv',
+                               manual_labels_fileNameVar='filename', manual_labels_labelVar='label',
+                               model_type='classification',
+                               multilabel_classification=True, label_sep='_',
+                               x_scaling='minmax', x_min_max_range=[0, 1], resmaple_method='random',
+                               training_percentage=0.8, verbose=False, random_state=1)
+tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data(batch_size=10)
+
+
+# ------ training ------
+# -- early stop and optimizer --
+earlystop = EarlyStopping(monitor='val_loss', patience=5)
+callbacks = [earlystop]
+optm = Adam(learning_rate=0.001, decay=0.001/80)  # decay?? lr/epoch
+
+# -- model --
+# - multiclass -
+tst_m = CnnClassifier(initial_x_shape=(90, 90, 1), y_len=len(tst_tf_dat.labels_map_rev), multilabel=False,
+                      bottleneck_dim=64, outpout_n=len(tst_tf_dat.lables_count),
+                      output_activation='softmax')
+
+# - multilabel -
+tst_m = CnnClassifier(initial_x_shape=(90, 90, 1), y_len=len(tst_tf_dat.labels_map_rev), multilabel=True,
+                      bottleneck_dim=64, outpout_n=len(tst_tf_dat.lables_count),
+                      output_activation='sigmoid')
+
+# - model summary -
+tst_m.model().summary()
+
+# -- training --
+# - multiclass -
+tst_m.compile(optimizer=optm, loss="categorical_crossentropy",
+              metrics=['categorical_accuracy', tf.keras.metrics.Recall()])  # for mutually exclusive multiclass
+
+# - multilabel -
+tst_m.compile(optimizer=optm, loss="binary_crossentropy",
+              metrics=['binary_accuracy', tf.keras.metrics.Recall()])  # for multilabel
+
+# - fitting -
+tst_m_history = tst_m.fit(tst_tf_train, epochs=80,
+                          callbacks=callbacks,
+                          validation_data=tst_tf_test)
+tst_m_history.history.keys()
+
+
+# -- prediciton --
+label_dict = tst_tf_dat.labels_map_rev
+# pred = tst_m.predict(tst_tf_test)
+
+# - single label multiclass -
+proba, pred_class = tst_m.predict_classes(
+    label_dict=label_dict, x=tst_tf_test)
+# to_categorical(np.argmax(pred, axis=1), len(tst_tf_dat.lables_count))
+
+# - multilabel -
+proba, pred_class = tst_m.predict_classes(
+    label_dict=label_dict, x=tst_tf_test, proba_threshold=0.5)
+
+
 # - ROC-AUC curve -
-tst_t = np.ndarray((0, 10))
-for _, b in tst_tf_test:
-    # print(b.numpy())
-    bn = b.numpy()
-    # print(type(bn))
-    tst_t = np.concatenate((tst_t, bn), axis=0)
-tst_t.shape
-
-proba_np = proba.to_numpy()
-
-tst_tf_train
-
-
-fg, ax = plt.subplots()
-ax.plot([0, 1], [0, 1], 'k--')
-auc_res = pd.DataFrame(columns=['label', 'auc', 'thresholds', 'fpr', 'tpr'])
-for class_idx, auc_class in enumerate(proba.columns):
-    fpr, tpr, thresholds = roc_curve(
-        tst_t[:, class_idx], proba_np[:, class_idx])
-    auc_score = roc_auc_score(tst_t[:, class_idx], proba_np[:, class_idx])
-    auc_res.loc[class_idx] = [auc_class, auc_score, thresholds, fpr, tpr]
-
-    ax.plot(fpr, tpr, label=f'{auc_class} vs rest: {auc_score:.3f}')
-ax.set_title('ROC-AUC')
-ax.set_xlabel('False Positive Rate')
-ax.set_ylabel('True Positive Rate')
-ax.legend(loc='best', bbox_to_anchor=(1.01, 1.0))
-plt.show()
-
-
-auc_res, _, _ = tstfoo(classifier=tst_m, x=tst_tf_test,
-                       label_dict=label_dict, legend_pos='none')
-
-
-if isinstance(tst_m, CnnClassifier):
-    print('y')
-else:
-    print('n')
+auc_res, _, _ = tstfoo(classifier=tst_m, x=tst_tf_train,
+                       label_dict=label_dict, legend_pos='outside')
 
 # - eppochs plot function -
 epochsPlotV2(model_history=tst_m_history)
