@@ -3,7 +3,7 @@ this is test realm for plot functions with tf.keras models using the data from B
 
 Objectives:
 [x] extract values from tf.dataset objects
-[ ] ROC-AUC
+[x] ROC-AUC
     [x] calculate AUC
     [x] construct simple ROC
     [x] multiple classes
@@ -282,22 +282,31 @@ proba, pred_class = tst_m.predict_classes(
 
 
 # ------ test plot functions ------
-def tstfoo(classifier, x, y=None, legend_pos='inside', **kwargs):
+def tstfoo(classifier, x, y=None, label_dict=None, legend_pos='inside', **kwargs):
     """
     # Purpose\n
         To calculate and plot ROC-AUC for binary or mutual multiclass classification.
 
     # Arguments\n
+        classifier: tf.keras.model subclass. These classes were 
+        label_dict: dict. Dictionary with index (integers) as keys.\n
         kwargs: additional arguments for the classifier.predict_classes.\n
-
 
     # Return\n
         - AUC scores for all the classes.\n
         - Plot objects "fg" and "ax" from matplotlib.\n
-        - Order: auc, fg, ax.\n
+        - Order: auc_res, fg, ax.\n
 
     # Details\n
         - The function will throw an warning if multilabel classifier is used.\n        
+        - The output auc_res is a pd.DataFrame. 
+            Column names:  'label', 'auc', 'thresholds', 'fpr', 'tpr'.
+            Since the threshold contains multiple values, so as the corresponding 'fpr' and 'tpr',
+            the value of these columns is a list.\n
+        - For label_dict, this is a dictionary with keys as index integers.
+            Example:
+            {0: 'all', 1: 'alpha', 2: 'beta', 3: 'fmri', 4: 'hig', 5: 'megs', 6: 'pc', 7: 'pt', 8: 'sc'}.
+            This can be derived from the "label_map_rev" attribtue from BatchDataLoader class.\n
 
     # Note\n
         - need to test the non-tf.Dataset inputs.\n
@@ -305,7 +314,7 @@ def tstfoo(classifier, x, y=None, legend_pos='inside', **kwargs):
     """
     # - probability calculation -
     # more model classes are going to be added.
-    if isinstance(classifier, CnnClassifier):
+    if not isinstance(classifier, CnnClassifier):
         raise ValueError('The classifier should be one of \'CnnClassifier\'.')
 
     if not isinstance(x, (np.ndarray, tf.data.Dataset)):
@@ -328,8 +337,12 @@ def tstfoo(classifier, x, y=None, legend_pos='inside', **kwargs):
         raise ValueError(
             'Options for legend_pos are \'none\', \'inside\' and \'outside\'.')
 
+    if label_dict is None:
+        raise ValueError('Set label_dict.')
+
     # - make prediction -
-    proba, _ = classifier.predict_classes(x=x, **kwargs)
+    proba, _ = classifier.predict_classes(x=x, label_dict=label_dict, **kwargs)
+    proba_np = proba.to_numpy()
 
     # - set up plotting data -
     if isinstance(x, tf.data.Dataset):
@@ -342,14 +355,19 @@ def tstfoo(classifier, x, y=None, legend_pos='inside', **kwargs):
     else:
         t = y
 
-    # - plotting -
+    # - calculate AUC and plotting -
+    auc_res = pd.DataFrame(
+        columns=['label', 'auc', 'thresholds', 'fpr', 'tpr'])
+
     fg, ax = plt.subplots()
     ax.plot([0, 1], [0, 1], 'k--')
-
     for class_idx, auc_class in enumerate(proba.columns):
         fpr, tpr, thresholds = roc_curve(
             t[:, class_idx], proba_np[:, class_idx])
         auc_score = roc_auc_score(t[:, class_idx], proba_np[:, class_idx])
+        auc_res.loc[class_idx] = [auc_class, auc_score,
+                                  thresholds, fpr, tpr]  # store results
+
         ax.plot(fpr, tpr, label=f'{auc_class} vs rest: {auc_score:.3f}')
     ax.set_title('ROC-AUC')
     ax.set_xlabel('False Positive Rate')
@@ -360,7 +378,7 @@ def tstfoo(classifier, x, y=None, legend_pos='inside', **kwargs):
         ax.legend(loc='best', bbox_to_anchor=(1.01, 1.0))
     plt.show()
 
-    return fg, ax
+    return auc_res, fg, ax
 
 
 # - ROC-AUC curve -
@@ -379,10 +397,13 @@ tst_tf_train
 
 fg, ax = plt.subplots()
 ax.plot([0, 1], [0, 1], 'k--')
+auc_res = pd.DataFrame(columns=['label', 'auc', 'thresholds', 'fpr', 'tpr'])
 for class_idx, auc_class in enumerate(proba.columns):
     fpr, tpr, thresholds = roc_curve(
         tst_t[:, class_idx], proba_np[:, class_idx])
     auc_score = roc_auc_score(tst_t[:, class_idx], proba_np[:, class_idx])
+    auc_res.loc[class_idx] = [auc_class, auc_score, thresholds, fpr, tpr]
+
     ax.plot(fpr, tpr, label=f'{auc_class} vs rest: {auc_score:.3f}')
 ax.set_title('ROC-AUC')
 ax.set_xlabel('False Positive Rate')
@@ -391,10 +412,14 @@ ax.legend(loc='best', bbox_to_anchor=(1.01, 1.0))
 plt.show()
 
 
-if 'none' not in ['inside', 'outside']:
-    print('not in')
+auc_res, _, _ = tstfoo(classifier=tst_m, x=tst_tf_test,
+                       label_dict=label_dict, legend_pos='none')
+
+
+if isinstance(tst_m, CnnClassifier):
+    print('y')
 else:
-    print('in')
+    print('n')
 
 # - eppochs plot function -
 epochsPlotV2(model_history=tst_m_history)
