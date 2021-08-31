@@ -288,9 +288,13 @@ def tstfoo(classifier, x, y=None, label_dict=None, legend_pos='inside', **kwargs
         To calculate and plot ROC-AUC for binary or mutual multiclass classification.
 
     # Arguments\n
-        classifier: tf.keras.model subclass. These classes were 
+        classifier: tf.keras.model subclass. 
+            These classes were created with a custom "predict_classes" method, along with other smaller custom attributes.\n
+        x: tf.Dataset or np.ndarray. Input x data for prediction.\n
+        y: None or np.ndarray. Only needed when x is a np.ndarray. Label information.\n
         label_dict: dict. Dictionary with index (integers) as keys.\n
-        kwargs: additional arguments for the classifier.predict_classes.\n
+        legend_pos: str. Legend position setting. Can be set to 'none' to hide legends.\n
+        **kwargs: additional arguments for the classifier.predict_classes.\n
 
     # Return\n
         - AUC scores for all the classes.\n
