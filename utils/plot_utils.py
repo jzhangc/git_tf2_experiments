@@ -391,24 +391,24 @@ def rocaucPlot(classifier, x, y=None, label_dict=None, legend_pos='inside', **kw
     return auc_res, fg, ax
 
 
-def lrSchedulerPlot(lr_schedular):
+def lrSchedulerPlot(lr_scheduler):
     """Plot learning rate progress after training when using WarmUpCosineDecayScheduler"""
     # - arguments check -
-    if not isinstance(lr_schedular, WarmUpCosineDecayScheduler):
+    if not isinstance(lr_scheduler, WarmUpCosineDecayScheduler):
         raise TypeError(
             'lr_schedular should be a WarmUpCosineDecayScheduler class.')
 
     # - variables -
-    total_steps = len(lr_schedular.learning_rates)
+    total_steps = len(lr_scheduler.learning_rates)
 
     if total_steps == 0:
         raise ValueError('lr_schedular has learning rate to plot.')
 
     # - plotting -
-    plt.plot(lr_schedular.learning_rates)
+    plt.plot(lr_scheduler.learning_rates)
     plt.xlabel('Step', fontsize=20)
     plt.ylabel('lr', fontsize=20)
-    plt.axis([0, total_steps, 0, lr_schedular.learning_rate_base*1.1])
+    plt.axis([0, total_steps, 0, lr_scheduler.learning_rate_base*1.1])
     plt.xticks(np.arange(0, total_steps, 50))
     plt.grid()
     plt.title('Learning rate cosine decay with warmup', fontsize=20)
