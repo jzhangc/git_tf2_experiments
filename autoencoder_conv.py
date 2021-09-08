@@ -37,6 +37,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tqdm import tqdm
 from utils.plot_utils import epochsPlot, epochsPlotV2
+from utils.dl_utils import WarmUpCosineDecayScheduler
 
 
 # ------ TF device check ------
@@ -168,10 +169,42 @@ x_test = np.reshape(x_test, (len(x_test), 28, 28, 1))
 
 # ------ training ------
 # -- early stop and optimizer --
+# earlystop = EarlyStopping(monitor='val_loss', patience=5)
+# # earlystop = EarlyStopping(monitor='loss', patience=5)
+# callbacks = [earlystop]
+# optm = Adam(learning_rate=0.001, decay=0.001/80)
+
+# Training batch size, set small value here for demonstration purpose.
+batch_size = 512
+epochs = 40
+n_training_samples = x_train.shape[0]
+
+# Base learning rate after warmup.
+learning_rate_base = 0.001
+total_steps = int(epochs * n_training_samples / batch_size)
+
+# Number of warmup epochs.
+warmup_epoch = 10
+warmup_steps = int(warmup_epoch * n_training_samples / batch_size)
+warmup_batches = warmup_epoch * n_training_samples / batch_size
+
+# Create the Learning rate scheduler.
+warm_up_lr = WarmUpCosineDecayScheduler(learning_rate_base=learning_rate_base,
+                                        total_steps=total_steps,
+                                        warmup_learning_rate=0.0,
+                                        warmup_steps=warmup_steps,
+                                        hold_base_rate_steps=0)
+
+# optimizer
+# optm = Adam(learning_rate=0.001, decay=0.001/80)  # decay?? lr/epoch
+optm = Adam()
+
+# early stop
 earlystop = EarlyStopping(monitor='val_loss', patience=5)
-# earlystop = EarlyStopping(monitor='loss', patience=5)
-callbacks = [earlystop]
-optm = Adam(learning_rate=0.001, decay=0.001/80)
+
+# callback
+callbacks = [warm_up_lr, earlystop]
+
 
 # -- model --
 m = AutoEncoderDecoder(initial_shape=x_train.shape[1:], bottleneck_dim=64)
@@ -181,10 +214,10 @@ m.compile(optimizer=optm, loss="binary_crossentropy")
 m.model().summary()
 
 # -- training --
-m_history = m.fit(x=x_train, y=x_train, batch_size=256, epochs=80, callbacks=callbacks,
+m_history = m.fit(x=x_train, y=x_train, batch_size=batch_size, epochs=epochs, callbacks=callbacks,
                   shuffle=True, validation_data=(x_test, x_test))
 
-m_history = m.fit(x=x_train, y=x_train, batch_size=256, epochs=5, callbacks=callbacks,
+m_history = m.fit(x=x_train, y=x_train, batch_size=batch_size, epochs=5, callbacks=callbacks,
                   shuffle=True, validation_data=(x_test, x_test))
 
 # -- inspection --
