@@ -221,6 +221,15 @@ m_history = m.fit(x=x_train, y=x_train, batch_size=batch_size, epochs=5, callbac
                   shuffle=True, validation_data=(x_test, x_test))
 
 # -- inspection --
+plt.plot(warm_up_lr.learning_rates)
+plt.xlabel('Step', fontsize=20)
+plt.ylabel('lr', fontsize=20)
+plt.axis([0, total_steps, 0, learning_rate_base*1.1])
+plt.xticks(np.arange(0, total_steps, 50))
+plt.grid()
+plt.title('Cosine decay with warmup', fontsize=20)
+plt.show()
+
 reconstruction_test = m.predict(x_test)
 
 m.encode(x_test).shape
