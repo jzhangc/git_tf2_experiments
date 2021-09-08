@@ -411,5 +411,5 @@ def lrSchedulerPlot(lr_schedular):
     plt.axis([0, total_steps, 0, lr_schedular.learning_rate_base*1.1])
     plt.xticks(np.arange(0, total_steps, 50))
     plt.grid()
-    plt.title('Cosine decay with warmup', fontsize=20)
+    plt.title('Learning rate cosine decay with warmup', fontsize=20)
     plt.show()
