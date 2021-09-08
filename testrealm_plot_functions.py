@@ -35,7 +35,7 @@ from tensorflow.python.keras.callbacks import History
 from sklearn.metrics import roc_auc_score, roc_curve
 from tensorflow.python.types.core import Value
 
-from utils.dl_utils import BatchMatrixLoader
+from utils.dl_utils import BatchMatrixLoader, WarmUpCosineDecayScheduler
 from utils.plot_utils import epochsPlotV2, rocaucPlot
 from utils.other_utils import flatten, warn
 
@@ -304,9 +304,36 @@ tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data(batch_size=10)
 
 # ------ training ------
 # -- early stop and optimizer --
+# Training batch size, set small value here for demonstration purpose.
+batch_size = tst_tf_dat.train_batch_n
+epochs = 100
+
+# Base learning rate after warmup.
+learning_rate_base = 0.001
+total_steps = int(epochs * tst_tf_dat.train_n / batch_size)
+
+# Number of warmup epochs.
+warmup_epoch = 10
+warmup_steps = int(warmup_epoch * tst_tf_dat.train_n / batch_size)
+warmup_batches = warmup_epoch * tst_tf_dat.train_n / batch_size
+
+# Create the Learning rate scheduler.
+warm_up_lr = WarmUpCosineDecayScheduler(learning_rate_base=learning_rate_base,
+                                        total_steps=total_steps,
+                                        warmup_learning_rate=0.0,
+                                        warmup_steps=warmup_steps,
+                                        hold_base_rate_steps=0)
+
+# optimizer
+# optm = Adam(learning_rate=0.001, decay=0.001/80)  # decay?? lr/epoch
+optm = Adam()
+
+# early stop
 earlystop = EarlyStopping(monitor='val_loss', patience=5)
-callbacks = [earlystop]
-optm = Adam(learning_rate=0.001, decay=0.001/80)  # decay?? lr/epoch
+
+# callback
+callbacks = [warm_up_lr, earlystop]
+
 
 # -- model --
 # - multiclass -
@@ -332,10 +359,18 @@ tst_m.compile(optimizer=optm, loss="binary_crossentropy",
               metrics=['binary_accuracy', tf.keras.metrics.Recall()])  # for multilabel
 
 # - fitting -
-tst_m_history = tst_m.fit(tst_tf_train, epochs=80,
+tst_m_history = tst_m.fit(tst_tf_train, epochs=epochs,
                           callbacks=callbacks,
                           validation_data=tst_tf_test)
-tst_m_history.history.keys()
+
+plt.plot(warm_up_lr.learning_rates)
+plt.xlabel('Step', fontsize=20)
+plt.ylabel('lr', fontsize=20)
+plt.axis([0, total_steps, 0, learning_rate_base*1.1])
+plt.xticks(np.arange(0, total_steps, 50))
+plt.grid()
+plt.title('Cosine decay with warmup', fontsize=20)
+plt.show()
 
 
 # -- prediction --
@@ -360,6 +395,7 @@ auc_res, _, _ = rocaucPlot(classifier=tst_m, x=tst_tf_train,
                            label_dict=label_dict, legend_pos='outside')
 
 # - epochs plot function -
+tst_m_history.history.keys()
 epochsPlotV2(model_history=tst_m_history)
 
 metrics_dict = tst_m_history.history

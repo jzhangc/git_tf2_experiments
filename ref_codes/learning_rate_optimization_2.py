@@ -4,6 +4,7 @@ Reference code for learning rate optimization.
 keras learning rate schedular: https://machinelearningmastery.com/using-learning-rate-schedules-deep-learning-models-python-keras/
 transformer lr optimization: https://huggingface.co/transformers/_modules/transformers/optimization_tf.html#WarmUp
 
+The following codes are from: https://github.com/Tony607/Keras_Bag_of_Tricks/blob/master/warmup_cosine_decay_scheduler.py
 """
 # ------ imports ------
 import matplotlib.pyplot as plt
