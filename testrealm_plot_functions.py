@@ -36,7 +36,7 @@ from sklearn.metrics import roc_auc_score, roc_curve
 from tensorflow.python.types.core import Value
 
 from utils.dl_utils import BatchMatrixLoader, WarmUpCosineDecayScheduler
-from utils.plot_utils import epochsPlotV2, rocaucPlot
+from utils.plot_utils import epochsPlotV2, rocaucPlot, lrSchedulerPlot
 from utils.other_utils import flatten, warn
 
 # ------ TF device check ------
@@ -211,30 +211,6 @@ def foo(**kwargs):
     print('Done!')
 
 
-def foo2(lr_scheduler):
-    """Plot learning rate progress after training when using WarmUpCosineDecayScheduler"""
-    # - arguments check -
-    if not isinstance(lr_schedular, WarmUpCosineDecayScheduler):
-        raise TypeError(
-            'lr_schedular should be a WarmUpCosineDecayScheduler class.')
-
-    # - variables -
-    total_steps = len(lr_schedular.learning_rates)
-
-    if total_steps == 0:
-        raise ValueError('lr_schedular has learning rate to plot.')
-
-    # - plotting -
-    plt.plot(lr_schedular.learning_rates)
-    plt.xlabel('Step', fontsize=20)
-    plt.ylabel('lr', fontsize=20)
-    plt.axis([0, total_steps, 0, lr_schedular.learning_rate_base*1.1])
-    plt.xticks(np.arange(0, total_steps, 50))
-    plt.grid()
-    plt.title('Cosine decay with warmup', fontsize=20)
-    plt.show()
-
-
 def tstfoo(classifier, x, y=None, label_dict=None, legend_pos='inside', **kwargs):
     """test foo for roc-auc plot function"""
     # - probability calculation -
@@ -304,6 +280,30 @@ def tstfoo(classifier, x, y=None, label_dict=None, legend_pos='inside', **kwargs
     plt.show()
 
     return auc_res, fg, ax
+
+
+def tstfoo2(lr_scheduler):
+    """Plot learning rate progress after training when using WarmUpCosineDecayScheduler"""
+    # - arguments check -
+    if not isinstance(lr_schedular, WarmUpCosineDecayScheduler):
+        raise TypeError(
+            'lr_schedular should be a WarmUpCosineDecayScheduler class.')
+
+    # - variables -
+    total_steps = len(lr_schedular.learning_rates)
+
+    if total_steps == 0:
+        raise ValueError('lr_schedular has learning rate to plot.')
+
+    # - plotting -
+    plt.plot(lr_schedular.learning_rates)
+    plt.xlabel('Step', fontsize=20)
+    plt.ylabel('lr', fontsize=20)
+    plt.axis([0, total_steps, 0, lr_schedular.learning_rate_base*1.1])
+    plt.xticks(np.arange(0, total_steps, 50))
+    plt.grid()
+    plt.title('Cosine decay with warmup', fontsize=20)
+    plt.show()
 
 
 # ------ data ------
@@ -387,16 +387,7 @@ tst_m_history = tst_m.fit(tst_tf_train, epochs=epochs,
                           callbacks=callbacks,
                           validation_data=tst_tf_test)
 
-plt.plot(warm_up_lr.learning_rates)
-plt.xlabel('Step', fontsize=20)
-plt.ylabel('lr', fontsize=20)
-plt.axis([0, total_steps, 0, learning_rate_base*1.1])
-plt.xticks(np.arange(0, total_steps, 50))
-plt.grid()
-plt.title('Cosine decay with warmup', fontsize=20)
-plt.show()
-
-foo2(warm_up_lr)
+lrSchedulerPlot(warm_up_lr)
 
 
 # -- prediction --
