@@ -350,6 +350,7 @@ warm_up_lr = WarmUpCosineDecayScheduler(learning_rate_base=learning_rate_base,
 
 # optimizer
 # optm = Adam(learning_rate=0.001, decay=0.001/80)  # decay?? lr/epoch
+# no need to specify decay here as the scheduler will take care of that.
 optm = Adam()
 
 # early stop
