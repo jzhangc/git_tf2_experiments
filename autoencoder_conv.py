@@ -171,7 +171,7 @@ x_test = np.reshape(x_test, (len(x_test), 28, 28, 1))
 earlystop = EarlyStopping(monitor='val_loss', patience=5)
 # earlystop = EarlyStopping(monitor='loss', patience=5)
 callbacks = [earlystop]
-optm = Adam(learning_rate=0.001)
+optm = Adam(learning_rate=0.001, decay=0.001/80)
 
 # -- model --
 m = AutoEncoderDecoder(initial_shape=x_train.shape[1:], bottleneck_dim=64)
