@@ -38,6 +38,12 @@ from tensorflow.python.types.core import Value
 from utils.dl_utils import BatchMatrixLoader, WarmUpCosineDecayScheduler
 from utils.plot_utils import epochsPlotV2, rocaucPlot, lrSchedulerPlot
 from utils.other_utils import flatten, warn
+from utils.models import CnnClassifier
+
+# Display
+from IPython.display import Image, display
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 # ------ TF device check ------
 tf.config.list_physical_devices()
@@ -79,12 +85,13 @@ class CnnClassifier(Model):
         self.conv2d_2 = Conv2D(8, (3, 3), activation='relu',
                                padding='same')  # output: 14, 14, 8
         self.bn2 = BatchNormalization()
-        self.leakyr2 = LeakyReLU()
+        self.leakyr2 = LeakyReLU(name='grads_cam_dense')
         # self.maxpooling_2 = MaxPooling2D((2, 2))  # output: 7, 7, 8
         self.maxpooling_2 = MaxPooling2D((5, 5))  # output: 9, 9, 8
         self.fl = Flatten()  # 7*7*8=392
         self.dense1 = Dense(bottleneck_dim, activation='relu',
-                            activity_regularizer=tf.keras.regularizers.l2(l2=0.01))
+                            activity_regularizer=tf.keras.regularizers.l2(
+                                l2=0.01))
         self.encoded = LeakyReLU()
         self.dense2 = Dense(outpout_n, activation=output_activation)
 
@@ -205,15 +212,120 @@ class CnnClassifier(Model):
 
 
 # ------ functions ------
-def foo(**kwargs):
-    print('Saving...', end='')
-    time.sleep(2)
-    print('Done!')
+def get_img_array(img_path, size):
+    # `img` is a PIL image of size 299x299
+    img = tf.keras.preprocessing.image.load_img(img_path, target_size=size)
+    # `array` is a float32 Numpy array of shape (299, 299, 3)
+    array = tf.keras.preprocessing.image.img_to_array(img)
+    # We add a dimension to transform our array into a "batch"
+    # of size (1, 299, 299, 3)
+    array = np.expand_dims(array, axis=0)
+    return array
+
+
+def make_gradcam_heatmap(img_array, model, last_conv_layer_name, pred_index=None):
+    # First, we create a model that maps the input image to the activations
+    # of the last conv layer as well as the output predictions
+    grad_model = tf.keras.models.Model(
+        [model.inputs], [model.get_layer(
+            last_conv_layer_name).output, model.output]
+    )
+
+    # Then, we compute the gradient of the top predicted class for our input image
+    # with respect to the activations of the last conv layer
+    with tf.GradientTape() as tape:
+        last_conv_layer_output, preds = grad_model(img_array)
+        if pred_index is None:
+            pred_index = tf.argmax(preds[0])
+        class_channel = preds[:, pred_index]
+
+    # This is the gradient of the output neuron (top predicted or chosen)
+    # with regard to the output feature map of the last conv layer
+    grads = tape.gradient(class_channel, last_conv_layer_output)
+
+    # This is a vector where each entry is the mean intensity of the gradient
+    # over a specific feature map channel
+    pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+
+    # We multiply each channel in the feature map array
+    # by "how important this channel is" with regard to the top predicted class
+    # then sum all the channels to obtain the heatmap class activation
+    last_conv_layer_output = last_conv_layer_output[0]
+    heatmap = last_conv_layer_output @ pooled_grads[..., tf.newaxis]
+    heatmap = tf.squeeze(heatmap)
+
+    # For visualization purpose, we will also normalize the heatmap between 0 & 1
+    heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
+    return heatmap.numpy()
+
+
+def save_and_display_gradcam(img_path, heatmap, cam_path="cam.jpg", alpha=0.4):
+    # Load the original image
+    img = tf.keras.preprocessing.image.load_img(img_path)
+    img = tf.keras.preprocessing.image.img_to_array(img)
+
+    # Rescale heatmap to a range 0-255
+    heatmap = np.uint8(255 * heatmap)
+
+    # Use jet colormap to colorize heatmap
+    jet = cm.get_cmap("jet")
+
+    # Use RGB values of the colormap
+    jet_colors = jet(np.arange(256))[:, :3]
+    jet_heatmap = jet_colors[heatmap]
+
+    # Create an image with RGB colorized heatmap
+    jet_heatmap = tf.keras.preprocessing.image.array_to_img(jet_heatmap)
+    jet_heatmap = jet_heatmap.resize((img.shape[1], img.shape[0]))
+    jet_heatmap = tf.keras.preprocessing.image.img_to_array(jet_heatmap)
+
+    # Superimpose the heatmap on original image
+    superimposed_img = jet_heatmap * alpha + img
+    superimposed_img = tf.keras.preprocessing.image.array_to_img(
+        superimposed_img)
+
+    # Save the superimposed image
+    superimposed_img.save(cam_path)
+
+    # Display Grad CAM
+    display(Image(cam_path))
 
 
 def tstfoo(classifier, x, y=None, label_dict=None, legend_pos='inside', **kwargs):
-    """test foo for roc-auc plot function"""
-    # - probability calculation -
+    """
+    # Purpose\n
+        To calculate and plot ROC-AUC for binary or mutual multiclass classification.
+
+    # Arguments\n
+        classifier: tf.keras.model subclass. 
+            These classes were created with a custom "predict_classes" method, along with other smaller custom attributes.\n
+        x: tf.Dataset or np.ndarray. Input x data for prediction.\n
+        y: None or np.ndarray. Only needed when x is a np.ndarray. Label information.\n
+        label_dict: dict. Dictionary with index (integers) as keys.\n
+        legend_pos: str. Legend position setting. Can be set to 'none' to hide legends.\n
+        **kwargs: additional arguments for the classifier.predict_classes.\n
+
+    # Return\n
+        - AUC scores for all the classes.\n
+        - Plot objects "fg" and "ax" from matplotlib.\n
+        - Order: auc_res, fg, ax.\n
+
+    # Details\n
+        - The function will throw an warning if multilabel classifier is used.\n        
+        - The output auc_res is a pd.DataFrame. 
+            Column names:  'label', 'auc', 'thresholds', 'fpr', 'tpr'.
+            Since the threshold contains multiple values, so as the corresponding 'fpr' and 'tpr',
+            the value of these columns is a list.\n
+        - For label_dict, this is a dictionary with keys as index integers.
+            Example:
+            {0: 'all', 1: 'alpha', 2: 'beta', 3: 'fmri', 4: 'hig', 5: 'megs', 6: 'pc', 7: 'pt', 8: 'sc'}.
+            This can be derived from the "label_map_rev" attribtue from BatchDataLoader class.\n
+
+    # Note\n
+        - need to test the non-tf.Dataset inputs.\n
+        - In the case of using tf.Dataset as x, y is not needed.\n
+    """
+    # - arguments check -
     # more model classes are going to be added.
     if not isinstance(classifier, CnnClassifier):
         raise ValueError('The classifier should be one of \'CnnClassifier\'.')
@@ -282,30 +394,6 @@ def tstfoo(classifier, x, y=None, label_dict=None, legend_pos='inside', **kwargs
     return auc_res, fg, ax
 
 
-def tstfoo2(lr_scheduler):
-    """Plot learning rate progress after training when using WarmUpCosineDecayScheduler"""
-    # - arguments check -
-    if not isinstance(lr_scheduler, WarmUpCosineDecayScheduler):
-        raise TypeError(
-            'lr_schedular should be a WarmUpCosineDecayScheduler class.')
-
-    # - variables -
-    total_steps = len(lr_scheduler.learning_rates)
-
-    if total_steps == 0:
-        raise ValueError('lr_schedular has learning rate to plot.')
-
-    # - plotting -
-    plt.plot(lr_scheduler.learning_rates)
-    plt.xlabel('Step', fontsize=20)
-    plt.ylabel('lr', fontsize=20)
-    plt.axis([0, total_steps, 0, lr_scheduler.learning_rate_base*1.1])
-    plt.xticks(np.arange(0, total_steps, 50))
-    plt.grid()
-    plt.title('Learning rate cosine decay with warmup', fontsize=20)
-    plt.show()
-
-
 # ------ data ------
 # - multiclass -
 tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
@@ -321,7 +409,7 @@ tst_tf_dat = BatchMatrixLoader(filepath='./data/tf_data', target_file_ext='txt',
                                manual_labels_fileNameVar='filename', manual_labels_labelVar='label',
                                model_type='classification',
                                multilabel_classification=True, label_sep='_',
-                               x_scaling='minmax', x_min_max_range=[0, 1], resmaple_method='random',
+                               x_scaling='minmax', x_min_max_range=[-1, 1], resmaple_method='random',
                                training_percentage=0.8, verbose=False, random_state=1)
 tst_tf_train, tst_tf_test = tst_tf_dat.generate_batched_data(batch_size=10)
 
@@ -406,11 +494,8 @@ proba, pred_class = tst_m.predict_classes(
 
 
 # - ROC-AUC curve -
-auc_res, _, _ = tstfoo(classifier=tst_m, x=tst_tf_train,
-                       label_dict=label_dict, legend_pos='outside')
-
-auc_res, _, _ = rocaucPlot(classifier=tst_m, x=tst_tf_train,
-                           label_dict=label_dict, legend_pos='outside')
+auc_res, _, _ = rocaucPlot(classifier=tst_m, x=tst_tf_test,
+                           label_dict=label_dict, legend_pos='outside', proba_threshold=0.5)
 
 # - epochs plot function -
 tst_m_history.history.keys()

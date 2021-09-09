@@ -48,12 +48,13 @@ class CnnClassifier(Model):
         self.conv2d_2 = Conv2D(8, (3, 3), activation='relu',
                                padding='same')  # output: 14, 14, 8
         self.bn2 = BatchNormalization()
-        self.leakyr2 = LeakyReLU()
+        self.leakyr2 = LeakyReLU(name='grads_cam_dense')
         # self.maxpooling_2 = MaxPooling2D((2, 2))  # output: 7, 7, 8
         self.maxpooling_2 = MaxPooling2D((5, 5))  # output: 9, 9, 8
         self.fl = Flatten()  # 7*7*8=392
         self.dense1 = Dense(bottleneck_dim, activation='relu',
-                            activity_regularizer=tf.keras.regularizers.l2(l2=0.01))
+                            activity_regularizer=tf.keras.regularizers.l2(
+                                l2=0.01))
         self.encoded = LeakyReLU()
         self.dense2 = Dense(outpout_n, activation=output_activation)
 
