@@ -15,7 +15,7 @@ from utils.other_utils import warn
 # ------ classes -------
 class CnnClassifier(Model):
     def __init__(self, initial_x_shape, y_len,
-                 bottleneck_dim, outpout_n, output_activation='softmax', multilabel=False):
+                 bottleneck_dim, output_n, output_activation='softmax', multilabel=False):
         """
         # Details:\n
             - Use "softmax" for binary or mutually exclusive multiclass modelling,
@@ -31,7 +31,7 @@ class CnnClassifier(Model):
         self.y_len = y_len
         self.bottleneck_dim = bottleneck_dim
         self.multilabel = multilabel
-        if multilabel and output_activation != 'softmax':
+        if multilabel and output_activation == 'softmax':
             warn(
                 'Activation automatically set to \'sigmoid\' for multilabel classification.')
             self.output_activation = 'sigmoid'
@@ -46,7 +46,7 @@ class CnnClassifier(Model):
         self.leakyr1 = LeakyReLU()
         self.maxpooling_1 = MaxPooling2D((2, 2))  # output: 14, 14, 16
         self.conv2d_2 = Conv2D(8, (3, 3), activation='relu',
-                               padding='same')  # output: 14, 14, 8
+                               padding='same', name='last_conv')  # output: 14, 14, 8
         self.bn2 = BatchNormalization()
         self.leakyr2 = LeakyReLU(name='grads_cam_dense')
         # self.maxpooling_2 = MaxPooling2D((2, 2))  # output: 7, 7, 8
@@ -56,7 +56,7 @@ class CnnClassifier(Model):
                             activity_regularizer=tf.keras.regularizers.l2(
                                 l2=0.01))
         self.encoded = LeakyReLU()
-        self.dense2 = Dense(outpout_n, activation=output_activation)
+        self.dense2 = Dense(output_n, activation=output_activation)
 
     def call(self, input):
         x = self.conv2d_1(input)
@@ -127,6 +127,11 @@ class CnnClassifier(Model):
 
         # - prediction -
         proba = self.predict(x, batch_size=batch_size, verbose=verbose)
+        if proba.min() < 0. or proba.max() > 1.:
+            warn('Network returning invalid probability values.',
+                 'The last layer might not normalize predictions',
+                 'into probabilities (like softmax or sigmoid would).')
+
         proba_res = pd.DataFrame(proba, dtype=float)
         proba_res.columns = res_colnames
 

@@ -402,7 +402,7 @@ def lrSchedulerPlot(lr_scheduler):
     total_steps = len(lr_scheduler.learning_rates)
 
     if total_steps == 0:
-        raise ValueError('lr_schedular has learning rate to plot.')
+        raise ValueError('lr_schedular has no learning rate to plot.')
 
     # - plotting -
     plt.plot(lr_scheduler.learning_rates)

@@ -51,6 +51,154 @@ tf.config.list_physical_devices()
 
 
 # ------ model ------
+class CnnClassifierFuncAPI():
+    def __init__(self, initial_x_shape, y_len,
+                 bottleneck_dim, output_n, output_activation='softmax', multilabel=False):
+        """
+        # Details:\n
+            - Use "softmax" for binary or mutually exclusive multiclass modelling,
+                and use "sigmoid" for multilabel classification.\n
+            - y_len: this is the length of y.
+                y_len = 1 or 2: binary classification.
+                y_len >= 2: multiclass or multilabel classification.
+        """
+        # super(CnnClassifierFuncAPI, self).__init__()
+
+        # -- initialization and argument check--
+        self.initial_x_shape = initial_x_shape
+        self.y_len = y_len
+        self.bottleneck_dim = bottleneck_dim
+        self.multilabel = multilabel
+        self.output_n = output_n
+        if multilabel and output_activation == 'softmax':
+            warn(
+                'Activation automatically set to \'sigmoid\' for multilabel classification.')
+            self.output_activation = 'sigmoid'
+        else:
+            self.output_activation = output_activation
+
+        # -- CNN model --
+        model_input = tf.keras.Input(shape=self.initial_x_shape)
+        # CNN encoding sub layers
+        x = Conv2D(16, (3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2=0.01),
+                   padding='same')(model_input)  # output: 28, 28, 16
+        x = BatchNormalization()(x)
+        x = LeakyReLU()(x)
+        x = MaxPooling2D((2, 2))(x)  # output: 14, 14, 16
+        x = Conv2D(8, (3, 3), activation='relu',
+                   padding='same', name='last_conv')(x)  # output: 14, 14, 8
+        x = BatchNormalization()(x)
+        x = LeakyReLU(name='grads_cam_dense')(x)
+        # x = MaxPooling2D((2, 2))(x)  # output: 7, 7, 8
+        x = MaxPooling2D((5, 5))(x)  # output: 9, 9, 8
+        x = Flatten()(x)  # 7*7*8=392
+        x = Dense(self.bottleneck_dim, activation='relu',
+                  activity_regularizer=tf.keras.regularizers.l2(
+                      l2=0.01))(x)
+        x = LeakyReLU()(x)
+        x = Dense(self.output_n, activation=self.output_activation)(x)
+
+        self.m = Model(model_input, x)
+
+    def model(self):
+        return self.m
+
+    def predict_classes(self, label_dict,
+                        x, proba_threshold=None,
+                        batch_size=32, verbose=1):
+        """
+        # Purpose:\n
+            Generate class predictions for the input samples batch by batch.\n
+        # Arguments:\n
+            label_dict: dict. Dictionary with index (integers) as keys.\n
+            x: input data, as a Numpy array or list of Numpy arrays
+                (if the model has multiple inputs).\n
+            proba_threshold: None or float. The probability threshold to allocate class labels to multilabel prediction.\n
+            batch_size: integer.\n
+            verbose: verbosity mode, 0 or 1.\n
+        # Return:\n
+            Two pandas dataframes for probability results and 0/1 classification results, in this order.\n
+        # Details:\n
+            - For label_dict, this is a dictionary with keys as index integers.
+                Example:
+                {0: 'all', 1: 'alpha', 2: 'beta', 3: 'fmri', 4: 'hig', 5: 'megs', 6: 'pc', 7: 'pt', 8: 'sc'}.
+                This can be derived from the "label_map_rev" attribtue from BatchDataLoader class.\n
+            - For binary classification, the length of the label_dict should be 1.
+                Example: {0: 'case'}. \n
+        """
+        # - argument check -
+        if not isinstance(label_dict, dict):
+            raise ValueError('label_dict needs to be a dictionary.')
+        else:
+            label_keys = list(label_dict.keys())
+
+        if not all(isinstance(key, int) for key in label_keys):
+            raise ValueError('The keys in label_dict need to be integers.')
+
+        if self.multilabel and proba_threshold is None:
+            raise ValueError(
+                'Set proba_threshold for multilabel class prediction.')
+
+        # - set up output column names -
+        if len(label_dict) == 1:
+            label_dict[0] = label_dict.pop(label_keys[0])
+
+        res_colnames = [None]*len(label_dict)
+        for k, v in label_dict.items():
+            res_colnames[k] = v
+
+        # - prediction -
+        proba = self.m.predict(x, batch_size=batch_size, verbose=verbose)
+        if proba.min() < 0. or proba.max() > 1.:
+            warn('Network returning invalid probability values.',
+                 'The last layer might not normalize predictions',
+                 'into probabilities (like softmax or sigmoid would).')
+
+        proba_res = pd.DataFrame(proba, dtype=float)
+        proba_res.columns = res_colnames
+
+        # self.proba = proba
+        if self.output_activation == 'softmax':
+            if proba.shape[-1] > 1:
+                multiclass_res = to_categorical(
+                    proba.argmax(axis=1), proba.shape[-1])
+            else:
+                multiclass_res = (proba > 0.5).astype('int32')
+
+            multiclass_out = pd.DataFrame(multiclass_res, dtype=int)
+            multiclass_out.columns = res_colnames
+
+            return proba_res, multiclass_out
+
+        elif self.output_activation == 'sigmoid':
+            """this is to display percentages for each class"""
+            # raise NotImplemented('TBC')
+            multilabel_res = np.zeros(proba.shape)
+            for i, j in enumerate(proba):
+                print(f'{i}: {j}')
+                sample_res = j >= proba_threshold
+                for m, n in enumerate(sample_res):
+                    print(f'{m}: {n}')
+                    multilabel_res[i, m] = n
+                # break
+
+            if verbose:
+                idxs = np.argsort(proba)
+                for i, j in enumerate(idxs):
+                    print(f'Sample: {i}')
+                    idx_decrease = j[::-1]  # [::-1] to make decreasing order
+                    sample_proba = proba[i]
+                    for n in idx_decrease:
+                        print(f'\t{label_dict[n]}: {sample_proba[n]*100:.2f}%')
+                # break
+
+            multilabel_out = pd.DataFrame(multilabel_res, dtype=int)
+            multilabel_out.columns = res_colnames
+
+            return proba_res, multilabel_out
+        else:
+            raise NotImplemented(
+                f'predict_classes method not implemented for {self.output_activation}')
 
 
 # ------ functions ------
@@ -185,26 +333,38 @@ earlystop = EarlyStopping(monitor='val_loss', patience=5)
 
 # callback
 callbacks = [warm_up_lr, earlystop]
+callbacks = [warm_up_lr]
 
 
 # -- model --
 # - multiclass -
 tst_m = CnnClassifier(initial_x_shape=(90, 90, 1), y_len=len(tst_tf_dat.labels_map_rev), multilabel=False,
-                      bottleneck_dim=64, outpout_n=len(tst_tf_dat.lables_count),
+                      bottleneck_dim=64, output_n=len(tst_tf_dat.lables_count),
                       output_activation='softmax')
+tst_m.model().summary()
+
+tst_m_cls = CnnClassifierFuncAPI(initial_x_shape=(90, 90, 1), y_len=len(tst_tf_dat.labels_map_rev), multilabel=False,
+                                 bottleneck_dim=64, output_n=len(tst_tf_dat.lables_count),
+                                 output_activation='softmax')
+tst_m = tst_m_cls.model()
+tst_m.summary()
 
 # - multilabel -
 tst_m = CnnClassifier(initial_x_shape=(90, 90, 1), y_len=len(tst_tf_dat.labels_map_rev), multilabel=True,
-                      bottleneck_dim=64, outpout_n=len(tst_tf_dat.lables_count),
+                      bottleneck_dim=64, output_n=len(tst_tf_dat.lables_count),
                       output_activation='sigmoid')
-
-# - model summary -
 tst_m.model().summary()
+
+tst_m_cls = CnnClassifierFuncAPI(initial_x_shape=(90, 90, 1), y_len=len(tst_tf_dat.labels_map_rev), multilabel=True,
+                                 bottleneck_dim=64, output_n=len(tst_tf_dat.lables_count),
+                                 output_activation='sigmoid')
+tst_m = tst_m_cls.model()
+tst_m.summary()
 
 # -- training --
 # - multiclass -
 tst_m.compile(optimizer=optm, loss="categorical_crossentropy",
-              metrics=['categorical_accuracy', tf.keras.metrics.Recall()])  # for mutually exclusive multiclass
+              metrics=['categorical_accuracy'])  # for mutually exclusive multiclass
 
 # - multilabel -
 tst_m.compile(optimizer=optm, loss="binary_crossentropy",
@@ -226,13 +386,18 @@ proba, pred_class = tst_m.predict_classes(
     label_dict=label_dict, x=tst_tf_test)
 # to_categorical(np.argmax(pred, axis=1), len(tst_tf_dat.lables_count))
 
+proba, pred_class = tst_m_cls.predict_classes(
+    label_dict=label_dict, x=tst_tf_test)
+
 # - multilabel -
 proba, pred_class = tst_m.predict_classes(
     label_dict=label_dict, x=tst_tf_test, proba_threshold=0.5)
 
+proba, pred_class = tst_m_cls.predict_classes(
+    label_dict=label_dict, x=tst_tf_test, proba_threshold=0.5)
+
 
 # - prediction -
-t = np.ndarray((0, proba.shape[-1]))
 for i, b in tst_tf_test:
     # print(b.numpy())
     i_numpy = i.numpy()
@@ -241,19 +406,43 @@ for i, b in tst_tf_test:
     print(bn)
     break
 
+tst_pred = tst_m.predict(x=i_numpy)
 
-tst_img = i_numpy[1, :, :, :].reshape([1, 90, 90, 1])
+tst_img = i_numpy[0, :, :, :].reshape([1, 90, 90, 1])
+
+# tst_img = tf.keras.applications.xception.preprocess_input(tst_img)
 img_size = (90, 90)
-last_conv_layer_name = 'conv2d_5'
+last_conv_layer_name = 'last_conv'
 
-grad_m = tst_m
-grad_m.layers[-1].activation = None
 
-pred = grad_m.predict(tst_img)
-pred, class_out = grad_m.predict_classes(
-    x=tst_img, label_dict=label_dict, proba_threshold=0.2)
-pred, class_out = tst_m.predict_classes(
-    x=tst_img, label_dict=label_dict, proba_threshold=0.2)
+tst_m.layers[-1].activation = None
+pred = tst_m.predict(tst_img)
+
+pred, class_out = tst_m_cls.predict_classes(
+    x=tst_img, label_dict=label_dict)
+
+heatmap = make_gradcam_heatmap(tst_img, tst_m, last_conv_layer_name)
+
+plt.matshow(heatmap)
+plt.matshow(tst_img.reshape((90, 90)))
+plt.show()
+
+
+jet = cm.get_cmap("jet")
+jet_colors = jet(np.arange(256))[:, :3]
+
+heatmap = np.uint8(255 * heatmap)
+jet_heatmap = jet_colors[heatmap]
+
+# Create an image with RGB colorized heatmap
+jet_heatmap = tf.keras.preprocessing.image.array_to_img(jet_heatmap)
+jet_heatmap = jet_heatmap.resize(img_size)
+jet_heatmap = tf.keras.preprocessing.image.img_to_array(jet_heatmap)
+
+# Superimpose the heatmap on original image
+superimposed_img = jet_heatmap * 0.8 + i_numpy[0, :, :, :]
+superimposed_img = tf.keras.preprocessing.image.array_to_img(superimposed_img)
+superimposed_img
 
 
 # - ROC-AUC curve -
@@ -269,8 +458,13 @@ for i, j in enumerate(proba):
         multilabel_res[i, m] = n
     # break
 
+label_dict = tst_tf_dat.labels_map_rev
 auc_res, _, _ = rocaucPlot(classifier=tst_m, x=tst_tf_test,
                            label_dict=label_dict, legend_pos='outside', proba_threshold=0.5)
+
+auc_res, _, _ = rocaucPlot(classifier=tst_m, x=tst_tf_train,
+                           label_dict=label_dict, legend_pos='outside', proba_threshold=0.5)
+
 
 # - epochs plot function -
 tst_m_history.history.keys()
