@@ -161,8 +161,8 @@ class CnnClassifier(Model):
                     print(f'Sample: {i}')
                     idx_decrease = j[::-1]  # [::-1] to make decreasing order
                     sample_proba = proba[i]
-                    for m, n in enumerate(idx_decrease):
-                        print(f'\t{label_dict[m]}: {sample_proba[n]*100:.2f}%')
+                    for n in idx_decrease:
+                        print(f'\t{label_dict[n]}: {sample_proba[n]*100:.2f}%')
                 # break
 
             multilabel_out = pd.DataFrame(multilabel_res, dtype=int)

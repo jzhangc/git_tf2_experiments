@@ -19,6 +19,7 @@ import matplotlib.cm as cm
 # ------ Configurable parameters -------
 model_builder = keras.applications.xception.Xception
 img_size = (299, 299)
+# this is to process image pixels to (-1, 1), which is used by the pre-trained ImageNet models
 preprocess_input = keras.applications.xception.preprocess_input
 decode_predictions = keras.applications.xception.decode_predictions
 
