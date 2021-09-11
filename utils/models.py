@@ -177,3 +177,153 @@ class CnnClassifier(Model):
         else:
             raise NotImplemented(
                 f'predict_classes method not implemented for {self.output_activation}')
+
+
+class CnnClassifierFuncAPI():
+    def __init__(self, initial_x_shape, y_len,
+                 bottleneck_dim, output_n, output_activation='softmax', multilabel=False):
+        """
+        # Details:\n
+            - Use "softmax" for binary or mutually exclusive multiclass modelling,
+                and use "sigmoid" for multilabel classification.\n
+            - y_len: this is the length of y.
+                y_len = 1 or 2: binary classification.
+                y_len >= 2: multiclass or multilabel classification.
+        """
+        # super(CnnClassifierFuncAPI, self).__init__()
+
+        # -- initialization and argument check--
+        self.initial_x_shape = initial_x_shape
+        self.y_len = y_len
+        self.bottleneck_dim = bottleneck_dim
+        self.multilabel = multilabel
+        self.output_n = output_n
+        if multilabel and output_activation == 'softmax':
+            warn(
+                'Activation automatically set to \'sigmoid\' for multilabel classification.')
+            self.output_activation = 'sigmoid'
+        else:
+            self.output_activation = output_activation
+
+        # -- CNN model --
+        model_input = tf.keras.Input(shape=self.initial_x_shape)
+        # CNN encoding sub layers
+        x = Conv2D(16, (3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(l2=0.01),
+                   padding='same')(model_input)  # output: 28, 28, 16
+        x = BatchNormalization()(x)
+        x = LeakyReLU()(x)
+        x = MaxPooling2D((2, 2))(x)  # output: 14, 14, 16
+        x = Conv2D(8, (3, 3), activation='relu',
+                   padding='same', name='last_conv')(x)  # output: 14, 14, 8
+        x = BatchNormalization()(x)
+        x = LeakyReLU(name='grads_cam_dense')(x)
+        # x = MaxPooling2D((2, 2))(x)  # output: 7, 7, 8
+        x = MaxPooling2D((5, 5))(x)  # output: 9, 9, 8
+        x = Flatten()(x)  # 7*7*8=392
+        x = Dense(self.bottleneck_dim, activation='relu',
+                  activity_regularizer=tf.keras.regularizers.l2(
+                      l2=0.01))(x)
+        x = LeakyReLU()(x)
+        x = Dense(self.output_n, activation=self.output_activation)(x)
+
+        self.m = Model(model_input, x)
+
+    def model(self):
+        return self.m
+
+    def predict_classes(self, label_dict,
+                        x, proba_threshold=None,
+                        batch_size=32, verbose=1):
+        """
+        # Purpose:\n
+            Generate class predictions for the input samples batch by batch.\n
+        # Arguments:\n
+            label_dict: dict. Dictionary with index (integers) as keys.\n
+            x: input data, as a Numpy array or list of Numpy arrays
+                (if the model has multiple inputs).\n
+            proba_threshold: None or float. The probability threshold to allocate class labels to multilabel prediction.\n
+            batch_size: integer.\n
+            verbose: verbosity mode, 0 or 1.\n
+        # Return:\n
+            Two pandas dataframes for probability results and 0/1 classification results, in this order.\n
+        # Details:\n
+            - For label_dict, this is a dictionary with keys as index integers.
+                Example:
+                {0: 'all', 1: 'alpha', 2: 'beta', 3: 'fmri', 4: 'hig', 5: 'megs', 6: 'pc', 7: 'pt', 8: 'sc'}.
+                This can be derived from the "label_map_rev" attribtue from BatchDataLoader class.\n
+            - For binary classification, the length of the label_dict should be 1.
+                Example: {0: 'case'}. \n
+        """
+        # - argument check -
+        if not isinstance(label_dict, dict):
+            raise ValueError('label_dict needs to be a dictionary.')
+        else:
+            label_keys = list(label_dict.keys())
+
+        if not all(isinstance(key, int) for key in label_keys):
+            raise ValueError('The keys in label_dict need to be integers.')
+
+        if self.multilabel and proba_threshold is None:
+            raise ValueError(
+                'Set proba_threshold for multilabel class prediction.')
+
+        # - set up output column names -
+        if len(label_dict) == 1:
+            label_dict[0] = label_dict.pop(label_keys[0])
+
+        res_colnames = [None]*len(label_dict)
+        for k, v in label_dict.items():
+            res_colnames[k] = v
+
+        # - prediction -
+        proba = self.m.predict(x, batch_size=batch_size, verbose=verbose)
+        if proba.min() < 0. or proba.max() > 1.:
+            warn('Network returning invalid probability values.',
+                 'The last layer might not normalize predictions',
+                 'into probabilities (like softmax or sigmoid would).')
+
+        proba_res = pd.DataFrame(proba, dtype=float)
+        proba_res.columns = res_colnames
+
+        # self.proba = proba
+        if self.output_activation == 'softmax':
+            if proba.shape[-1] > 1:
+                multiclass_res = to_categorical(
+                    proba.argmax(axis=1), proba.shape[-1])
+            else:
+                multiclass_res = (proba > 0.5).astype('int32')
+
+            multiclass_out = pd.DataFrame(multiclass_res, dtype=int)
+            multiclass_out.columns = res_colnames
+
+            return proba_res, multiclass_out
+
+        elif self.output_activation == 'sigmoid':
+            """this is to display percentages for each class"""
+            # raise NotImplemented('TBC')
+            multilabel_res = np.zeros(proba.shape)
+            for i, j in enumerate(proba):
+                print(f'{i}: {j}')
+                sample_res = j >= proba_threshold
+                for m, n in enumerate(sample_res):
+                    print(f'{m}: {n}')
+                    multilabel_res[i, m] = n
+                # break
+
+            if verbose:
+                idxs = np.argsort(proba)
+                for i, j in enumerate(idxs):
+                    print(f'Sample: {i}')
+                    idx_decrease = j[::-1]  # [::-1] to make decreasing order
+                    sample_proba = proba[i]
+                    for n in idx_decrease:
+                        print(f'\t{label_dict[n]}: {sample_proba[n]*100:.2f}%')
+                # break
+
+            multilabel_out = pd.DataFrame(multilabel_res, dtype=int)
+            multilabel_out.columns = res_colnames
+
+            return proba_res, multilabel_out
+        else:
+            raise NotImplemented(
+                f'predict_classes method not implemented for {self.output_activation}')

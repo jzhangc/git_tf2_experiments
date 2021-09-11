@@ -9,7 +9,7 @@ import tensorflow as tf
 import pandas as pd
 from utils.other_utils import warn
 from utils.dl_utils import WarmUpCosineDecayScheduler
-from utils.models import CnnClassifier
+from utils.models import CnnClassifier, CnnClassifierFuncAPI
 from tensorflow.python.keras.callbacks import History
 from sklearn.metrics import roc_auc_score, roc_curve
 
@@ -324,8 +324,9 @@ def rocaucPlot(classifier, x, y=None, label_dict=None, legend_pos='inside', **kw
     """
     # - arguments check -
     # more model classes are going to be added.
-    if not isinstance(classifier, CnnClassifier):
-        raise ValueError('The classifier should be one of \'CnnClassifier\'.')
+    if not isinstance(classifier, (CnnClassifier, CnnClassifierFuncAPI)):
+        raise ValueError(
+            'The classifier should be one of \'CnnClassifier\', \'CnnClassifierFuncAPI\'.')
 
     if not isinstance(x, (np.ndarray, tf.data.Dataset)):
         raise TypeError(

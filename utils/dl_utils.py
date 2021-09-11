@@ -153,7 +153,8 @@ class BatchMatrixLoader(object):
         multilabel_classification: bool. If the classification is a "multilabel" type. Only effective when model_type='classification'.\n
         x_scaling: str. If and how to scale x values. Options are "none", "max" and "minmax".\n
         x_min_max_range: two num list. Only effective when x_scaling='minmax', the range for the x min max scaling.\n
-        resampole_method: str. Effective when cv_only is not True. Train/test split method. Options are "random" and "stratified".
+        lower_triangular_paddin: None or int. The value to pad the lower triangular of the input systematic input matrix, including the diagonal.\n
+        resampole_method: str. Effective when cv_only is not True. Train/test split method. Options are "random" and "stratified".\n
         training_percentage: num. Training data set percentage.\n
         verbose: bool. verbose.\n
         randome_state: int. randome state.\n
@@ -170,13 +171,14 @@ class BatchMatrixLoader(object):
         - When multilabel, make sure to set up label_sep argument.\n
         - For multilabels, a mixture of continuous and discrete labels are not supported.\n
         - For x_min_max_range, a two tuple is required. Order: min, max. \n
+        - No padding is applied when lower_triangular_padding=None.\n
         - It is noted that for regression, multilabel modelling is automatically supported via multiple labels in the manual label data frame.
             Therefore, for regression, manual_labels argument cannot be None.\n
         - When resample_method='random', the loader randomly draws samples according to the split percentage from the full data.
             When resample_method='stratified', the loader randomly draws samples according to the split percentage within each label.
             Currently, the "balanced" method, i.e. drawing equal amount of samples from each label, has not been implemented.\n
         - For manual_labels, the CSV file needs to have at least two columns: one for file names (no path, but with extension), one for labels.
-            For regression modelling, the
+            For regression modelling, the label column is the outcome.\n
     """
 
     def __init__(self, filepath,
@@ -184,7 +186,7 @@ class BatchMatrixLoader(object):
                  target_file_ext=None,
                  model_type='classification', multilabel_classification=False, label_sep=None,
                  manual_labels=None, manual_labels_fileNameVar=None, manual_labels_labelVar=None,
-                 x_scaling="none", x_min_max_range=[0, 1],
+                 x_scaling="none", x_min_max_range=[0, 1], lower_triangular_padding=None,
                  resmaple_method="random",
                  training_percentage=0.8,
                  verbose=True, random_state=1):
@@ -225,7 +227,10 @@ class BatchMatrixLoader(object):
         # - processing -
         self.x_scaling = x_scaling
         self.x_min_max_range = x_min_max_range
-
+        if lower_triangular_padding is not None and not isinstance(lower_triangular_padding, int):
+            raise ValueError(
+                'lower_triangular_padding needs to be an int if not None.')
+        self.lower_triangular_padding = lower_triangular_padding
         # - resampling -
         self.resample_method = resmaple_method
         self.train_percentage = training_percentage
@@ -363,6 +368,11 @@ class BatchMatrixLoader(object):
             Max = self.x_min_max_range[1]
             X_std = (X - X.min(axis=0)) / (X.max(axis=0) - X.min(axis=0))
             X = X_std * (Max - Min) + Min
+
+        if self.lower_triangular_padding is not None:
+            X[np.arange(X.shape[0])[:, None] > np.arange(
+                X.shape[1])] = self.lower_triangular_padding
+            np.fill_diagonal(X, self.lower_triangular_padding)
 
         if self.new_shape is not None:  # reshape
             X = np.reshape(X, self.new_shape)

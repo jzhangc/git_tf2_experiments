@@ -445,6 +445,27 @@ superimposed_img = tf.keras.preprocessing.image.array_to_img(superimposed_img)
 superimposed_img
 
 
+f = np.loadtxt('/Users/jingzhang/Documents/git_repo/git_tf2_experiments/data/tf_data/all_megs_pc/all_megs_fused_mtx_v2_PC03.txt').astype('float32')
+
+X=f
+if self.x_scaling == 'max':
+    X = X/X.max()
+elif self.x_scaling == 'minmax':
+    Min = -1
+    Max = 1
+    X_std = (X - X.min(axis=0)) / (X.max(axis=0) - X.min(axis=0))
+    X = X_std * (Max - Min) + Min
+
+if self.new_shape is not None:  # reshape
+    X = np.reshape(X, self.new_shape)
+else:
+    X = np.reshape(X, (X.shape[0], X.shape[1], 1))
+
+
+X[np.arange(X.shape[0])[:,None] > np.arange(X.shape[1])] = 0
+np.fill_diagonal(X, 0)
+
+
 # - ROC-AUC curve -
 proba_threshold = 0.5
 """this is to display percentages for each class"""
