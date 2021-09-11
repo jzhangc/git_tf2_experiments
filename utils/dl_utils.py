@@ -132,10 +132,10 @@ def makeGradcamHeatmap(img_array, model, last_conv_layer_name, pred_index=None):
 def displayGradcam(image_array, heatmap, cam_path=None, alpha=0.4):
     """
     # Arguments:\n
-        cam_path: None or string. The file name with directory name. \n
+        cam_path: None or string. The file name with directory name.\n
 
     # Details:\n
-        - The superimposed image will be not saved when cam_path=None.
+        - The superimposed image will be not saved when cam_path=None.\n
     """
     # argument check
     img = image_array
