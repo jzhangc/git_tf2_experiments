@@ -37,14 +37,6 @@ class AppArgParser(argparse.ArgumentParser):
     """
 
 
-def error(self, message, *lines):
-    string = "\n{}ERROR: " + message + "{}\n" + \
-        "\n".join(lines) + ("{}\n" if lines else "{}")
-    print(string.format(colr.RED_B, colr.RED, colr.ENDC))
-    self.print_help()
-    sys.exit(2)
-
-
 # ------ functions -------
 def addBoolArg(parser, name, help, input_type, default=False):
     """

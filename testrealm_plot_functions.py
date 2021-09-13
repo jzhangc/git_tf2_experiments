@@ -38,7 +38,7 @@ from tensorflow.python.types.core import Value
 
 from utils.dl_utils import BatchMatrixLoader, WarmUpCosineDecayScheduler, makeGradcamHeatmap, displayGradcam
 from utils.plot_utils import epochsPlotV2, rocaucPlot, lrSchedulerPlot
-from utils.other_utils import flatten, warn
+from utils.other_utils import flatten, warn, error
 from utils.models import CnnClassifier, CnnClassifierFuncAPI
 
 # Display
@@ -49,7 +49,7 @@ import matplotlib.cm as cm
 tf.config.list_physical_devices()
 
 
-# ------ model ------
+# ------ class ------
 
 
 # ------ functions ------
@@ -202,6 +202,34 @@ heatmap = makeGradcamHeatmap(tst_img, tst_m, last_conv_layer_name)
 plt.matshow(heatmap)
 plt.matshow(tst_img.reshape((90, 90)))
 plt.show()
+
+try:
+    last_conv_layer = next(
+        x for x in tst_m2.layers[::-1] if isinstance(x, Conv2D))
+except Exception as e:
+    warn("not there")
+
+last_conv_layer.name
+
+
+tst_m2 = Model()
+
+
+def GradCAM():
+    def __init__(self, model, label_index, last_conv_layer_name=None):
+        # -- initialization --
+        self.model = model
+        self.label_index = label_index
+
+        if last_conv_layer_name is None:
+            try:
+                last_conv_layer = next(
+                    x for x in model.layers[::-1] if isinstance(x, Conv2D))
+                last_conv_layer_name = last_conv_layer.name
+            except StopIteration as e:
+                print('')
+
+        self.last_conv_layer_name = last_conv_layer_name
 
 
 # - ROC-AUC curve -
