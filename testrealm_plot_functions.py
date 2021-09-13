@@ -32,11 +32,12 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 from tensorflow.python.distribute.multi_worker_util import id_in_cluster
+from tensorflow.python.eager.backprop import make_attr
 from tensorflow.python.keras.callbacks import History
 from sklearn.metrics import roc_auc_score, roc_curve
 from tensorflow.python.types.core import Value
 
-from utils.dl_utils import BatchMatrixLoader, WarmUpCosineDecayScheduler, makeGradcamHeatmap, displayGradcam
+from utils.dl_utils import BatchMatrixLoader, WarmUpCosineDecayScheduler, makeGradcamHeatmap, makeGradcamHeatmapV2
 from utils.plot_utils import epochsPlotV2, rocaucPlot, lrSchedulerPlot
 from utils.other_utils import flatten, warn, error
 from utils.models import CnnClassifier, CnnClassifierFuncAPI
@@ -203,33 +204,66 @@ plt.matshow(heatmap)
 plt.matshow(tst_img.reshape((90, 90)))
 plt.show()
 
-try:
-    last_conv_layer = next(
-        x for x in tst_m2.layers[::-1] if isinstance(x, Conv2D))
-except Exception as e:
-    warn("not there")
+for layer in reversed(tst_m.layers):
+    print(len(layer.output_shape))
 
-last_conv_layer.name
+tgt_layer = next(
+    x for x in reversed(tst_m.layers).layers[::-1] if len(x.output_shape) == 4)
 
 
 tst_m2 = Model()
 
 
-def GradCAM():
-    def __init__(self, model, label_index, last_conv_layer_name=None):
+layer_names = []
+for l in tst_m.layers:
+    layer_names.append(l.name)
+
+if 'input_1' in layer_names:
+    print('yes')
+
+
+class GradCAM():
+    def __init__(self, model, label_index, conv_last_layer=False, last_layer_name=None):
         # -- initialization --
         self.model = model
         self.label_index = label_index
+        if last_layer_name is None:
+            if conv_last_layer:
+                try:
+                    last_conv_layer = next(
+                        x for x in model.layers[::-1] if isinstance(x, Conv2D))
+                    last_layer_name = last_conv_layer.name
+                except StopIteration as e:
+                    print('No Conv2D layer found in the input model.')
+                    raise
+            else:
+                last_layer_name = self._find_target_layer()
+        else:
+            layer_names = []
+            for l in model.layers:
+                layer_names.append(l.name)
 
-        if last_conv_layer_name is None:
-            try:
-                last_conv_layer = next(
-                    x for x in model.layers[::-1] if isinstance(x, Conv2D))
-                last_conv_layer_name = last_conv_layer.name
-            except StopIteration as e:
-                print('')
+            if last_conv_layer_name not in layer_names:
+                raise ValueError('Custom last_layer_name not found in model.')
 
-        self.last_conv_layer_name = last_conv_layer_name
+        self.last_layer_name = last_layer_name
+
+    def _find_target_layer(self):
+        """find the target layer (final layer with 4D output: n, dim1, dim2, channel)"""
+        for l_4d in reversed(self.model.layers):
+            if len(l_4d.output_shape) == 4:
+                return l_4d.name
+
+        raise ValueError(
+            'Input model has no layer with output shape=4: None, dim1, dim2, channel.')
+
+    def _compute_gradcam_heatmap(self, img_array):
+        heatmap = makeGradcamHeatmapV2(
+            img_array=img_array, model=self.model, last_conv_layer_name=self.last_layer_name)
+        return heatmap
+
+    def _display_overlay(self):
+        None
 
 
 # - ROC-AUC curve -

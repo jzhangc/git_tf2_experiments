@@ -3,17 +3,20 @@
 # ------ modules ------
 import os
 import random
+
+import cv2
+import matplotlib.cm as cm
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from utils.data_utils import adjmatAnnotLoader, adjmatAnnotLoaderV2, labelMapping, labelOneHot, getSelectedDataset
-from utils.other_utils import VariableNotFoundError, FileError, warn
+from IPython.display import Image, display
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
-
 from tensorflow.keras import backend as K
-from IPython.display import Image, display
-import matplotlib.cm as cm
+
+from utils.data_utils import (adjmatAnnotLoader, adjmatAnnotLoaderV2,
+                              getSelectedDataset, labelMapping, labelOneHot)
+from utils.other_utils import FileError, VariableNotFoundError, warn
 
 
 # ------ functions ------
@@ -94,6 +97,7 @@ def getImgArray(img_path, size):
 
 
 def makeGradcamHeatmap(img_array, model, last_conv_layer_name, pred_index=None):
+    """heatmap gerneation for GradCAM, from keras.io"""
     # First, we create a model that maps the input image to the activations
     # of the last conv layer as well as the output predictions
     grad_model = tf.keras.models.Model(
@@ -127,6 +131,69 @@ def makeGradcamHeatmap(img_array, model, last_conv_layer_name, pred_index=None):
     # For visualization purpose, we will also normalize the heatmap between 0 & 1
     heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
     return heatmap.numpy()
+
+
+def makeGradcamHeatmapV2(img_array, model, last_layer_name, guided_grad=False, eps=1e-8):
+    """V2 of heatmap gerneation for GradCAM, with guided grad functionality"""
+    # construct our gradient model by supplying (1) the inputs
+    # to our pre-trained model, (2) the output of the (presumably)
+    # final 4D layer in the network, and (3) the output of the
+    # softmax activations from the model
+    grad_model = tf.keras.models.Model(
+        inputs=[model.inputs],
+        outputs=[model.get_layer(last_layer_name).output, model.output])
+
+    # record operations for automatic differentiation
+    with tf.GradientTape() as tape:
+        # cast the image tensor to a float-32 data type, pass the
+        # image through the gradient model, and grab the loss
+        # associated with the specific class index
+        inputs = tf.cast(img_array, tf.float32)
+        (convOutputs, predictions) = grad_model(inputs)
+
+        loss = predictions[:, tf.argmax(predictions[0])]
+
+    # use automatic differentiation to compute the gradients
+    grads = tape.gradient(loss, convOutputs)
+
+    if guided_grad:
+        # compute the guided gradients
+        castConvOutputs = tf.cast(convOutputs > 0, "float32")
+        castGrads = tf.cast(grads > 0, "float32")
+        guidedGrads = castConvOutputs * castGrads * grads
+
+        # the guided gradients have a batch dimension
+        # (which we don't need) so let's grab the volume itself and
+        # discard the batch
+        # guidedGrads = guidedGrads[0]
+        grads = guidedGrads[0]
+
+    # the convolution have a batch dimension
+    # (which we don't need) so let's grab the volume itself and
+    # discard the batch
+    convOutputs = convOutputs[0]
+
+    # compute the average of the gradient values, and using them
+    # as weights, compute the ponderation of the filters with
+    # respect to the weights
+    weights = tf.reduce_mean(grads, axis=(0, 1))
+    cam = tf.reduce_sum(tf.multiply(weights, convOutputs), axis=-1)
+
+    # grab the spatial dimensions of the input image and resize
+    # the output class activation map to match the input image
+    # dimensions
+    (w, h) = (grad_model.shape[2], grad_model.shape[1])
+    heatmap = cv2.resize(cam.numpy(), (w, h))
+
+    # normalize the heatmap such that all values lie in the range
+    # [0, 1], scale the resulting values to the range [0, 255],
+    # and then convert to an unsigned 8-bit integer
+    numer = heatmap - np.min(heatmap)
+    denom = (heatmap.max() - heatmap.min()) + eps
+    heatmap = numer / denom
+    # heatmap = (heatmap * 255).astype("uint8")  # convert back heatmap into 255 scale
+    # return the resulting heatmap to the calling function
+    return heatmap
 
 
 def displayGradcam(image_array, heatmap, cam_path=None, alpha=0.4):
@@ -368,12 +435,13 @@ class BatchMatrixLoader(object):
                         annotFile=self.manual_labels,
                         fileNameVar=self.manual_labels_fileNameVar, labelVar=self.manual_labels_labelVar)
                 except VariableNotFoundError as e:
-                    raise VariableNotFoundError(
+                    print(
                         'Filename variable or label variable names not found in manual_labels file.')
+                    raise
                 except FileNotFoundError as e:
-                    raise e
+                    raise
                 except FileError as e:
-                    raise e
+                    raise
             else:
                 raise NotImplemented('Unknown model type.')
 
@@ -444,6 +512,7 @@ class BatchMatrixLoader(object):
             filepath_list = file_annot['path'].to_list()
         except KeyError as e:
             print('Failed to load files. Hint: check target extension or directory.')
+            raise
 
         return filepath_list, labels_list, lables_count, labels_map_rev, encoded_labels
 
