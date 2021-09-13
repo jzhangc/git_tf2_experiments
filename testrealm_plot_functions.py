@@ -15,10 +15,10 @@ Objectives:
 """
 
 
-import math
 # ------ load modules ------
 import os
 import time
+import math
 
 import cv2
 import matplotlib.cm as cm
@@ -40,6 +40,8 @@ from tensorflow.keras.utils import to_categorical
 from tensorflow.python.distribute.multi_worker_util import id_in_cluster
 from tensorflow.python.eager.backprop import make_attr
 from tensorflow.python.keras.callbacks import History
+from tensorflow.python.ops.gen_array_ops import tensor_scatter_max
+from tensorflow.python.ops.numpy_ops.np_array_ops import imag
 from tensorflow.python.types.core import Value
 
 from utils.dl_utils import (BatchMatrixLoader, WarmUpCosineDecayScheduler,
@@ -47,6 +49,7 @@ from utils.dl_utils import (BatchMatrixLoader, WarmUpCosineDecayScheduler,
 from utils.models import CnnClassifier, CnnClassifierFuncAPI
 from utils.other_utils import error, flatten, warn
 from utils.plot_utils import epochsPlotV2, lrSchedulerPlot, rocaucPlot
+
 
 # ------ TF device check ------
 tf.config.list_physical_devices()
@@ -197,12 +200,94 @@ last_conv_layer_name = 'last_conv'
 tst_m.layers[-1].activation = None
 pred = tst_m.predict(tst_img)
 
+label_dict = tst_tf_dat.labels_map_rev
 pred, class_out = tst_m_cls.predict_classes(
     x=tst_img, label_dict=label_dict, proba_threshold=0.5)
 
 heatmap = makeGradcamHeatmap(tst_img, tst_m, last_conv_layer_name)
 heatmap = makeGradcamHeatmapV2(
-    img_array=tst_img, model=tst_m, last_layer_name=last_conv_layer_name, guided_grad=True)
+    img_array=tst_img, model=tst_m, pred_label_index=0, last_layer_name=last_conv_layer_name, guided_grad=True)
+
+
+img_array = tst_img
+model = tst_m
+target_layer_name = last_conv_layer_name
+pred_label_index = None
+guided_grad = False
+eps = 1e-8
+
+
+def tstV2(img_array, model, target_layer_name, pred_label_index=None, guided_grad=False, eps=1e-8):
+    """V2 of heatmap gerneation for GradCAM, with guided grad functionality"""
+    # construct our gradient model by supplying (1) the inputs
+    # to our pre-trained model, (2) the output of the (presumably)
+    # final 4D layer in the network, and (3) the output of the
+    # softmax activations from the model
+    grad_model = tf.keras.models.Model(
+        inputs=[model.inputs],
+        outputs=[model.get_layer(target_layer_name).output, model.output])
+
+    # record operations for automatic differentiation
+    with tf.GradientTape() as tape:
+        # cast the image tensor to a float-32 data type, pass the
+        # image through the gradient model, and grab the loss
+        # associated with the specific class index
+        inputs = tf.cast(img_array, tf.float32)
+        (target_layer_output, preds) = grad_model(inputs)
+
+        # the function automatically calculate for the top predicted
+        # label when pred_label_index=None
+        if pred_label_index is None:
+            pred_label_index = tf.argmax(preds[0])
+
+        loss = preds[:, pred_label_index]
+
+    # use automatic differentiation to compute the gradients
+    grads = tape.gradient(loss, target_layer_output)
+
+    if guided_grad:
+        # compute the guided gradients
+        casttarget_layer_output = tf.cast(target_layer_output > 0, "float32")
+        castGrads = tf.cast(grads > 0, "float32")
+        guidedGrads = casttarget_layer_output * castGrads * grads
+
+        # the guided gradients have a batch dimension
+        # (which we don't need) so let's grab the volume itself and
+        # discard the batch
+        # guidedGrads = guidedGrads[0]
+        grads = guidedGrads[0]
+
+    # the convolution have a batch dimension
+    # (which we don't need) so let's grab the volume itself and
+    # discard the batch
+    target_layer_output = target_layer_output[0]
+
+    # compute the average of the gradient values, and using them
+    # as weights, compute the ponderation of the filters with
+    # respect to the weights
+    weights = tf.reduce_mean(grads, axis=(0, 1))
+    cam = tf.reduce_sum(tf.multiply(weights, target_layer_output), axis=-1)
+
+    # grab the spatial dimensions of the input image and resize
+    # the output class activation map to match the input image
+    # dimensions
+    (w, h) = (img_array.shape[2], img_array.shape[1])
+    heatmap = cv2.resize(cam.numpy(), (w, h))
+
+    # normalize the heatmap such that all values lie in the range
+    # [0, 1], scale the resulting values to the range [0, 255],
+    # and then convert to an unsigned 8-bit integer
+    numer = heatmap - np.min(heatmap)
+    denom = (heatmap.max() - heatmap.min()) + eps
+    heatmap = numer / denom
+    # heatmap = (heatmap * 255).astype("uint8")  # convert back heatmap into 255 scale
+    # return the resulting heatmap
+    return heatmap
+
+
+heatmap = tstV2(
+    img_array=tst_img, model=tst_m, pred_label_index=0, last_layer_name=last_conv_layer_name, guided_grad=True)
+
 
 plt.matshow(heatmap)
 plt.matshow(tst_img.reshape((90, 90)))
