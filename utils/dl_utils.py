@@ -201,7 +201,7 @@ def makeGradcamHeatmapV2(img_array, model, last_layer_name, pred_label_index=Non
     denom = (heatmap.max() - heatmap.min()) + eps
     heatmap = numer / denom
     # heatmap = (heatmap * 255).astype("uint8")  # convert back heatmap into 255 scale
-    # return the resulting heatmap to the calling function
+    # return the resulting heatmap
     return heatmap
 
 
@@ -269,7 +269,7 @@ class GradCAM():
             for l in model.layers:
                 layer_names.append(l.name)
 
-            if last_conv_layer_name not in layer_names:
+            if last_layer_name not in layer_names:
                 raise ValueError('Custom last_layer_name not found in model.')
 
         self.last_layer_name = last_layer_name
@@ -316,17 +316,19 @@ class WarmUpCosineDecayScheduler(tf.keras.callbacks.Callback):
                  warmup_steps=0,
                  hold_base_rate_steps=0,
                  verbose=0):
-        """Constructor for cosine decay with warmup learning rate scheduler.
-    Arguments:
-        learning_rate_base {float} -- base learning rate.
-        total_steps {int} -- total number of training steps.
-    Keyword Arguments:
-        global_step_init {int} -- initial global step, e.g. from previous checkpoint.
-        warmup_learning_rate {float} -- initial learning rate for warm up. (default: {0.0})
-        warmup_steps {int} -- number of warmup steps. (default: {0})
-        hold_base_rate_steps {int} -- Optional number of steps to hold base learning rate
-                                    before decaying. (default: {0})
-        verbose {int} -- 0: quiet, 1: update messages. (default: {0})
+        """
+        Purpose:\n
+            Constructor for cosine decay with warmup learning rate scheduler.\n
+        Arguments:\n
+            learning_rate_base: float. Base learning rate.\n
+            total_steps: int. Total number of training steps.\n
+        Keyword Arguments:\n
+            global_step_init: int. Initial global step, e.g. from previous checkpoint.\n
+            warmup_learning_rate: float. Initial learning rate for warm up. (default: 0.0)\n
+            warmup_steps: int. Number of warmup steps. (default: 0)\n
+            hold_base_rate_steps: int. Optional number of steps to hold base learning rate
+                                        before decaying. (default: 0)\n
+            verbose: int. 0: quiet, 1: update messages. (default: 0)\n
         """
 
         super(WarmUpCosineDecayScheduler, self).__init__()
