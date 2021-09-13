@@ -1,4 +1,8 @@
-"""utilities for deep learning (excluding models)"""
+"""utilities for deep learning (excluding models)
+
+To be implemented:
+    [ ] logger
+"""
 
 # ------ modules ------
 import os
@@ -96,7 +100,7 @@ def getImgArray(img_path, size):
     return array
 
 
-def makeGradcamHeatmap(img_array, model, last_conv_layer_name, pred_index=None):
+def makeGradcamHeatmap(img_array, model, last_conv_layer_name, pred_label_index=None):
     """heatmap gerneation for GradCAM, from keras.io"""
     # First, we create a model that maps the input image to the activations
     # of the last conv layer as well as the output predictions
@@ -109,9 +113,9 @@ def makeGradcamHeatmap(img_array, model, last_conv_layer_name, pred_index=None):
     # with respect to the activations of the last conv layer
     with tf.GradientTape() as tape:
         last_conv_layer_output, preds = grad_model(img_array)
-        if pred_index is None:
-            pred_index = tf.argmax(preds[0])
-        class_channel = preds[:, pred_index]
+        if pred_label_index is None:
+            pred_label_index = tf.argmax(preds[0])
+        class_channel = preds[:, pred_label_index]
 
     # This is the gradient of the output neuron (top predicted or chosen)
     # with regard to the output feature map of the last conv layer
@@ -133,7 +137,7 @@ def makeGradcamHeatmap(img_array, model, last_conv_layer_name, pred_index=None):
     return heatmap.numpy()
 
 
-def makeGradcamHeatmapV2(img_array, model, last_layer_name, guided_grad=False, eps=1e-8):
+def makeGradcamHeatmapV2(img_array, model, last_layer_name, pred_label_index=None, guided_grad=False, eps=1e-8):
     """V2 of heatmap gerneation for GradCAM, with guided grad functionality"""
     # construct our gradient model by supplying (1) the inputs
     # to our pre-trained model, (2) the output of the (presumably)
@@ -151,7 +155,12 @@ def makeGradcamHeatmapV2(img_array, model, last_layer_name, guided_grad=False, e
         inputs = tf.cast(img_array, tf.float32)
         (convOutputs, predictions) = grad_model(inputs)
 
-        loss = predictions[:, tf.argmax(predictions[0])]
+        # the function automatically calculate for the top predicted
+        # label when pred_label_index=None
+        if pred_label_index is None:
+            pred_label_index = tf.argmax(predictions[0])
+
+        loss = predictions[:, pred_label_index]
 
     # use automatic differentiation to compute the gradients
     grads = tape.gradient(loss, convOutputs)
@@ -182,7 +191,7 @@ def makeGradcamHeatmapV2(img_array, model, last_layer_name, guided_grad=False, e
     # grab the spatial dimensions of the input image and resize
     # the output class activation map to match the input image
     # dimensions
-    (w, h) = (grad_model.shape[2], grad_model.shape[1])
+    (w, h) = (img_array.shape[2], img_array.shape[1])
     heatmap = cv2.resize(cam.numpy(), (w, h))
 
     # normalize the heatmap such that all values lie in the range
@@ -239,6 +248,58 @@ def displayGradcam(image_array, heatmap, cam_path=None, alpha=0.4):
 
 
 # ------ classes -------
+class GradCAM():
+    def __init__(self, model, pred_label_index=None, conv_last_layer=False, last_layer_name=None):
+        # -- initialization --
+        self.model = model
+        self.pred_label_index = pred_label_index
+        if last_layer_name is None:
+            if conv_last_layer:
+                try:
+                    last_conv_layer = next(
+                        x for x in model.layers[::-1] if isinstance(x, Conv2D))
+                    last_layer_name = last_conv_layer.name
+                except StopIteration as e:
+                    print('No Conv2D layer found in the input model.')
+                    raise
+            else:
+                last_layer_name = self._find_target_layer()
+        else:
+            layer_names = []
+            for l in model.layers:
+                layer_names.append(l.name)
+
+            if last_conv_layer_name not in layer_names:
+                raise ValueError('Custom last_layer_name not found in model.')
+
+        self.last_layer_name = last_layer_name
+
+    def _find_target_layer(self):
+        """find the target layer (final layer with 4D output: n, dim1, dim2, channel)"""
+        for l_4d in reversed(self.model.layers):
+            if len(l_4d.output_shape) == 4:
+                return l_4d.name
+
+        raise ValueError(
+            'Input model has no layer with output shape=4: None, dim1, dim2, channel.')
+
+    def compute_gradcam_heatmap(self, img_array):
+        heatmap = makeGradcamHeatmapV2(
+            img_array=img_array, model=self.model, last_conv_layer_name=self.last_layer_name,
+            pred_label_index=self.pred_label_index)
+        return heatmap
+
+    def overlay_heatmap(self, heatmap, image, alpha=0.5,
+                        colormap=cv2.COLORMAP_VIRIDIS):
+        # apply the supplied color map to the heatmap and then
+        # overlay the heatmap on the input image
+        heatmap = cv2.applyColorMap(heatmap, colormap)
+        output = cv2.addWeighted(image, alpha, heatmap, 1 - alpha, 0)
+        # return a 2-tuple of the color mapped heatmap and the output,
+        # overlaid image
+        return (heatmap, output)
+
+
 class WarmUpCosineDecayScheduler(tf.keras.callbacks.Callback):
     """
     Cosine decay with warmup learning rate scheduler\n

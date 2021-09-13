@@ -15,15 +15,21 @@ Objectives:
 """
 
 
+import math
 # ------ load modules ------
 import os
-import math
 import time
 
+import cv2
+import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+
+# Display
+from IPython.display import Image, display
+from sklearn.metrics import roc_auc_score, roc_curve
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.layers import (BatchNormalization, Conv2D, Dense,
                                      Flatten, Input, Layer, LeakyReLU,
@@ -34,17 +40,13 @@ from tensorflow.keras.utils import to_categorical
 from tensorflow.python.distribute.multi_worker_util import id_in_cluster
 from tensorflow.python.eager.backprop import make_attr
 from tensorflow.python.keras.callbacks import History
-from sklearn.metrics import roc_auc_score, roc_curve
 from tensorflow.python.types.core import Value
 
-from utils.dl_utils import BatchMatrixLoader, WarmUpCosineDecayScheduler, makeGradcamHeatmap, makeGradcamHeatmapV2
-from utils.plot_utils import epochsPlotV2, rocaucPlot, lrSchedulerPlot
-from utils.other_utils import flatten, warn, error
+from utils.dl_utils import (BatchMatrixLoader, WarmUpCosineDecayScheduler,
+                            makeGradcamHeatmap, makeGradcamHeatmapV2)
 from utils.models import CnnClassifier, CnnClassifierFuncAPI
-
-# Display
-from IPython.display import Image, display
-import matplotlib.cm as cm
+from utils.other_utils import error, flatten, warn
+from utils.plot_utils import epochsPlotV2, lrSchedulerPlot, rocaucPlot
 
 # ------ TF device check ------
 tf.config.list_physical_devices()
@@ -199,6 +201,8 @@ pred, class_out = tst_m_cls.predict_classes(
     x=tst_img, label_dict=label_dict, proba_threshold=0.5)
 
 heatmap = makeGradcamHeatmap(tst_img, tst_m, last_conv_layer_name)
+heatmap = makeGradcamHeatmapV2(
+    img_array=tst_img, model=tst_m, last_layer_name=last_conv_layer_name, guided_grad=True)
 
 plt.matshow(heatmap)
 plt.matshow(tst_img.reshape((90, 90)))
@@ -223,10 +227,10 @@ if 'input_1' in layer_names:
 
 
 class GradCAM():
-    def __init__(self, model, label_index, conv_last_layer=False, last_layer_name=None):
+    def __init__(self, model, pred_label_index=None, conv_last_layer=False, last_layer_name=None):
         # -- initialization --
         self.model = model
-        self.label_index = label_index
+        self.pred_label_index = pred_label_index
         if last_layer_name is None:
             if conv_last_layer:
                 try:
@@ -257,13 +261,24 @@ class GradCAM():
         raise ValueError(
             'Input model has no layer with output shape=4: None, dim1, dim2, channel.')
 
-    def _compute_gradcam_heatmap(self, img_array):
+    def compute_gradcam_heatmap(self, img_array):
         heatmap = makeGradcamHeatmapV2(
-            img_array=img_array, model=self.model, last_conv_layer_name=self.last_layer_name)
+            img_array=img_array, model=self.model, last_conv_layer_name=self.last_layer_name,
+            pred_label_index=self.pred_label_index)
         return heatmap
 
-    def _display_overlay(self):
-        None
+    def overlay_heatmap(self, heatmap, image, alpha=0.5,
+                        colormap=cv2.COLORMAP_VIRIDIS):
+        # apply the supplied color map to the heatmap and then
+        # overlay the heatmap on the input image
+        heatmap = cv2.applyColorMap(heatmap, colormap)
+        output = cv2.addWeighted(image, alpha, heatmap, 1 - alpha, 0)
+        # return a 2-tuple of the color mapped heatmap and the output,
+        # overlaid image
+        return (heatmap, output)
+
+
+tst_cam = GradCAM(model=tst_m)
 
 
 # - ROC-AUC curve -
