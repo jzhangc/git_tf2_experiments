@@ -116,16 +116,16 @@ def makeGradcamHeatmap(img_array, model, target_layer_name, pred_label_index=Non
     # of the last conv layer as well as the output predictions
     grad_model = tf.keras.models.Model(
         [model.inputs], [model.get_layer(
-            last_conv_layer_name).output, model.output]
+            target_layer_name).output, model.output]
     )
 
     # Then, we compute the gradient of the top predicted class for our input image
     # with respect to the activations of the last conv layer
     with tf.GradientTape() as tape:
         last_conv_layer_output, preds = grad_model(img_array)
-        if pred_index is None:
-            pred_index = tf.argmax(preds[0])
-        class_channel = preds[:, pred_index]
+        if pred_label_index is None:
+            pred_label_index = tf.argmax(preds[0])
+        class_channel = preds[:, pred_label_index]
 
     # This is the gradient of the output neuron (top predicted or chosen)
     # with regard to the output feature map of the last conv layer
