@@ -150,7 +150,7 @@ def makeGradcamHeatmap(img_array, model, target_layer_name, pred_label_index=Non
     (w, h) = (img_array.shape[2], img_array.shape[1])
     heatmap = cv2.resize(heatmap.numpy(), (w, h))
 
-    return heatmap.numpy()
+    return heatmap
 
 
 def makeGradcamHeatmapV2(img_array, model, target_layer_name, pred_label_index=None, guided_grad=False, eps=1e-8):
