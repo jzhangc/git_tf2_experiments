@@ -17,6 +17,7 @@ from IPython.display import Image, display
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 from tensorflow.keras import backend as K
+from tensorflow.keras.layers import Conv2D
 
 from utils.data_utils import (adjmatAnnotLoader, adjmatAnnotLoaderV2,
                               getSelectedDataset, labelMapping, labelOneHot)

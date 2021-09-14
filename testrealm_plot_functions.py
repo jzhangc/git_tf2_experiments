@@ -197,14 +197,15 @@ img_size = (90, 90)
 last_conv_layer_name = 'last_conv'
 
 
-tst_m.layers[-1].activation = None
+# tst_m.layers[-1].activation = None
 pred = tst_m.predict(tst_img)
 
 label_dict = tst_tf_dat.labels_map_rev
 pred, class_out = tst_m_cls.predict_classes(
     x=tst_img, label_dict=label_dict, proba_threshold=0.5)
 
-heatmap = makeGradcamHeatmap(tst_img, tst_m, last_conv_layer_name)
+heatmap = makeGradcamHeatmap(
+    tst_img, tst_m, last_conv_layer_name, pred_label_index=3)
 heatmap = makeGradcamHeatmapV2(
     img_array=tst_img, model=tst_m, pred_label_index=0, last_layer_name=last_conv_layer_name, guided_grad=True)
 
@@ -286,7 +287,7 @@ def tstV2(img_array, model, target_layer_name, pred_label_index=None, guided_gra
 
 
 heatmap = tstV2(
-    img_array=tst_img, model=tst_m, pred_label_index=0, last_layer_name=last_conv_layer_name, guided_grad=True)
+    img_array=tst_img, model=tst_m, pred_label_index=None, target_layer_name=last_conv_layer_name, guided_grad=True)
 
 
 plt.matshow(heatmap)
