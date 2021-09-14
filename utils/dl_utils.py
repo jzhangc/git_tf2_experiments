@@ -498,7 +498,7 @@ class BatchMatrixLoader(object):
         self.verbose = verbose
 
         # - load paths -
-        self.filepath_list, self.labels_list, self.lables_count, self.labels_map_rev, self.encoded_labels = self._get_file_annot()
+        self.filepath_list, self.labels_list, self.lables_count, self.labels_map, self.labels_map_rev, self.encoded_labels = self._get_file_annot()
 
     def _parse_file(self):
         """
@@ -601,8 +601,8 @@ class BatchMatrixLoader(object):
             #         labels=labels, sep=None)
             encoded_labels = labelOneHot(labels_list, labels_map)
         else:
+            labels_list, lables_count, labels_map, labels_map_rev = None, None, None, None
             encoded_labels = labels
-            lables_count, labels_map_rev = None, None
 
         try:
             filepath_list = file_annot['path'].to_list()
@@ -610,7 +610,7 @@ class BatchMatrixLoader(object):
             print('Failed to load files. Hint: check target extension or directory.')
             raise
 
-        return filepath_list, labels_list, lables_count, labels_map_rev, encoded_labels
+        return filepath_list, labels_list, lables_count, labels_map, labels_map_rev, encoded_labels
 
     def _x_data_process(self, x_array):
         """NOTE: reshaping to (_, _, 1) is mandatory"""

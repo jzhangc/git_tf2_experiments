@@ -373,7 +373,7 @@ heatmap_v2 = cv2.resize(heatmap_v2.numpy(), (90, 90))
 
 heatmap = tstV2(
     img_array=tst_img, model=tst_m, pred_label_index=None,
-    target_layer_name=last_conv_layer_name, guided_grad=True)
+    target_layer_name=last_conv_layer_name, guided_grad=False)
 
 
 plt.matshow(heatmap)
@@ -398,31 +398,36 @@ if 'input_1' in layer_names:
     print('yes')
 
 
+tst_tf_dat.labels_map_rev
+
+
 class GradCAM():
-    def __init__(self, model, pred_label_index=None, conv_last_layer=False, last_layer_name=None):
+    def __init__(self, model, label_index_dict=None,
+                 conv_last_layer=False, target_layer_name=None):
         # -- initialization --
         self.model = model
-        self.pred_label_index = pred_label_index
-        if last_layer_name is None:
+        self.label_index_dict = label_index_dict
+        if target_layer_name is None:
             if conv_last_layer:
                 try:
                     last_conv_layer = next(
                         x for x in model.layers[::-1] if isinstance(x, Conv2D))
-                    last_layer_name = last_conv_layer.name
+                    target_layer_name = last_conv_layer.name
                 except StopIteration as e:
                     print('No Conv2D layer found in the input model.')
                     raise
             else:
-                last_layer_name = self._find_target_layer()
+                target_layer_name = self._find_target_layer()
         else:
             layer_names = []
             for l in model.layers:
                 layer_names.append(l.name)
 
-            if last_conv_layer_name not in layer_names:
-                raise ValueError('Custom last_layer_name not found in model.')
+            if target_layer_name not in layer_names:
+                raise ValueError(
+                    'Custom target_layer_name not found in model.')
 
-        self.last_layer_name = last_layer_name
+        self.target_layer_name = target_layer_name
 
     def _find_target_layer(self):
         """find the target layer (final layer with 4D output: n, dim1, dim2, channel)"""
@@ -433,10 +438,16 @@ class GradCAM():
         raise ValueError(
             'Input model has no layer with output shape=4: None, dim1, dim2, channel.')
 
-    def compute_gradcam_heatmap(self, img_array):
+    def compute_gradcam_heatmap(self, img_array, target_label=None):
+        if self.label_index_dict is not None:
+            None
+        else:
+            pred_label_index = None
+
         heatmap = makeGradcamHeatmapV2(
-            img_array=img_array, model=self.model, last_conv_layer_name=self.last_layer_name,
-            pred_label_index=self.pred_label_index)
+            img_array=img_array, model=self.model,
+            target_layer_name=self.target_layer_name,
+            pred_label_index=pred_label_index)
         return heatmap
 
     def overlay_heatmap(self, heatmap, image, alpha=0.5,
