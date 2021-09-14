@@ -31,19 +31,25 @@ class colr:
 
 class AppArgParser(argparse.ArgumentParser):
     """
-    This is a sub class to argparse.ArgumentParser.
-    Purpose
+    # Purpose
         The help page will display when (1) no argumment was provided, or (2) there is an error
     """
+
+    def error(self, message, *lines):
+        string = "\n{}ERROR: " + message + "{}\n" + \
+            "\n".join(lines) + ("{}\n" if lines else "{}")
+        print(string.format(colr.RED_B, colr.RED, colr.ENDC))
+        self.print_help()
+        sys.exit(2)
 
 
 # ------ functions -------
 def addBoolArg(parser, name, help, input_type, default=False):
     """
-    Purpose\n
+    # Purpose\n
         autmatically add a pair of mutually exclusive boolean arguments to the
         argparser
-    Arguments\n
+    # Arguments\n
         parser: a parser object.\n
         name: str. the argument name.\n
         help: str. the help message.\n

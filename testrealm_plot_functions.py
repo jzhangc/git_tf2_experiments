@@ -210,202 +210,41 @@ heatmap = makeGradcamHeatmapV2(
     img_array=tst_img, model=tst_m, pred_label_index=None,
     target_layer_name=last_conv_layer_name, guided_grad=False)
 
-
-img_array = tst_img
-model = tst_m
-target_layer_name = last_conv_layer_name
-pred_label_index = None
-pred_index = None
-
-
-def tstV1(img_array, model, last_conv_layer_name, pred_index=None):
-    # First, we create a model that maps the input image to the activations
-    # of the last conv layer as well as the output predictions
-    grad_model = tf.keras.models.Model(
-        [model.inputs], [model.get_layer(
-            last_conv_layer_name).output, model.output]
-    )
-
-    # Then, we compute the gradient of the top predicted class for our input image
-    # with respect to the activations of the last conv layer
-    with tf.GradientTape() as tape:
-        last_conv_layer_output, preds = grad_model(img_array)
-        if pred_index is None:
-            pred_index = tf.argmax(preds[0])
-        class_channel = preds[:, pred_index]
-
-    # This is the gradient of the output neuron (top predicted or chosen)
-    # with regard to the output feature map of the last conv layer
-    grads = tape.gradient(class_channel, last_conv_layer_output)
-
-    # This is a vector where each entry is the mean intensity of the gradient
-    # over a specific feature map channel
-    pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
-
-    # We multiply each channel in the feature map array
-    # by "how important this channel is" with regard to the top predicted class
-    # then sum all the channels to obtain the heatmap class activation
-    last_conv_layer_output = last_conv_layer_output[0]
-    heatmap = last_conv_layer_output @ pooled_grads[..., tf.newaxis]
-    heatmap = tf.squeeze(heatmap)
-
-    # tf.maximu(heatmap, 0) is to apply relu to the heatmap (remove negative values)
-    # For visualization purpose, we will also normalize the heatmap between 0 & 1
-    heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
-
-    # -- resize to the image dimension --
-    (w, h) = (img_array.shape[2], img_array.shape[1])
-    heatmap = cv2.resize(heatmap.numpy(), (w, h))
-
-    return heatmap.numpy()
-
-
-heatmap_v1 = heatmap
-
-
-img_array = tst_img
-model = tst_m
-target_layer_name = last_conv_layer_name
-pred_label_index = None
-guided_grad = False
-eps = 1e-8
-
-
-def tstV2(img_array, model, target_layer_name, pred_label_index=None, guided_grad=False, eps=1e-8):
-    """
-    Purpose:\n
-        V2 of heatmap gerneation for GradCAM, with guided grad functionality.\n
-
-    Details:\n
-        - The pred_label_index is unsorted. 
-            One can get the info from from the "label_map_rev" attribtue from BatchDataLoader class.
-            Example (dict keys are indices): 
-            {0: 'all', 1: 'alpha', 2: 'beta', 3: 'fmri', 4: 'hig', 5: 'megs', 6: 'pc', 7: 'pt', 8: 'sc'}\n
-    """
-    # -- construct our gradient model by supplying (1) the inputs
-    # to our pre-trained model, (2) the output of the (presumably)
-    # final 4D layer in the network, and (3) the output of the
-    # softmax activations from the model --
-    grad_model = tf.keras.models.Model(
-        inputs=[model.inputs],
-        outputs=[model.get_layer(target_layer_name).output, model.output])
-
-    # -- record operations for automatic differentiation --
-    with tf.GradientTape() as tape:
-        # cast the image tensor to a float-32 data type, pass the
-        # image through the gradient model, and grab the loss
-        # associated with the specific class index
-        inputs = tf.cast(img_array, tf.float32)
-        (target_layer_output, preds) = grad_model(inputs)
-
-        # the function automatically calculate for the top predicted
-        # label when pred_label_index=None
-        if pred_label_index is None:
-            pred_label_index = tf.argmax(preds[0])
-
-        loss = preds[:, pred_label_index]
-
-    # -- use automatic differentiation to compute the gradients --
-    grads = tape.gradient(loss, target_layer_output)
-
-    # -- use guided grad or not --
-    if guided_grad:
-        # compute the guided gradients
-        casttarget_layer_output = tf.cast(target_layer_output > 0, "float32")
-        castGrads = tf.cast(grads > 0, "float32")
-        guidedGrads = casttarget_layer_output * castGrads * grads
-
-        # the guided gradients have a batch dimension
-        # (which we don't need) so let's grab the volume itself and
-        # discard the batch
-        # guidedGrads = guidedGrads[0]
-        grads = guidedGrads[0]
-    else:
-        grads = grads[0]
-
-    # -- compute the average of the gradient values, and using them
-    # as weights, compute the ponderation of the filters with
-    # respect to the weights
-    # from (dim1, dim2, c) to (c) --
-    weights = tf.reduce_mean(grads, axis=(0, 1))
-
-    # -- the convolution have a batch dimension
-    # (which we don't need) so let's grab the volume itself and
-    # discard the batch --
-    target_layer_output = target_layer_output[0]
-    cam = tf.reduce_sum(tf.multiply(weights, target_layer_output), axis=-1)
-    heatmap = cam
-
-    # -- normalize the heatmap such that all values lie in the range
-    # [0, 1], and optionally scale the resulting values to the range [0, 255],
-    # and then convert to an unsigned 8-bit integer --
-    heatmap = tf.maximum(heatmap, 0)  # relu heatmap
-    heatmap = heatmap / tf.math.reduce_max(heatmap)  # scale to [0,]
-    # numer = heatmap - np.min(heatmap)
-    # denom = (heatmap.max() - heatmap.min()) + eps
-    # heatmap = numer / denom
-    # heatmap = (heatmap * 255).astype("uint8")  # convert back heatmap into 255 scale
-
-    # -- grab the spatial dimensions of the input image and resize
-    # the output class activation map to match the input image
-    # dimensions --
-    (w, h) = (img_array.shape[2], img_array.shape[1])
-    heatmap = cv2.resize(heatmap.numpy(), (w, h))
-
-    # return the resulting heatmap
-    return heatmap
-
-
-heatmap_v2 = cam
-
-heatmap_v1.shape
-heatmap_v1_norm = tf.maximum(heatmap_v1, 0) / tf.math.reduce_max(heatmap_v1)
-heatmap_v1_norm = cv2.resize(heatmap_v1_norm.numpy(), (90, 90))
-
-
-heatmap_v2.shape
-heatmap_v2 = tf.maximum(heatmap_v2, 0)  # relu
-numer = heatmap_v2 - np.min(heatmap_v2)
-denom = (heatmap_v2.max() - heatmap_v2.min()) + eps
-heatmap_v2_norm = numer / denom
-heatmap_v2 = cv2.resize(heatmap_v2.numpy(), (90, 90))
-
-
-heatmap = tstV2(
-    img_array=tst_img, model=tst_m, pred_label_index=None,
-    target_layer_name=last_conv_layer_name, guided_grad=False)
-
-
 plt.matshow(heatmap)
 plt.matshow(tst_img.reshape((90, 90)))
 plt.show()
 
-for layer in reversed(tst_m.layers):
-    print(len(layer.output_shape))
 
-tgt_layer = next(
-    x for x in reversed(tst_m.layers).layers[::-1] if len(x.output_shape) == 4)
+tst_dict = tst_tf_dat.labels_map
 
-
-tst_m2 = Model()
-
-
-layer_names = []
-for l in tst_m.layers:
-    layer_names.append(l.name)
-
-if 'input_1' in layer_names:
-    print('yes')
-
-
-tst_tf_dat.labels_map_rev
+tst_dict['all']
 
 
 class GradCAM():
     def __init__(self, model, label_index_dict=None,
                  conv_last_layer=False, target_layer_name=None):
+        """
+        # Details:\n
+            - When not None, the label_index_dict should be a dictionary where
+                the keys are labels, and values are indices. One can obtain such
+                dictionary from the BatchDataLoader().label_map.\n
+                Example:
+                {'all': 0,
+                'alpha': 1,
+                'beta': 2,
+                'fmri': 3,
+                'hig': 4,
+                'megs': 5,
+                'pc': 6,
+                'pt': 7,
+                'sc': 8}\n
+        """
         # -- initialization --
         self.model = model
+        if label_index_dict is not None:
+            if not isinstance(label_index_dict, dict):
+                raise ValueError(
+                    'label_index_dict should be a dict class if not None.')
         self.label_index_dict = label_index_dict
         if target_layer_name is None:
             if conv_last_layer:
@@ -438,16 +277,30 @@ class GradCAM():
         raise ValueError(
             'Input model has no layer with output shape=4: None, dim1, dim2, channel.')
 
-    def compute_gradcam_heatmap(self, img_array, target_label=None):
-        if self.label_index_dict is not None:
-            None
+    def compute_gradcam_heatmap(self, img_array, target_label=None, guided_grad=False):
+        """
+        # Arguments:\n
+            image_array: np.ndarray. Normalized np.ndarray for an image of interest.\n
+            target_label: None or str. Target label of interest.\n
+
+        # Details:\n
+            - When target_label=None, the method automatically uses the top predcited label.\n
+        """
+        if self.label_index_dict is not None and target_label is not None:
+            try:
+                pred_label_index = self.label_index_dict[target_label]
+            except Exception as e:
+                print('Check target_label.')
+                raise
         else:
             pred_label_index = None
 
         heatmap = makeGradcamHeatmapV2(
             img_array=img_array, model=self.model,
             target_layer_name=self.target_layer_name,
-            pred_label_index=pred_label_index)
+            pred_label_index=pred_label_index,
+            guided_grad=guided_grad)
+
         return heatmap
 
     def overlay_heatmap(self, heatmap, image, alpha=0.5,

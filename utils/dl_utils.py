@@ -103,10 +103,10 @@ def getImgArray(img_path, size):
 
 def makeGradcamHeatmap(img_array, model, target_layer_name, pred_label_index=None):
     """
-    Purpose:\n
+    # Purpose:\n
         heatmap gerneation for GradCAM, from keras.io.\n
 
-    Details:\n
+    # Details:\n
         - The pred_label_index is unsorted. 
             One can get the info from from the "label_map_rev" attribtue from BatchDataLoader class.
             Example (dict keys are indices): 
@@ -155,10 +155,10 @@ def makeGradcamHeatmap(img_array, model, target_layer_name, pred_label_index=Non
 
 def makeGradcamHeatmapV2(img_array, model, target_layer_name, pred_label_index=None, guided_grad=False, eps=1e-8):
     """
-    Purpose:\n
+    # Purpose:\n
         V2 of heatmap gerneation for GradCAM, with guided grad functionality.\n
 
-    Details:\n
+    # Details:\n
         - The pred_label_index is unsorted. 
             One can get the info from from the "label_map_rev" attribtue from BatchDataLoader class.
             Example (dict keys are indices): 
@@ -234,7 +234,7 @@ def makeGradcamHeatmapV2(img_array, model, target_layer_name, pred_label_index=N
     (w, h) = (img_array.shape[2], img_array.shape[1])
     heatmap = cv2.resize(heatmap.numpy(), (w, h))
 
-    # return the resulting heatmap
+    # -- return the resulting heatmap --
     return heatmap
 
 
@@ -282,30 +282,52 @@ def displayGradcam(image_array, heatmap, cam_path=None, alpha=0.4):
 
 # ------ classes -------
 class GradCAM():
-    def __init__(self, model, pred_label_index=None, conv_last_layer=False, last_layer_name=None):
+    def __init__(self, model, label_index_dict=None,
+                 conv_last_layer=False, target_layer_name=None):
+        """
+        # Details:\n
+            - When not None, the label_index_dict should be a dictionary where
+                the keys are labels, and values are indices. One can obtain such
+                dictionary from the BatchDataLoader().label_map.\n
+                Example:
+                {'all': 0,
+                'alpha': 1,
+                'beta': 2,
+                'fmri': 3,
+                'hig': 4,
+                'megs': 5,
+                'pc': 6,
+                'pt': 7,
+                'sc': 8}\n
+        """
         # -- initialization --
         self.model = model
-        self.pred_label_index = pred_label_index
-        if last_layer_name is None:
+        if label_index_dict is not None:
+            if not isinstance(label_index_dict, dict):
+                raise ValueError(
+                    'label_index_dict should be a dict class if not None.')
+        self.label_index_dict = label_index_dict
+        if target_layer_name is None:
             if conv_last_layer:
                 try:
                     last_conv_layer = next(
                         x for x in model.layers[::-1] if isinstance(x, Conv2D))
-                    last_layer_name = last_conv_layer.name
+                    target_layer_name = last_conv_layer.name
                 except StopIteration as e:
                     print('No Conv2D layer found in the input model.')
                     raise
             else:
-                last_layer_name = self._find_target_layer()
+                target_layer_name = self._find_target_layer()
         else:
             layer_names = []
             for l in model.layers:
                 layer_names.append(l.name)
 
-            if last_layer_name not in layer_names:
-                raise ValueError('Custom last_layer_name not found in model.')
+            if target_layer_name not in layer_names:
+                raise ValueError(
+                    'Custom target_layer_name not found in model.')
 
-        self.last_layer_name = last_layer_name
+        self.target_layer_name = target_layer_name
 
     def _find_target_layer(self):
         """find the target layer (final layer with 4D output: n, dim1, dim2, channel)"""
@@ -316,10 +338,30 @@ class GradCAM():
         raise ValueError(
             'Input model has no layer with output shape=4: None, dim1, dim2, channel.')
 
-    def compute_gradcam_heatmap(self, img_array):
+    def compute_gradcam_heatmap(self, img_array, target_label=None, guided_grad=False):
+        """
+        # Arguments:\n
+            image_array: np.ndarray. Normalized np.ndarray for an image of interest.\n
+            target_label: None or str. Target label of interest.\n
+
+        # Details:\n
+            - When target_label=None, the method automatically uses the top predcited label.\n
+        """
+        if self.label_index_dict is not None and target_label is not None:
+            try:
+                pred_label_index = self.label_index_dict[target_label]
+            except Exception as e:
+                print('Check target_label.')
+                raise
+        else:
+            pred_label_index = None
+
         heatmap = makeGradcamHeatmapV2(
-            img_array=img_array, model=self.model, target_layer_name=self.last_layer_name,
-            pred_label_index=self.pred_label_index)
+            img_array=img_array, model=self.model,
+            target_layer_name=self.target_layer_name,
+            pred_label_index=pred_label_index,
+            guided_grad=guided_grad)
+
         return heatmap
 
     def overlay_heatmap(self, heatmap, image, alpha=0.5,
@@ -350,12 +392,12 @@ class WarmUpCosineDecayScheduler(tf.keras.callbacks.Callback):
                  hold_base_rate_steps=0,
                  verbose=0):
         """
-        Purpose:\n
+        # Purpose:\n
             Constructor for cosine decay with warmup learning rate scheduler.\n
-        Arguments:\n
+        # Arguments:\n
             learning_rate_base: float. Base learning rate.\n
             total_steps: int. Total number of training steps.\n
-        Keyword Arguments:\n
+        # Keyword Arguments:\n
             global_step_init: int. Initial global step, e.g. from previous checkpoint.\n
             warmup_learning_rate: float. Initial learning rate for warm up. (default: 0.0)\n
             warmup_steps: int. Number of warmup steps. (default: 0)\n
