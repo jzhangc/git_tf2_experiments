@@ -222,7 +222,7 @@ def makeGradcamHeatmapV2(img_array, model, target_layer_name, pred_label_index=N
     # [0, 1], and optionally scale the resulting values to the range [0, 255],
     # and then convert to an unsigned 8-bit integer --
     heatmap = tf.maximum(heatmap, 0)  # relu heatmap
-    heatmap = heatmap / tf.math.reduce_max(heatmap)  # scale to [0,]
+    heatmap = heatmap / tf.math.reduce_max(heatmap)  # scale to [0, 1]
     # numer = heatmap - np.min(heatmap)
     # denom = (heatmap.max() - heatmap.min()) + eps
     # heatmap = numer / denom
