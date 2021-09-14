@@ -205,9 +205,53 @@ pred, class_out = tst_m_cls.predict_classes(
     x=tst_img, label_dict=label_dict, proba_threshold=0.5)
 
 heatmap = makeGradcamHeatmap(
-    tst_img, tst_m, last_conv_layer_name, pred_label_index=3)
-heatmap = makeGradcamHeatmapV2(
-    img_array=tst_img, model=tst_m, pred_label_index=0, last_layer_name=last_conv_layer_name, guided_grad=True)
+    tst_img, tst_m, last_conv_layer_name, pred_label_index=None)
+heatmap = tstV2(
+    img_array=tst_img, model=tst_m, pred_label_index=None,
+    target_layer_name=last_conv_layer_name, guided_grad=False)
+
+
+img_array = tst_img
+model = tst_m
+target_layer_name = last_conv_layer_name
+pred_label_index = None
+pred_index = None
+
+
+def tstV1(img_array, model, last_conv_layer_name, pred_index=None):
+    # First, we create a model that maps the input image to the activations
+    # of the last conv layer as well as the output predictions
+    grad_model = tf.keras.models.Model(
+        [model.inputs], [model.get_layer(
+            last_conv_layer_name).output, model.output]
+    )
+
+    # Then, we compute the gradient of the top predicted class for our input image
+    # with respect to the activations of the last conv layer
+    with tf.GradientTape() as tape:
+        last_conv_layer_output, preds = grad_model(img_array)
+        if pred_index is None:
+            pred_index = tf.argmax(preds[0])
+        class_channel = preds[:, pred_index]
+
+    # This is the gradient of the output neuron (top predicted or chosen)
+    # with regard to the output feature map of the last conv layer
+    grads = tape.gradient(class_channel, last_conv_layer_output)
+
+    # This is a vector where each entry is the mean intensity of the gradient
+    # over a specific feature map channel
+    pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+
+    # We multiply each channel in the feature map array
+    # by "how important this channel is" with regard to the top predicted class
+    # then sum all the channels to obtain the heatmap class activation
+    last_conv_layer_output = last_conv_layer_output[0]
+    heatmap = last_conv_layer_output @ pooled_grads[..., tf.newaxis]
+    heatmap = tf.squeeze(heatmap)
+
+    # For visualization purpose, we will also normalize the heatmap between 0 & 1
+    heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
+    return heatmap.numpy()
 
 
 img_array = tst_img
@@ -219,7 +263,16 @@ eps = 1e-8
 
 
 def tstV2(img_array, model, target_layer_name, pred_label_index=None, guided_grad=False, eps=1e-8):
-    """V2 of heatmap gerneation for GradCAM, with guided grad functionality"""
+    """
+    Purpose:\n
+        V2 of heatmap gerneation for GradCAM, with guided grad functionality.\n
+
+    Details:\n
+        - The pred_label_index is unsorted. 
+            One can get the info from from the "label_map_rev" attribtue from BatchDataLoader class.
+            Example (dict keys are indices): 
+            {0: 'all', 1: 'alpha', 2: 'beta', 3: 'fmri', 4: 'hig', 5: 'megs', 6: 'pc', 7: 'pt', 8: 'sc'}\n
+    """
     # construct our gradient model by supplying (1) the inputs
     # to our pre-trained model, (2) the output of the (presumably)
     # final 4D layer in the network, and (3) the output of the
@@ -257,16 +310,20 @@ def tstV2(img_array, model, target_layer_name, pred_label_index=None, guided_gra
         # discard the batch
         # guidedGrads = guidedGrads[0]
         grads = guidedGrads[0]
+    else:
+        grads = grads[0]
+
+    # compute the average of the gradient values, and using them
+    # as weights, compute the ponderation of the filters with
+    # respect to the weights
+    # from (dim1, dim2, c) to (c)
+    weights = tf.reduce_mean(grads, axis=(0, 1))
 
     # the convolution have a batch dimension
     # (which we don't need) so let's grab the volume itself and
     # discard the batch
     target_layer_output = target_layer_output[0]
 
-    # compute the average of the gradient values, and using them
-    # as weights, compute the ponderation of the filters with
-    # respect to the weights
-    weights = tf.reduce_mean(grads, axis=(0, 1))
     cam = tf.reduce_sum(tf.multiply(weights, target_layer_output), axis=-1)
 
     # grab the spatial dimensions of the input image and resize
@@ -276,7 +333,7 @@ def tstV2(img_array, model, target_layer_name, pred_label_index=None, guided_gra
     heatmap = cv2.resize(cam.numpy(), (w, h))
 
     # normalize the heatmap such that all values lie in the range
-    # [0, 1], scale the resulting values to the range [0, 255],
+    # [0, 1], and optionally scale the resulting values to the range [0, 255],
     # and then convert to an unsigned 8-bit integer
     numer = heatmap - np.min(heatmap)
     denom = (heatmap.max() - heatmap.min()) + eps
@@ -287,7 +344,8 @@ def tstV2(img_array, model, target_layer_name, pred_label_index=None, guided_gra
 
 
 heatmap = tstV2(
-    img_array=tst_img, model=tst_m, pred_label_index=None, target_layer_name=last_conv_layer_name, guided_grad=True)
+    img_array=tst_img, model=tst_m, pred_label_index=None,
+    target_layer_name=last_conv_layer_name, guided_grad=True)
 
 
 plt.matshow(heatmap)

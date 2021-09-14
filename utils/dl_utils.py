@@ -139,6 +139,9 @@ def makeGradcamHeatmap(img_array, model, target_layer_name, pred_label_index=Non
     # by "how important this channel is" with regard to the top predicted class
     # then sum all the channels to obtain the heatmap class activation
     target_layer_output = target_layer_output[0]
+
+    # in Python "..." means "all dimensions prior to"
+    # tf.newaxis adds a new axis (dimension)
     heatmap = target_layer_output @ pooled_grads[..., tf.newaxis]
     heatmap = tf.squeeze(heatmap)
 
@@ -195,16 +198,20 @@ def makeGradcamHeatmapV2(img_array, model, target_layer_name, pred_label_index=N
         # discard the batch
         # guidedGrads = guidedGrads[0]
         grads = guidedGrads[0]
+    else:
+        grads = grads[0]
+
+    # compute the average of the gradient values, and using them
+    # as weights, compute the ponderation of the filters with
+    # respect to the weights
+    # from (dim1, dim2, c) to (c)
+    weights = tf.reduce_mean(grads, axis=(0, 1))
 
     # the convolution have a batch dimension
     # (which we don't need) so let's grab the volume itself and
     # discard the batch
     target_layer_output = target_layer_output[0]
 
-    # compute the average of the gradient values, and using them
-    # as weights, compute the ponderation of the filters with
-    # respect to the weights
-    weights = tf.reduce_mean(grads, axis=(0, 1))
     cam = tf.reduce_sum(tf.multiply(weights, target_layer_output), axis=-1)
 
     # grab the spatial dimensions of the input image and resize
@@ -214,7 +221,7 @@ def makeGradcamHeatmapV2(img_array, model, target_layer_name, pred_label_index=N
     heatmap = cv2.resize(cam.numpy(), (w, h))
 
     # normalize the heatmap such that all values lie in the range
-    # [0, 1], scale the resulting values to the range [0, 255],
+    # [0, 1], and optionally scale the resulting values to the range [0, 255],
     # and then convert to an unsigned 8-bit integer
     numer = heatmap - np.min(heatmap)
     denom = (heatmap.max() - heatmap.min()) + eps
