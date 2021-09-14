@@ -31,18 +31,11 @@ import tensorflow as tf
 from IPython.display import Image, display
 from sklearn.metrics import roc_auc_score, roc_curve
 from tensorflow.keras.callbacks import EarlyStopping
-from tensorflow.keras.layers import (BatchNormalization, Conv2D, Dense,
-                                     Flatten, Input, Layer, LeakyReLU,
-                                     MaxPooling2D, Reshape, UpSampling2D)
+from tensorflow.keras.layers import Conv2D, Input
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.utils import to_categorical
-from tensorflow.python.distribute.multi_worker_util import id_in_cluster
-from tensorflow.python.eager.backprop import make_attr
 from tensorflow.python.keras.callbacks import History
 from tensorflow.python.ops.gen_array_ops import tensor_scatter_max
-from tensorflow.python.ops.numpy_ops.np_array_ops import imag
-from tensorflow.python.types.core import Value
 
 from utils.dl_utils import (BatchMatrixLoader, WarmUpCosineDecayScheduler,
                             makeGradcamHeatmap, makeGradcamHeatmapV2)
@@ -208,7 +201,7 @@ heatmap = makeGradcamHeatmap(
     tst_img, tst_m, last_conv_layer_name, pred_label_index=None)
 heatmap = makeGradcamHeatmapV2(
     img_array=tst_img, model=tst_m, pred_label_index=None,
-    target_layer_name=last_conv_layer_name, guided_grad=False)
+    target_layer_name=last_conv_layer_name, guided_grad=True)
 
 plt.matshow(heatmap)
 plt.matshow(tst_img.reshape((90, 90)))
