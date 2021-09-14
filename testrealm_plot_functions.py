@@ -249,9 +249,18 @@ def tstV1(img_array, model, last_conv_layer_name, pred_index=None):
     heatmap = last_conv_layer_output @ pooled_grads[..., tf.newaxis]
     heatmap = tf.squeeze(heatmap)
 
+    # tf.maximu(heatmap, 0) is to apply relu to the heatmap (remove negative values)
     # For visualization purpose, we will also normalize the heatmap between 0 & 1
     heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
+
+    # -- resize to the image dimension --
+    (w, h) = (img_array.shape[2], img_array.shape[1])
+    heatmap = cv2.resize(heatmap.numpy(), (w, h))
+
     return heatmap.numpy()
+
+
+heatmap_v1 = heatmap
 
 
 img_array = tst_img
@@ -273,15 +282,15 @@ def tstV2(img_array, model, target_layer_name, pred_label_index=None, guided_gra
             Example (dict keys are indices): 
             {0: 'all', 1: 'alpha', 2: 'beta', 3: 'fmri', 4: 'hig', 5: 'megs', 6: 'pc', 7: 'pt', 8: 'sc'}\n
     """
-    # construct our gradient model by supplying (1) the inputs
+    # -- construct our gradient model by supplying (1) the inputs
     # to our pre-trained model, (2) the output of the (presumably)
     # final 4D layer in the network, and (3) the output of the
-    # softmax activations from the model
+    # softmax activations from the model --
     grad_model = tf.keras.models.Model(
         inputs=[model.inputs],
         outputs=[model.get_layer(target_layer_name).output, model.output])
 
-    # record operations for automatic differentiation
+    # -- record operations for automatic differentiation --
     with tf.GradientTape() as tape:
         # cast the image tensor to a float-32 data type, pass the
         # image through the gradient model, and grab the loss
@@ -296,9 +305,10 @@ def tstV2(img_array, model, target_layer_name, pred_label_index=None, guided_gra
 
         loss = preds[:, pred_label_index]
 
-    # use automatic differentiation to compute the gradients
+    # -- use automatic differentiation to compute the gradients --
     grads = tape.gradient(loss, target_layer_output)
 
+    # -- use guided grad or not --
     if guided_grad:
         # compute the guided gradients
         casttarget_layer_output = tf.cast(target_layer_output > 0, "float32")
@@ -313,34 +323,52 @@ def tstV2(img_array, model, target_layer_name, pred_label_index=None, guided_gra
     else:
         grads = grads[0]
 
-    # compute the average of the gradient values, and using them
+    # -- compute the average of the gradient values, and using them
     # as weights, compute the ponderation of the filters with
     # respect to the weights
-    # from (dim1, dim2, c) to (c)
+    # from (dim1, dim2, c) to (c) --
     weights = tf.reduce_mean(grads, axis=(0, 1))
 
-    # the convolution have a batch dimension
+    # -- the convolution have a batch dimension
     # (which we don't need) so let's grab the volume itself and
-    # discard the batch
+    # discard the batch --
     target_layer_output = target_layer_output[0]
-
     cam = tf.reduce_sum(tf.multiply(weights, target_layer_output), axis=-1)
+    heatmap = cam
 
-    # grab the spatial dimensions of the input image and resize
-    # the output class activation map to match the input image
-    # dimensions
-    (w, h) = (img_array.shape[2], img_array.shape[1])
-    heatmap = cv2.resize(cam.numpy(), (w, h))
-
-    # normalize the heatmap such that all values lie in the range
+    # -- normalize the heatmap such that all values lie in the range
     # [0, 1], and optionally scale the resulting values to the range [0, 255],
-    # and then convert to an unsigned 8-bit integer
-    numer = heatmap - np.min(heatmap)
-    denom = (heatmap.max() - heatmap.min()) + eps
-    heatmap = numer / denom
+    # and then convert to an unsigned 8-bit integer --
+    heatmap = tf.maximum(heatmap, 0)  # relu heatmap
+    heatmap = heatmap / tf.math.reduce_max(heatmap)  # scale to [0,]
+    # numer = heatmap - np.min(heatmap)
+    # denom = (heatmap.max() - heatmap.min()) + eps
+    # heatmap = numer / denom
     # heatmap = (heatmap * 255).astype("uint8")  # convert back heatmap into 255 scale
+
+    # -- grab the spatial dimensions of the input image and resize
+    # the output class activation map to match the input image
+    # dimensions --
+    (w, h) = (img_array.shape[2], img_array.shape[1])
+    heatmap = cv2.resize(heatmap.numpy(), (w, h))
+
     # return the resulting heatmap
     return heatmap
+
+
+heatmap_v2 = cam
+
+heatmap_v1.shape
+heatmap_v1_norm = tf.maximum(heatmap_v1, 0) / tf.math.reduce_max(heatmap_v1)
+heatmap_v1_norm = cv2.resize(heatmap_v1_norm.numpy(), (90, 90))
+
+
+heatmap_v2.shape
+heatmap_v2 = tf.maximum(heatmap_v2, 0)  # relu
+numer = heatmap_v2 - np.min(heatmap_v2)
+denom = (heatmap_v2.max() - heatmap_v2.min()) + eps
+heatmap_v2_norm = numer / denom
+heatmap_v2 = cv2.resize(heatmap_v2.numpy(), (90, 90))
 
 
 heatmap = tstV2(
