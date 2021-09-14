@@ -206,7 +206,7 @@ pred, class_out = tst_m_cls.predict_classes(
 
 heatmap = makeGradcamHeatmap(
     tst_img, tst_m, last_conv_layer_name, pred_label_index=None)
-heatmap = tstV2(
+heatmap = makeGradcamHeatmapV2(
     img_array=tst_img, model=tst_m, pred_label_index=None,
     target_layer_name=last_conv_layer_name, guided_grad=False)
 
