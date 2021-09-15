@@ -307,8 +307,10 @@ class GradCAM():
         return (heatmap, output)
 
 
-tst_cam = GradCAM(model=tst_m)
-
+tst_cam = GradCAM(model=tst_m, target_layer_name=last_conv_layer_name)
+tst_heatmap = tst_cam.compute_gradcam_heatmap(
+    img_array=tst_img, guided_grad=True)
+plt.matshow(tst_heatmap)
 
 # - ROC-AUC curve -
 proba_threshold = 0.5
