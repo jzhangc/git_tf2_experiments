@@ -1,5 +1,5 @@
 """
-Reference code for time series classificaiton with transformer
+Reference code for time series classification with transformer
 
 
 Title: Timeseries classification with a Transformer model
