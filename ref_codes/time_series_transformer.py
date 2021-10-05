@@ -1,4 +1,6 @@
 """
+NOTE: this implementation does not include a time/position embedding layer
+
 Reference code for time series classification with transformer
 
 
