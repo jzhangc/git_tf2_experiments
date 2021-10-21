@@ -241,6 +241,7 @@ plt.figure(figsize=(20, 4))
 for i in range(n):
     # display original
     ax = plt.subplot(2, n, i + 1)
+    # imshow function automatically maps [0, 1] to [0, 255]
     plt.imshow(x_test[i].reshape(28, 28))
     plt.gray()
     ax.get_xaxis().set_visible(False)
@@ -254,7 +255,10 @@ for i in range(n):
     ax.get_yaxis().set_visible(False)
 plt.show()
 
+
 epochsPlotV2(model_history=m_history)
+
+plt.imshow(reconstruction_test[0].reshape(28, 28))
 
 
 # ------ save model ------
