@@ -255,12 +255,6 @@ for i in range(n):
     ax.get_yaxis().set_visible(False)
 plt.show()
 
-
-epochsPlotV2(model_history=m_history)
-
-plt.imshow(reconstruction_test[0].reshape(28, 28))
-
-
 # ------ save model ------
 m.save('./results/subclass_autoencoder', save_format='tf')
 
