@@ -10,4 +10,5 @@ dependencies:
   - pandas
   - tqdm
   - matplotlib
+  - opencv
 
