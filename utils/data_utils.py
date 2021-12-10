@@ -262,7 +262,7 @@ def labelMapping(labels, sep=None, pd_labels_var_name=None):
 
     # Arguments\n
         labels: pandas DataFrame or numpy ndarray. Input label string collections.\n
-        sep: str. Separator string. Default is ' '.\n
+        sep: str. Separator string. Default is None.\n
         pd_labels_var_name: str. Set when labels is a pandas DataFrame, the variable/column name for label string collection.\n
 
     # Return\n
