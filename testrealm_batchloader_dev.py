@@ -19,7 +19,8 @@ from collections import Counter
 from utils.data_utils import (adjmatAnnotLoader, adjmatAnnotLoaderV2, getSelectedDataset,
                               labelMapping, labelOneHot, scanFiles, sameFileCheck,
                               findFilePath)
-from utils.other_utils import csvPath, error, flatten
+from utils.other_utils import csvPath, flatten
+from utils.error_handling import error
 
 # from skmultilearn.model_selection import iterative_train_test_split
 

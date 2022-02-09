@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import pandas as pd
-from utils.other_utils import warn
+from utils.error_handling import warn
 from utils.dl_utils import WarmUpCosineDecayScheduler
 from utils.models import CnnClassifier, CnnClassifierFuncAPI
 from tensorflow.python.keras.callbacks import History

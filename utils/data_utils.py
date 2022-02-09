@@ -6,7 +6,8 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 from tqdm import tqdm
-from utils.other_utils import flatten, VariableNotFoundError, FileError
+from utils.other_utils import flatten
+from utils.error_handling import VariableNotFoundError, FileError
 from collections import Counter
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import MinMaxScaler, StandardScaler

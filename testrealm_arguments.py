@@ -18,7 +18,8 @@ the application.
 # ------ import modules ------
 import argparse
 import os
-from utils.other_utils import AppArgParser, addBoolArg, colr, csvPath, fileDir, error, warn
+from utils.other_utils import AppArgParser, addBoolArg, colr, csvPath, fileDir
+from utils.error_handling import error, warn
 
 # ------ GLOBAL variables -------
 __version__ = '0.1.0'

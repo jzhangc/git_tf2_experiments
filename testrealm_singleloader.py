@@ -18,7 +18,7 @@ from sklearn.model_selection import StratifiedShuffleSplit, train_test_split
 from sklearn.preprocessing import LabelBinarizer, MinMaxScaler, StandardScaler
 
 from utils.data_utils import getSelectedDataset, getSingleCsvDataset
-from utils.other_utils import error
+from utils.error_handling import error
 
 # from skmultilearn.model_selection import iterative_train_test_split
 

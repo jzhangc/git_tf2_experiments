@@ -21,7 +21,7 @@ from tensorflow.keras.layers import Conv2D
 
 from utils.data_utils import (adjmatAnnotLoader, adjmatAnnotLoaderV2,
                               getSelectedDataset, labelMapping, labelOneHot)
-from utils.other_utils import FileError, VariableNotFoundError, warn
+from utils.error_handling import FileError, VariableNotFoundError, warn
 
 
 # ------ functions ------
