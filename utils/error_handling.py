@@ -5,7 +5,7 @@ import os
 import sys
 import logging
 from typing import Union, Optional
-from other_utils import colr
+from utils.other_utils import colr
 
 
 # ------ classes -------
