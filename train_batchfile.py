@@ -24,7 +24,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-from utils.dl_utils import BatchMatrixLoader
+from utils.tf_dataloaders import BatchMatrixLoader
 from utils.other_utils import (AppArgParser, addBoolArg, colr, error, fileDir,
                                warn)
 

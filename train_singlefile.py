@@ -25,7 +25,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-from utils.dl_utils import SingleCsvMemLoader
+from utils.tf_dataloaders import SingleCsvMemLoader
 from utils.other_utils import (AppArgParser, addBoolArg, colr, csvPath, error,
                                warn)
 

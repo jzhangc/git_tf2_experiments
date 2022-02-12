@@ -25,7 +25,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 from sklearn.metrics import roc_auc_score, roc_curve
 
-from utils.dl_utils import BatchMatrixLoader
+from utils.tf_dataloaders import BatchMatrixLoader
 from utils.plot_utils import epochsPlot
 from utils.other_utils import flatten
 

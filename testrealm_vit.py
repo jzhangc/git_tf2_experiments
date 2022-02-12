@@ -24,8 +24,9 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.python.keras.callbacks import History
 from tensorflow.python.ops.gen_array_ops import tensor_scatter_max
 
-from utils.dl_utils import (BatchMatrixLoader, WarmUpCosineDecayScheduler,
+from utils.dl_utils import (WarmUpCosineDecayScheduler,
                             makeGradcamHeatmap, makeGradcamHeatmapV2)
+from utils.tf_dataloaders import BatchMatrixLoader
 from utils.models import CnnClassifier, CnnClassifierFuncAPI
 from utils.other_utils import flatten
 from utils.error_handling import error, warn
