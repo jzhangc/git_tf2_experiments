@@ -13,6 +13,7 @@ import matplotlib.cm as cm
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from typing import Union, Optional
 from IPython.display import Image, display
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
@@ -25,12 +26,12 @@ from utils.error_handling import FileError, VariableNotFoundError, warn
 
 
 # ------ functions ------
-def cosinDecayWithWarmup(global_step,
-                         learning_rate_base,
-                         total_steps,
-                         warmup_learning_rate=0.0,
-                         warmup_steps=0,
-                         hold_base_rate_steps=0):
+def cosinDecayWithWarmup(global_step: int,
+                         learning_rate_base: float,
+                         total_steps: int,
+                         warmup_learning_rate: float = 0.0,
+                         warmup_steps: int = 0,
+                         hold_base_rate_steps: int = 0):
     """
     # Purpose\n
     Cosine decay schedule with warm up period.\n
@@ -87,7 +88,7 @@ def cosinDecayWithWarmup(global_step,
     return np.where(global_step > total_steps, 0.0, learning_rate)
 
 
-def getImgArray(img_path, size):
+def getImgArray(img_path: str, size: int):
     """
     Not used here. Stole from the grad-CAM page from keras.io\n
     """
@@ -101,7 +102,7 @@ def getImgArray(img_path, size):
     return array
 
 
-def makeGradcamHeatmap(img_array, model, target_layer_name, pred_label_index=None):
+def makeGradcamHeatmap(img_array, model, target_layer_name: str, pred_label_index: Optional[int] = None):
     """
     # Purpose:\n
         heatmap gerneation for GradCAM, from keras.io.\n
@@ -153,7 +154,8 @@ def makeGradcamHeatmap(img_array, model, target_layer_name, pred_label_index=Non
     return heatmap
 
 
-def makeGradcamHeatmapV2(img_array, model, target_layer_name, pred_label_index=None, guided_grad=False, eps=1e-8):
+def makeGradcamHeatmapV2(img_array, model, target_layer_name, pred_label_index: Optional[int] = None,
+                         guided_grad: bool = False, eps: float = 1e-8):
     """
     # Purpose:\n
         V2 of heatmap gerneation for GradCAM, with guided grad functionality.\n
@@ -238,7 +240,8 @@ def makeGradcamHeatmapV2(img_array, model, target_layer_name, pred_label_index=N
     return heatmap
 
 
-def displayGradcam(image_array, heatmap, cam_path=None, alpha=0.4):
+def displayGradcam(image_array, heatmap, cam_path: Optional[str] = None,
+                   alpha: float = 0.4):
     """
     # Arguments:\n
         cam_path: None or string. The file name with directory name.\n
@@ -282,8 +285,9 @@ def displayGradcam(image_array, heatmap, cam_path=None, alpha=0.4):
 
 # ------ classes -------
 class GradCAM():
-    def __init__(self, model, label_index_dict=None,
-                 conv_last_layer=False, target_layer_name=None):
+    def __init__(self, model, label_index_dict: Optional[dict] = None,
+                 conv_last_layer: bool = False,
+                 target_layer_name: Optional[str] = None):
         """
         # Details:\n
             - When not None, the label_index_dict should be a dictionary where
@@ -480,15 +484,15 @@ class BatchMatrixLoader(object):
             For regression modelling, the label column is the outcome.\n
     """
 
-    def __init__(self, filepath,
-                 new_shape=None,
-                 target_file_ext=None,
-                 model_type='classification', multilabel_classification=False, label_sep=None,
-                 manual_labels=None, manual_labels_fileNameVar=None, manual_labels_labelVar=None,
-                 x_scaling="none", x_min_max_range=[0, 1], lower_triangular_padding=None,
-                 resmaple_method="random",
-                 training_percentage=0.8,
-                 verbose=True, random_state=1):
+    def __init__(self, filepath: str,
+                 new_shape: Optional[tuple] = None,
+                 target_file_ext: Optional[str] = None,
+                 model_type: str = 'classification', multilabel_classification: bool = False, label_sep: Optional[str] = None,
+                 manual_labels: Optional[pd.DataFrame] = None, manual_labels_fileNameVar: Optional[str] = None, manual_labels_labelVar: Optional[str] = None,
+                 x_scaling: str = "none", x_min_max_range: list = [0, 1], lower_triangular_padding: Optional[int] = None,
+                 resmaple_method: str = "random",
+                 training_percentage: float = 0.8,
+                 verbose: bool = True, random_state: int = 1):
         """Initialization"""
         # - argument check -
         # for multilabel modelling label separation
@@ -514,8 +518,6 @@ class BatchMatrixLoader(object):
         self.manual_labels = manual_labels
         self.manual_labels_fileNameVar = manual_labels_fileNameVar
         self.manual_labels_labelVar = manual_labels_labelVar
-        # self.pd_labels_var_name = pd_labels_var_name  # deprecated argument
-        # self.label_sep = label_sep
         self.new_shape = new_shape
 
         if model_type == 'semisupervised':
@@ -583,43 +585,6 @@ class BatchMatrixLoader(object):
             else:
                 raise NotImplemented('Unknown model type.')
 
-        # if self.model_type == 'classification':
-        #     if self.manual_labels is None:
-        #         # file_annot, labels = adjmatAnnotLoader(
-        #         #     self.filepath, targetExt=self.target_ext)
-        #         file_annot, labels = adjmatAnnotLoaderV2(
-        #             self.filepath, targetExt=self.target_ext)
-        #     else:
-        #         try:
-        #             file_annot, labels = adjmatAnnotLoaderV2(
-        #                 self.filepath, targetExt=self.target_ext, autoLabel=False,
-        #                 annotFile=self.manual_labels,
-        #                 fileNameVar=self.manual_labels_fileNameVar, labelVar=self.manual_labels_labelVar)
-        #         except VariableNotFoundError as e:
-        #             print(e)
-        #         except FileNotFoundError as e:
-        #             print(e)
-
-        # elif self.model_type == 'regression':
-        #     if self.manual_labels is None:
-        #         raise ValueError(
-        #             'Set manual_labels when model_type=\"regression\".')
-        #     else:
-        #         try:
-        #             file_annot, labels = adjmatAnnotLoaderV2(
-        #                 self.filepath, targetExt=self.target_ext, autoLabel=False,
-        #                 annotFile=self.manual_labels,
-        #                 fileNameVar=self.manual_labels_fileNameVar, labelVar=self.manual_labels_labelVar)
-        #         except VariableNotFoundError as e:
-        #             print(e)
-        #         except FileNotFoundError as e:
-        #             print(e)
-
-        # else:  # semisupervised
-        #     file_annot, _ = adjmatAnnotLoader(
-        #         self.filepath, targetExt=self.target_ext)
-        #     labels = None
-
         return file_annot, labels
 
     def _get_file_annot(self, **kwargs):
@@ -628,19 +593,6 @@ class BatchMatrixLoader(object):
         if self.model_type == 'classification':
             labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
                 labels=labels, sep=self.label_sep)
-            # if self.multilabel_class:
-            #     if self.label_sep is None:
-            #         raise ValueError(
-            #             'set label_sep for multilabel classification.')
-
-            #     labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
-            #         labels=labels, sep=self.label_sep)
-            # else:
-            #     if self.label_sep is not None:
-            #         warn('label_sep ignored when multilabel_class=False')
-
-            #     labels_list, lables_count, labels_map, labels_map_rev = labelMapping(
-            #         labels=labels, sep=None)
             encoded_labels = labelOneHot(labels_list, labels_map)
         else:
             labels_list, lables_count, labels_map, labels_map_rev = None, None, None, None
@@ -654,7 +606,7 @@ class BatchMatrixLoader(object):
 
         return filepath_list, labels_list, lables_count, labels_map, labels_map_rev, encoded_labels
 
-    def _x_data_process(self, x_array):
+    def _x_data_process(self, x_array: np.ndarray):
         """NOTE: reshaping to (_, _, 1) is mandatory"""
         # - variables -
         if isinstance(x_array, np.ndarray):  # this check can be done outside of the class
@@ -682,7 +634,7 @@ class BatchMatrixLoader(object):
 
         return X
 
-    def _map_func(self, filepath: tf.Tensor, label: tf.Tensor, processing=False):
+    def _map_func(self, filepath: tf.Tensor, label: tf.Tensor, processing: bool = False):
         # - read file and assign label -
         fname = filepath.numpy().decode('utf-8')
         f = np.loadtxt(fname).astype('float32')
@@ -695,7 +647,7 @@ class BatchMatrixLoader(object):
         f = tf.convert_to_tensor(f, dtype=tf.float32)
         return f, lb
 
-    def _map_func_semisupervised(self, filepath: tf.Tensor, processing=False):
+    def _map_func_semisupervised(self, filepath: tf.Tensor, processing: bool = False):
         # - read file and assign label -
         fname = filepath.numpy().decode('utf-8')
         f = np.loadtxt(fname).astype('float32')
@@ -720,14 +672,13 @@ class BatchMatrixLoader(object):
         lb.set_shape([None, None, lb.shape[-1]])
         return f, lb
 
-    def _data_resample(self, total_data, n_total_sample, encoded_labels):
+    def _data_resample(self, total_data: tf.data.Dataset, n_total_sample: int, encoded_labels):
         """
         NOTE: regression cannot use stratified splitting\n
         NOTE: "stratified" (keep class ratios) is NOT the same as "balanced" (make class ratio=1)\n
         NOTE: "balanced" mode will be implemented at a later time\n
         NOTE: depending on how "balanced" is implemented, the if/else block could be simplified\n
         """
-        # _, encoded_labels, _, _ = self._get_file_annot()
         X_indices = np.arange(n_total_sample)
 
         if self.model_type != 'classification' and self.resample_method == 'stratified':
@@ -753,7 +704,7 @@ class BatchMatrixLoader(object):
 
         return train_ds, train_n, test_ds, test_n
 
-    def generate_batched_data(self, batch_size=4, cv_only=False, shuffle_for_cv_only=True):
+    def generate_batched_data(self, batch_size: int = 4, cv_only: bool = False, shuffle_for_cv_only: bool = True):
         """
         # Purpose\n
             To generate working data in batches. The method also creates a series of attributes that store 
@@ -776,9 +727,6 @@ class BatchMatrixLoader(object):
         self.cv_only = cv_only
         self.shuffle_for_cv_only = shuffle_for_cv_only
 
-        # # - load paths -
-        # filepath_list, labels_list, lables_count, labels_map_rev, encoded_labels = self._get_file_annot()
-
         if self.semi_supervised:
             total_ds = tf.data.Dataset.from_tensor_slices(self.filepath_list)
         else:
@@ -789,8 +737,6 @@ class BatchMatrixLoader(object):
         # the reason this can be used for total sample size is because
         # tf.data.Dataset.from_tensor_slices() reads the file list as one file per batch
         self.n_total_sample = total_ds.cardinality().numpy()
-
-        # return total_ds, self.n_total_sample  # test point
 
         # - resample data -
         self.train_batch_n = 0
@@ -839,13 +785,6 @@ class BatchMatrixLoader(object):
 
             self.test_batch_n = 0
 
-        # # - export attributes -
-        # self.filepath_list = filepath_list
-        # self.labels_list = labels_list
-        # self.lables_count = lables_count
-        # self.labels_map_rev = labels_map_rev
-        # self.encoded_labels = encoded_labels
-
         # - set up batch and prefeching -
         # NOTE: the train_set and test_set are tensorflow.python.data.ops.dataset_ops.PrefetchDataset type
         train_batched = self.train_set_map.batch(
@@ -878,9 +817,13 @@ class SingleCsvMemLoader(object):
         label_var: list of strings. Variable name for label(s). 
         annotation_vars: list of strings. Column names for the annotation variables in the input dataframe, EXCLUDING label variable.
         sample_id_var: str. variable used to identify samples.\n
+        minmax: bool. if to conduct min-max normalizaiton.\n
         model_type: str. model type, classification or regression.\n
-        n_classes: int. number of classes when model_type='classification'.\n
+        label_string_sep: None or str. separator for labels.\n
+        cv_only: bool. when `True`, no train/test split is done.\n
+        shuffle_for_cv_only: bool. if to shuffle when `cv_only=True`.\n
         training_percentage: float, betwen 0 and 1. percentage for training data.\n
+        resample_method: str. data resampling method.\n
         random_state: int. random state.\n
         verbose: bool. verbose.\n
     # Methods\n
@@ -895,7 +838,6 @@ class SingleCsvMemLoader(object):
             self.label_var
             self.annotation_vars
             self.cv_only
-            self.holdout_samples
             self.training_percentage
             self.rand: int. random state
         self.labels_working: np.ndarray. Working labels. For classification, working labels are one hot encoded.
@@ -918,16 +860,15 @@ class SingleCsvMemLoader(object):
         - For multilabels, a mixture of continuous and discrete labels are not supported.\n
     """
 
-    def __init__(self, file,
-                 label_var, annotation_vars, sample_id_var,
-                 minmax=True,
-                 model_type='classification',
-                 label_string_sep=None,
-                 cv_only=False, shuffle_for_cv_only=True,
-                 holdout_samples=None,
-                 training_percentage=0.8,
-                 resample_method='random',
-                 random_state=1, verbose=True):
+    def __init__(self, file: str,
+                 label_var: str, annotation_vars: list, sample_id_var: str,
+                 minmax: bool = True,
+                 model_type: str = 'classification',
+                 label_string_sep: Optional[str] = None,
+                 cv_only: bool = False, shuffle_for_cv_only: bool = True,
+                 training_percentage: float = 0.8,
+                 resample_method: str = 'random',
+                 random_state: int = 1, verbose: bool = True):
         """initialization"""
         # - random state and other settings -
         self.rand = random_state
@@ -962,7 +903,7 @@ class SingleCsvMemLoader(object):
         self.shuffle_for_cv_only = shuffle_for_cv_only
         self.resample_method = resample_method
         self.sample_id_var = sample_id_var
-        self.holdout_samples = holdout_samples
+        # self.holdout_samples = holdout_samples
         self.training_percentage = training_percentage
         self.test_percentage = 1 - training_percentage
         self.minmax = minmax
@@ -985,7 +926,7 @@ class SingleCsvMemLoader(object):
             ~self.raw_working.columns.isin(self.complete_annot_vars)]].to_numpy()
         self.labels = self.raw_working[self.label_var].to_numpy()
 
-    def _label_onehot_encode(self, labels):
+    def _label_onehot_encode(self, labels: np.ndarray):
         """one hot encoding for labels. labels: should be a np.ndarray"""
         labels_list, labels_count, labels_map, labels_map_rev = labelMapping(
             labels, sep=self.label_sep)
@@ -994,7 +935,7 @@ class SingleCsvMemLoader(object):
 
         return onehot_encoded, labels_count, labels_map_rev
 
-    def _x_minmax(self, x_array):
+    def _x_minmax(self, x_array: np.ndarray):
         """NOTE: reshaping to (_, _, 1) is mandatory"""
         # - variables -
         if isinstance(x_array, np.ndarray):  # this check can be done outside of the classs
@@ -1010,7 +951,7 @@ class SingleCsvMemLoader(object):
 
         return X
 
-    def generate_batched_data(self, batch_size=4):
+    def generate_batched_data(self, batch_size: int = 4):
         """
         # Purpose\n
             Generate batched data\n
