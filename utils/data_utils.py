@@ -2,18 +2,136 @@
 
 # ------ modules ------
 import os
+import itertools
+import csv
 import pandas as pd
 import numpy as np
 import tensorflow as tf
+from typing import Union, Optional, List
 from tqdm import tqdm
-from utils.other_utils import flatten
-from utils.error_handling import VariableNotFoundError, FileError
 from collections import Counter
-from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.model_selection import StratifiedShuffleSplit, train_test_split
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from utils.other_utils import flatten, string_flex
+from utils.error_handling import MyLogger, VariableNotFoundError, FileError, warn
 
 
 # ------ functions -------
+def onehotLabelWeight(file: str, n_samples: int, num_classes: int,
+                      col_idx: Union[List[str], List[int], None] = None,
+                      logger: Optional[MyLogger] = None, verbose=True) -> dict:
+    """calculate class weights for one-hot encoded  multilabel data
+        formula: weight_of_class_1 = n_samples/n_class*n_freq_class_1"""
+    label_counts = csvRowSum(file, col_idx=col_idx, logger=None, verbose=False)
+    class_weights = [n_samples/(num_classes * count) for count in label_counts]
+    if verbose:
+        if logger:
+            logger.info(
+                f'Class weight calculated for {num_classes} input classes.')
+        else:
+            print(
+                f'Class weight calculated for {num_classes} input classes.')
+    return {k: v for k, v in enumerate(class_weights)}
+
+
+def csvRowSum(file: str, header: bool = True, col_idx: Union[int, str, None] = None, logger: MyLogger = None, verbose=True):
+    """
+    # Purpose:\n
+        Calculate row sums of a CSV file.\n
+
+    # Arguments:\n
+        file: `str`. A csv file.\n
+        header: `bool`. If the input file has a header.\n
+        col_idx: `int`, `str` or `None`. Index for the columns to sum.\n
+        logger: `MyLogger` or `None`. A `MyLogger` object for custom logging.\n
+        verbose: `bool`. Verbose or not.\n
+
+    # Details:\n
+        - `col_idx` can take many forms.
+            - single int, e.g. `2`, `-3`
+            - list of int, e.g. `[2, 3, 6]`
+            - single string, e.g. `'2'`, `'2:6'`, `"2:"`, `":2"`, `"-1"`, `"label1"`
+            - list of string, e.g. `["2", "3", "4"]`, `["label1", "label2". "label3"]`
+            - Note, the following are NOT SUPPORTED: `["1, 2, 3"]`, or  `"label1label2lable3"` (three labels, will be treated as one label: `label1label2lable3`).
+            However, int strings like `"123"` are supported, e.g. `"123"` as three ints.\n
+        - When `col_idx=None`, all columns are going to be used.\n
+    """
+    if verbose:
+        if logger:
+            logger.info(f'Initiating generator for file: {file}')
+        else:
+            print(f"Calculating row sum for file {file}...")
+
+    with open(file, 'r') as f:
+        i_reader, f_reader = itertools.tee(csv.reader(f))
+        ncol = len(next(i_reader))
+        if col_idx:
+            ncol = len(string_flex(np.arange(ncol), col_idx))
+        del i_reader
+        o = np.zeros(ncol)
+        if header:
+            h = next(f_reader, None)
+
+        for i, row in enumerate(tqdm(f_reader, unit=' line')):
+            r = string_flex(row, col_idx)
+            for j, v in enumerate(r):
+                try:
+                    o[j] += float(v)
+                except:
+                    if logger:
+                        logger.warning(f'value skipped: {i} row, {j} column')
+                    else:
+                        warn(f'value skipped: {i} row, {j} column')
+                    continue
+
+    if verbose:
+        if logger:
+            logger.info(f'Row sum calculated for file: {file}')
+        else:
+            print("Done!")
+
+    return o
+
+
+def getCsvNrow(file: str, header: bool = False):
+    """A great way to get sample size if the data source is a big csv. """
+    with open(file) as f:
+        if header:
+            next(f)
+        return (sum(1 for line in f))
+
+
+def getTfSize(tf_dataset: tf.data.Dataset):
+    """
+    # Purpose:\n
+        return sample size of a tf dataset.
+
+    # Details:\n
+        Since the function reads the entire dataset in and converts in to a list, 
+            it could be very slow for big dataset (> 1 million).\n
+    """
+    tf_n = tf_dataset.as_numpy_iterator()
+    tf_n = list(tf_n)
+    return len(tf_n)
+
+
+def valueCheck(threshold: Union[int, float] = 1, **kwargs: Union[int, float]):
+    """check if the sum of and keyword arguments values greater than a threshold. """
+    try:
+        if threshold-(sum(kwargs.values())) < 0:
+            print(f'Error: sum of numbers {kwargs.keys()} > {threshold}')
+    except TypeError as e:
+        for key, val in kwargs.items():
+            try:
+                if threshold-val < 0:
+                    print('Error: arg {key} > {threshold}')
+            except TypeError as e1:
+                print(f'e1={e1}')
+                continue
+    finally:
+        print(f'kwargs are {kwargs}')
+
+
 def getSingleCsvDataset(csv_path, label_var, column_to_exclude=None,
                         batch_size=5, **kwargs):
     """
@@ -263,7 +381,7 @@ def labelMapping(labels, sep=None, pd_labels_var_name=None):
 
     # Arguments\n
         labels: pandas DataFrame or numpy ndarray. Input label string collections.\n
-        sep: str. Separator string. Default is None.\n
+        sep: str. Separator string. Default is ' '.\n
         pd_labels_var_name: str. Set when labels is a pandas DataFrame, the variable/column name for label string collection.\n
 
     # Return\n
@@ -440,10 +558,44 @@ def getSelectedDataset(ds, X_indices_np):
     # calculate number of samples
     # cardinality would not work on "selected_ds"
     n = 0
-    for e in selected_ds:
+    for _ in selected_ds:
         n += 1
 
     return selected_ds, n
+
+
+def getSelectedDatasetV2(ds, X_indices_np):
+    """
+    modified from https://www.kaggle.com/tt195361/splitting-tensorflow-dataset-for-validation
+    difference from "v1": does not return n
+    """
+    # Make a tensor of type tf.int64 to match the one by Dataset.enumerate().
+    X_indices_ts = tf.constant(X_indices_np, dtype=tf.int64)
+
+    def is_index_in(index, rest):
+        # Returns True if the specified index value is included in X_indices_ts.
+        #
+        # '==' compares the specified index value with each values in X_indices_ts.
+        # The result is a boolean tensor, looks like [ False, True, ..., False ].
+        # reduce_any() returns True if True is included in the specified tensor.
+        return tf.math.reduce_any(index == X_indices_ts)
+
+    def drop_index(index, rest):
+        return rest
+
+    # Dataset.enumerate() is similar to Python's enumerate().
+    # The method adds indices to each elements. Then, the elements are filtered
+    # by using the specified indices. Finally unnecessary indices are dropped.
+    selected_ds = ds.enumerate().filter(is_index_in).map(drop_index)
+
+    # # calculate number of samples
+    # # cardinality would not work on "selected_ds"
+    # n = 0
+    # for _ in selected_ds:
+    #     n += 1
+
+    # return selected_ds, n
+    return selected_ds
 
 
 def trainingtestSplitterFinal(data, model_type='classification',
@@ -593,3 +745,68 @@ def trainingtestSplitterFinal(data, model_type='classification',
                     'Y column to scale not found. Proceed without Y scaling. \n')
 
     return training, test, training_standard_scaler_X, training_minmax_scaler_X, training_scaler_Y
+
+
+def tfDataResample(data_set: tf.data.Dataset,
+                   total_sample_n: Optional[int], test_rate: float = 0.25,
+                   validation_rate: Optional[float] = None, random_state: int = 1):
+    """
+    # Purpose\n
+        Resampling function for tf.data.Dataset\n
+
+    # Output\n
+        Items in the following order: train_set, train_n, validation_set, validation_n, test_set, test_n\n
+    """
+    # -- check args and set vars --
+    if test_rate is None:
+        raise ValueError(
+            'test_rate cannot be None and should be a positive float that is less than 1.')
+
+    try:
+        if test_rate+validation_rate > 1:
+            raise ValueError(
+                'When both set, make sure test_split_rate+validation_split_rate is less than 1.')
+    except TypeError as e:
+        # print(f'e={e}')
+        for rate, value in {'test_rate': test_rate, 'validation_rate': validation_rate}.items():
+            try:
+                if value > 1:
+                    raise ValueError(
+                        f'When set, make sure {rate} is less than 1.')
+            except TypeError as e2:
+                # print(f'e2={e2}')
+                continue
+    finally:
+        test_split_rate = test_rate
+        val_split_rate = validation_rate
+
+    # if n_total_sample is None:
+    #     n_total_sample = getTfSize(data_set)
+
+    # -- resample data --
+    total_ids = np.arange(total_sample_n)
+
+    train_ids, test_ids = train_test_split(
+        total_ids, test_size=test_split_rate, stratify=None, random_state=random_state)
+    inter_train = getSelectedDatasetV2(data_set, train_ids)
+    test_set = getSelectedDatasetV2(data_set, test_ids)
+    inter_train_n = int(total_sample_n*(1-test_rate))
+    test_n = total_sample_n - inter_train_n
+
+    if val_split_rate is not None:  # validation set
+        inter_train_ids = np.arange(inter_train_n)
+        final_train_ids, final_val_idx = train_test_split(inter_train_ids, test_size=(
+            total_sample_n*validation_rate)/inter_train_n, stratify=None, random_state=random_state)
+        train_set = getSelectedDatasetV2(
+            inter_train, final_train_ids)
+        validation_set = getSelectedDatasetV2(
+            inter_train, final_val_idx)
+        train_n = int(
+            inter_train_n*(1-((total_sample_n*validation_rate)/inter_train_n)))
+        validation_n = inter_train_n - train_n
+    else:
+        train_set, train_n = inter_train, inter_train_n
+        validation_set, validation_n = None, None
+
+    # -- output --
+    return train_set, train_n, validation_set, validation_n, test_set, test_n
