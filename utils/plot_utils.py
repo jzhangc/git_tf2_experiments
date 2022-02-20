@@ -10,7 +10,7 @@ import pandas as pd
 from utils.error_handling import warn
 from utils.dl_utils import WarmUpCosineDecayScheduler
 from utils.models import CnnClassifier, CnnClassifierFuncAPI
-from tensorflow.python.keras.callbacks import History
+# from tensorflow.python.keras.callbacks import History
 from sklearn.metrics import roc_auc_score, roc_curve
 
 
@@ -38,7 +38,7 @@ def epochsPlot(model_history,
         - The loss_var and accuracy_var are keys in the history.history object.\n
     """
     # -- argument check --
-    if not isinstance(model_history, History):
+    if not isinstance(model_history, tf.keras.callbacks.History):
         raise TypeError('model_history needs to be a keras History object."')
 
     if not all(hist_key in model_history.history for hist_key in [loss_var, val_loss_var]):
@@ -132,13 +132,10 @@ def choose_subplot_dimensions(k):
     """
     # Purpose\n
         To generate subplot dimensions for matplotlib.\n
-
     # Arguments\n
         k: int. Number of subplots.\n
-
     # Return\n
         Number of rows and columns (int, int) as subplot dimensions.\n
-
     # Details\n
         - If k < 4, one column.\n
         - If k < 11, two columns.\n
@@ -157,10 +154,8 @@ def generate_subplots(k):
     """
     # Purpose\n
         Generate matplotlib figure and axes with k number of subplots.\n
-
     # Arguments\n
         k: int. Number of subplots.\n
-
     # Return\n
         - If more than one metric, function returns figure, axes, idxs_to_turn_off_ticks\n
         - If only one metric, function returns figure, axes\n
@@ -195,7 +190,7 @@ def generate_subplots(k):
 
 def epochsPlotV2(model_history,
                  file=None,
-                 figure_size=(5, 5), **kwargs):
+                 figure_width: float = 5, figure_height: float = 5, **kwargs):
     """
     # Purpose\n
         The plot function for epoch history from LSTM modelling\n
@@ -210,7 +205,7 @@ def epochsPlotV2(model_history,
         - The loss_var and accuracy_var are keys in the history.history object.\n
     """
     # -- argument check --
-    if not isinstance(model_history, History):
+    if not isinstance(model_history, tf.keras.callbacks.History):
         raise TypeError('model_history needs to be a keras History object."')
     metrics_dict = model_history.history
 
@@ -272,6 +267,8 @@ def epochsPlotV2(model_history,
     plt.tight_layout()
 
     fig.set_facecolor('white')
+    fig.set_size_inches(figure_width, figure_height, forward=True)
+    # fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
     fig
 
     # - save output -
@@ -292,7 +289,6 @@ def rocaucPlot(classifier, x, y=None, label_dict=None, legend_pos='inside', **kw
     """
     # Purpose\n
         To calculate and plot ROC-AUC for binary or mutual multiclass classification.
-
     # Arguments\n
         classifier: tf.keras.model subclass. 
             These classes were created with a custom "predict_classes" method, along with other smaller custom attributes.\n
@@ -301,12 +297,10 @@ def rocaucPlot(classifier, x, y=None, label_dict=None, legend_pos='inside', **kw
         label_dict: dict. Dictionary with index (integers) as keys.\n
         legend_pos: str. Legend position setting. Can be set to 'none' to hide legends.\n
         **kwargs: additional arguments for the classifier.predict_classes.\n
-
     # Return\n
         - AUC scores for all the classes.\n
         - Plot objects "fg" and "ax" from matplotlib.\n
         - Order: auc_res, fg, ax.\n
-
     # Details\n
         - The function will throw an warning if multilabel classifier is used.\n        
         - The output auc_res is a pd.DataFrame. 
@@ -317,7 +311,6 @@ def rocaucPlot(classifier, x, y=None, label_dict=None, legend_pos='inside', **kw
             Example:
             {0: 'all', 1: 'alpha', 2: 'beta', 3: 'fmri', 4: 'hig', 5: 'megs', 6: 'pc', 7: 'pt', 8: 'sc'}.
             This can be derived from the "label_map_rev" attribtue from BatchDataLoader class.\n
-
     # Note\n
         - need to test the non-tf.Dataset inputs.\n
         - In the case of using tf.Dataset as x, y is not needed.\n
