@@ -6,10 +6,11 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.layers import (BatchNormalization, Conv2D, Dense,
                                      Flatten, Input, LeakyReLU,
-                                     MaxPooling2D)
+                                     MaxPooling2D, Dropout, Input)
 from tensorflow.keras.models import Model
 from tensorflow.keras.utils import to_categorical
-from utils.error_handling import warn
+
+from utils.error_handling import warn, MyLogger, excpt
 
 
 # ------ classes -------
@@ -141,7 +142,7 @@ class CnnClassifier(Model):
                 multiclass_res = to_categorical(
                     proba.argmax(axis=1), proba.shape[-1])
             else:
-                multiclass_res = (proba > 0.5).astype('int32')
+                multiclass_res = (proba > proba_threshold).astype('int32')
 
             multiclass_out = pd.DataFrame(multiclass_res, dtype=int)
             multiclass_out.columns = res_colnames
@@ -232,7 +233,7 @@ class CnnClassifierFuncAPI():
         return self.m
 
     def predict_classes(self, label_dict,
-                        x, proba_threshold=None,
+                        x, proba_threshold=0.5,
                         batch_size=32, verbose=1):
         """
         # Purpose:\n
@@ -291,7 +292,7 @@ class CnnClassifierFuncAPI():
                 multiclass_res = to_categorical(
                     proba.argmax(axis=1), proba.shape[-1])
             else:
-                multiclass_res = (proba > 0.5).astype('int32')
+                multiclass_res = (proba > proba_threshold).astype('int32')
 
             multiclass_out = pd.DataFrame(multiclass_res, dtype=int)
             multiclass_out.columns = res_colnames
